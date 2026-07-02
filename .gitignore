@@ -1,0 +1,40 @@
+# Godot
+.godot/
+export/
+*.tmp
+
+# Archives / imported downloads
+ImportedAssets/
+
+# Starfall Requiem assets (not needed for Pixel Observatory)
+spritesheets/
+spriteframes/
+
+# Large addons not needed
+addons/BulletUpHell/
+addons/blastbullets2d/
+addons/tama/
+
+# Starfall Requiem leftovers (root level)
+2DPIXX*/
+ammunition.svg
+ammunition.svg.import
+
+# Maps and player character (Starfall Requiem leftovers)
+Maps/
+PlayerCharacter/
+
+# OS
+__MACOSX/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+
+# Save files
+*.sav
+savegame.json

@@ -1,0 +1,76 @@
+[
+  {
+    "id": "basic_tripod",
+    "type": "tripod",
+    "name_en": "Basic Tripod",
+    "name_zh": "基础三脚架",
+    "stability_bonus": 45,
+    "alignment_difficulty": 1,
+    "cost": 0,
+    "unlock_level": 1,
+    "description_en": "A simple tripod that supports the whole telescope.",
+    "description_zh": "支撑整台望远镜的基础三脚架。"
+  },
+  {
+    "id": "basic_mount",
+    "type": "mount",
+    "name_en": "Basic Mount",
+    "name_zh": "基础支架",
+    "stability": 45,
+    "tracking": 0,
+    "cost": 0,
+    "unlock_level": 1,
+    "description_en": "A simple mount. It works, but it can shake at high magnification.",
+    "description_zh": "简单支架，可以使用，但高倍率时会更容易抖动。"
+  },
+  {
+    "id": "starter_tube",
+    "type": "tube",
+    "name_en": "Starter Telescope Tube",
+    "name_zh": "入门镜筒",
+    "alignment_quality": 55,
+    "weight": 1,
+    "cost": 0,
+    "unlock_level": 1,
+    "description_en": "A basic tube that keeps the objective and eyepiece in line.",
+    "description_zh": "保持主镜和目镜对齐的基础镜筒。"
+  },
+  {
+    "id": "objective_60mm",
+    "type": "objective",
+    "name_en": "60mm Starter Lens",
+    "name_zh": "60mm 入门物镜",
+    "aperture_mm": 60,
+    "focal_length_mm": 700,
+    "quality": 58,
+    "cost": 0,
+    "unlock_level": 1,
+    "description_en": "Good for the Moon and bright stars.",
+    "description_zh": "适合观察月球和明亮恒星。"
+  },
+  {
+    "id": "eyepiece_20mm",
+    "type": "eyepiece",
+    "name_en": "20mm Low Power Eyepiece",
+    "name_zh": "20mm 低倍率目镜",
+    "focal_length_mm": 20,
+    "field_of_view": 60,
+    "quality": 62,
+    "cost": 0,
+    "unlock_level": 1,
+    "description_en": "A wide view eyepiece. Good for finding targets.",
+    "description_zh": "视野较宽的目镜，适合寻找目标。"
+  },
+  {
+    "id": "basic_finder_scope",
+    "type": "finder_scope",
+    "name_en": "Basic Finder Scope",
+    "name_zh": "基础寻星镜",
+    "aim_assist": 40,
+    "calibration_required": false,
+    "cost": 0,
+    "unlock_level": 5,
+    "description_en": "A small scope that helps aim the main telescope.",
+    "description_zh": "帮助主望远镜瞄准的小型寻星镜。"
+  }
+]

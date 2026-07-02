@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://c1main001"]
+
+[ext_resource type="Script" uid="uid://bkapcswqjrwat" path="res://scripts/main.gd" id="1_main"]
+
+[node name="Main" type="Node2D" unique_id=1925873891]
+script = ExtResource("1_main")
+
+[node name="Background" type="ColorRect" parent="." unique_id=1942055510]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.035, 0.036, 0.043, 1)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=516368155]
+
+[node name="ScoreLabel" type="Label" parent="CanvasLayer" unique_id=198868043]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 300.0
+offset_bottom = 36.0
+theme_override_font_sizes/font_size = 18
+text = "分数: 0"
+
+[node name="WaveLabel" type="Label" parent="CanvasLayer" unique_id=1700415747]
+offset_left = 10.0
+offset_top = 40.0
+offset_right = 420.0
+offset_bottom = 66.0
+theme_override_font_sizes/font_size = 18
+text = "波次: 0"
+
+[node name="HPLabel" type="Label" parent="CanvasLayer" unique_id=497012499]
+offset_left = 10.0
+offset_top = 70.0
+offset_right = 200.0
+offset_bottom = 96.0
+theme_override_font_sizes/font_size = 18
+text = "HP: 5 / 5"
+
+[node name="GameOver" type="Panel" parent="CanvasLayer" unique_id=2030507489]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -80.0
+offset_right = 150.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/GameOver" unique_id=349807262]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 10.0
+offset_right = 280.0
+offset_bottom = 110.0
+text = "游戏结束!"
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="CanvasLayer/GameOver" unique_id=313987800]
+layout_mode = 0
+offset_left = 90.0
+offset_top = 125.0
+offset_right = 210.0
+offset_bottom = 155.0
+text = "重新开始"
