@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Godot
 .godot/
 export/
@@ -38,3 +39,70 @@ __pycache__/
 # Save files
 *.sav
 savegame.json
+=======
+# Unreal generated folders
+**/Binaries/
+**/DerivedDataCache/
+**/Intermediate/
+**/Saved/
+
+# Visual Studio / Rider / editor state
+**/.vs/
+**/.idea/
+**/.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+*.opensdf
+*.sdf
+*.ipch
+
+# Unreal generated files
+*.opensdf
+*.sdf
+*.sln
+*.slnx
+*.xcodeproj
+*.xcworkspace
+*.xcuserdata
+*.code-workspace
+
+# Build products and debug symbols
+**/bin/
+**/obj/
+*.dll
+*.exe
+*.exp
+*.ilk
+*.lib
+*.obj
+*.pdb
+*.pch
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+*.swp
+*.bak
+*.cache
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Only TIWAN is tracked from this workspace.
+/Fre/
+/THREE/
+/TIWAN 5.8/
+/si/
+/游戏动画示例/
+
+# Local tooling repositories
+/UnrealClaude/
+/Unreal_mcp/
+>>>>>>> origin/main

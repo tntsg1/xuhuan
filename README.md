@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Godot Simple FPS Weapon System
 
 
@@ -163,3 +164,7 @@ Weapons models and textures (except for the RPG weapon) by amaraha : https://ama
 Ammo Canister model and texture by Stephen Yoshimura (CC-BY) via Poly Pizza : https://poly.pizza/m/b2_n3tmq02h
 
 RPG model and texture by : https://sketchfab.com/3d-models/low-poly-rpg-7-de967b52c9794d2995d4606749fcdff7
+=======
+# xuhuan
+nothing
+>>>>>>> origin/main

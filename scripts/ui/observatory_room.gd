@@ -3,11 +3,14 @@ extends Control
 const W := 1024.0
 const H := 768.0
 const ROOM_RECT := Rect2(36, 118, 952, 570)
-const PLAYER_SIZE := Vector2(30, 36)
+const PLAYER_SIZE := Vector2(18, 20)
 const PLAYER_SPEED := 220.0
 const INTERACT_DISTANCE := 56.0
 const BG_TEXTURE := "res://assets/reference/observatory_room_clean_bg_1024.png"
-const PLAYER_TEXTURE := "res://assets/sprout_lands/characters/basic_character.png"
+const PLAYER_TEXTURE := "res://assets/characters/player_observer_4dir_clean.png"
+const PLAYER_FRAME_SIZE := Vector2(96, 128)
+const PLAYER_DISPLAY_SIZE := Vector2(44, 62)
+const PLAYER_ANIM_FPS := 8.0
 
 const NOT_READY_TEXT := "The telescope is not ready yet. Go to the Assembly Table and install the core parts."
 const READY_GUIDANCE_TEXT := "Telescope ready. Go to the Telescope Observation Pad or Observatory Door to begin sky observation."
@@ -19,7 +22,8 @@ const WARM_TEXT := Color(0.96, 0.91, 0.78)
 const BRASS := Color(0.90, 0.63, 0.28)
 const CYAN := Color(0.52, 0.86, 1.00)
 
-var player: TextureRect
+var player: Sprite2D
+var player_atlas: AtlasTexture
 var player_shadow: ColorRect
 var level_value_label: Label
 var credits_value_label: Label
@@ -29,12 +33,16 @@ var feedback_label: Label
 var interactables: Array[Dictionary] = []
 var obstacles: Array[Rect2] = []
 var nearby_id := ""
-var player_pos := Vector2(506, 602)
+var player_pos := Vector2(517, 630)
 var active_guidance := ""
 var feedback_override := ""
 var feedback_override_until_msec := 0
 var interact_key_was_down := false
 var mission_key_was_down := false
+var player_facing := "down"
+var player_anim_frame := 0
+var player_anim_time := 0.0
+var player_is_moving := false
 
 
 func _ready() -> void:
@@ -117,13 +125,13 @@ func _draw_full_background() -> void:
 
 
 func _register_hitboxes() -> void:
-	_register_interactable("cabinet", "Parts Cabinet", "Review unlocked telescope parts.", Rect2(70, 108, 235, 210))
-	_register_interactable("door", "Observatory Door", "Enter the observatory control room.", Rect2(455, 70, 116, 214))
-	_register_interactable("mission", "Mission Board", "Read the current level goal here.", Rect2(607, 96, 170, 150))
-	_register_interactable("assembly", "Assembly Table", "Build and align the telescope.", Rect2(758, 188, 222, 205))
-	_register_interactable("telescope", "Telescope Observation Pad", "Start observation here after assembly.", Rect2(378, 360, 280, 216))
-	_register_interactable("journal", "Learning Journal", "Review completed observations and learning cards.", Rect2(70, 454, 272, 190))
-	_register_interactable("computer", "Stats Terminal", "Check telescope performance and readiness.", Rect2(707, 474, 197, 152))
+	_register_interactable("cabinet", "Parts Cabinet", "Review unlocked telescope parts.", Rect2(82, 124, 214, 182))
+	_register_interactable("door", "Observatory Door", "Enter the observatory control room.", Rect2(468, 88, 88, 188))
+	_register_interactable("mission", "Mission Board", "Read the current level goal here.", Rect2(622, 108, 138, 124))
+	_register_interactable("assembly", "Assembly Table", "Build and align the telescope.", Rect2(782, 214, 170, 160))
+	_register_interactable("telescope", "Telescope Observation Pad", "Start observation here after assembly.", Rect2(455, 398, 120, 124))
+	_register_interactable("journal", "Learning Journal", "Review completed observations and learning cards.", Rect2(96, 476, 214, 132))
+	_register_interactable("computer", "Stats Terminal", "Check telescope performance and readiness.", Rect2(730, 492, 146, 116))
 
 	# Foot blockers only: keep furniture edges walkable while preventing the player from standing inside bases.
 	obstacles.append_array([
@@ -140,29 +148,29 @@ func _register_interactable(id: String, display_name: String, hint: String, rect
 	var frame_color := BRASS if _is_ready_observation_target(id) else CYAN
 	var frame := _thin_highlight_frame(rect, frame_color)
 	frame.modulate.a = 0.0
+	var click_target := _transparent_click_target(rect, id)
 	interactables.append({
 		"id": id,
 		"name": display_name,
 		"hint": hint,
 		"rect": rect,
-		"glow": frame
+		"glow": frame,
+		"click_target": click_target
 	})
 
 
 func _draw_player() -> void:
-	player_shadow = _rect(player_pos + Vector2(4, 30), Vector2(22, 7), Color(0.0, 0.0, 0.0, 0.36))
-	player = TextureRect.new()
-	var atlas := AtlasTexture.new()
-	atlas.atlas = load(PLAYER_TEXTURE)
-	atlas.region = Rect2(17, 16, 14, 16)
-	player.texture = atlas
-	player.position = player_pos + Vector2(0, -6)
-	player.size = Vector2(30, 34)
-	player.ignore_texture_size = true
-	player.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	player.stretch_mode = TextureRect.STRETCH_SCALE
-	player.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	player_shadow = _rect(_player_shadow_position(), Vector2(20, 6), Color(0.0, 0.0, 0.0, 0.32))
+	player = Sprite2D.new()
+	player_atlas = AtlasTexture.new()
+	player_atlas.atlas = load(PLAYER_TEXTURE)
+	player.texture = player_atlas
+	player.position = _player_visual_position()
+	player.centered = true
+	player.scale = Vector2(PLAYER_DISPLAY_SIZE.x / PLAYER_FRAME_SIZE.x, PLAYER_DISPLAY_SIZE.y / PLAYER_FRAME_SIZE.y)
+	player.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(player)
+	_set_player_animation_frame("down", 0)
 
 
 func _draw_hud() -> void:
@@ -217,12 +225,19 @@ func _move_player(delta: float) -> void:
 	if Input.is_action_pressed("move_down") or Input.is_key_pressed(KEY_DOWN):
 		direction.y += 1.0
 	if direction == Vector2.ZERO:
+		player_is_moving = false
+		_update_player_animation(delta)
 		return
 
-	var next_pos := player_pos + direction.normalized() * PLAYER_SPEED * delta
-	next_pos.x = clampf(next_pos.x, ROOM_RECT.position.x + 16, ROOM_RECT.end.x - PLAYER_SIZE.x - 16)
-	next_pos.y = clampf(next_pos.y, ROOM_RECT.position.y + 8, ROOM_RECT.end.y - PLAYER_SIZE.y - 8)
-	var next_rect := Rect2(next_pos + Vector2(4, 10), PLAYER_SIZE - Vector2(8, 10))
+	direction = direction.normalized()
+	player_is_moving = true
+	player_facing = _facing_from_direction(direction)
+	_update_player_animation(delta)
+
+	var next_pos := player_pos + direction * PLAYER_SPEED * delta
+	next_pos.x = clampf(next_pos.x, ROOM_RECT.position.x + PLAYER_SIZE.x * 0.5, ROOM_RECT.end.x - PLAYER_SIZE.x * 0.5)
+	next_pos.y = clampf(next_pos.y, ROOM_RECT.position.y + PLAYER_SIZE.y, ROOM_RECT.end.y)
+	var next_rect := _player_collision_rect_for(next_pos)
 	for obstacle in obstacles:
 		if next_rect.intersects(obstacle):
 			return
@@ -232,15 +247,74 @@ func _move_player(delta: float) -> void:
 func _set_player_position(pos: Vector2) -> void:
 	player_pos = pos
 	if player_shadow != null:
-		player_shadow.position = player_pos + Vector2(4, 30)
+		player_shadow.position = _player_shadow_position()
 	if player != null:
-		player.position = player_pos + Vector2(0, -6)
+		player.position = _player_visual_position()
+
+
+func _player_visual_position() -> Vector2:
+	return player_pos - Vector2(0.0, PLAYER_DISPLAY_SIZE.y * 0.5)
+
+
+func _player_shadow_position() -> Vector2:
+	return player_pos - Vector2(8, 3)
+
+
+func _player_collision_rect_for(pos: Vector2) -> Rect2:
+	return Rect2(pos - Vector2(PLAYER_SIZE.x * 0.5, PLAYER_SIZE.y), PLAYER_SIZE)
+
+
+func _facing_from_direction(direction: Vector2) -> String:
+	if absf(direction.x) > absf(direction.y):
+		return "right" if direction.x > 0.0 else "left"
+	return "down" if direction.y > 0.0 else "up"
+
+
+func _update_player_animation(delta: float) -> void:
+	if player_atlas == null:
+		return
+	if not player_is_moving:
+		player_anim_frame = 0
+		player_anim_time = 0.0
+		_set_player_animation_frame(player_facing, player_anim_frame)
+		return
+	player_anim_time += delta
+	var frame_duration := 1.0 / PLAYER_ANIM_FPS
+	if player_anim_time >= frame_duration:
+		player_anim_time = fmod(player_anim_time, frame_duration)
+		player_anim_frame += 1
+		if player_anim_frame > 3:
+			player_anim_frame = 1
+	if player_anim_frame == 0:
+		player_anim_frame = 1
+	_set_player_animation_frame(player_facing, player_anim_frame)
+
+
+func _set_player_animation_frame(facing: String, frame: int) -> void:
+	if player_atlas == null:
+		return
+	var row := 3
+	match facing:
+		"up":
+			row = 3
+		"left":
+			row = 1
+		"right":
+			row = 2
+		_:
+			row = 0
+	player_atlas.region = Rect2(
+		float(frame) * PLAYER_FRAME_SIZE.x,
+		float(row) * PLAYER_FRAME_SIZE.y,
+		PLAYER_FRAME_SIZE.x,
+		PLAYER_FRAME_SIZE.y
+	)
 
 
 func _update_nearby() -> void:
 	var best_id := ""
 	var best_distance := 99999.0
-	var center := player_pos + PLAYER_SIZE * 0.5
+	var center := player_pos
 	for data in interactables:
 		var rect: Rect2 = data["rect"]
 		var nearest := Vector2(
@@ -357,20 +431,20 @@ func _has_feedback_override() -> bool:
 func _spawn_position(spawn_id: String) -> Vector2:
 	match spawn_id:
 		"cabinet":
-			return Vector2(300, 340)
+			return Vector2(300, 350)
 		"assembly":
-			return Vector2(730, 398)
+			return Vector2(756, 410)
 		"door":
-			return Vector2(506, 292)
+			return Vector2(517, 320)
 		"telescope":
-			return Vector2(506, 604)
+			return Vector2(517, 570)
 		"journal":
-			return Vector2(354, 606)
+			return Vector2(350, 628)
 		"computer":
-			return Vector2(682, 604)
+			return Vector2(693, 632)
 		"mission":
-			return Vector2(590, 274)
-	return Vector2(506, 602)
+			return Vector2(610, 250)
+	return Vector2(517, 630)
 
 
 func _is_ready_observation_target(id: String) -> bool:
@@ -395,6 +469,24 @@ func _thin_highlight_frame(rect: Rect2, color: Color) -> Control:
 	_frame_rect(frame, Vector2.ZERO, Vector2(2, rect.size.y), color)
 	_frame_rect(frame, Vector2(rect.size.x - 2, 0), Vector2(2, rect.size.y), color)
 	return frame
+
+
+func _transparent_click_target(rect: Rect2, id: String) -> Button:
+	var button := Button.new()
+	button.position = rect.position
+	button.size = rect.size
+	button.text = ""
+	button.flat = true
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	var empty := StyleBoxEmpty.new()
+	button.add_theme_stylebox_override("normal", empty)
+	button.add_theme_stylebox_override("hover", empty)
+	button.add_theme_stylebox_override("pressed", empty)
+	button.add_theme_stylebox_override("focus", empty)
+	button.pressed.connect(_handle_interaction.bind(id))
+	add_child(button)
+	return button
 
 
 func _frame_rect(parent: Control, pos: Vector2, rect_size: Vector2, color: Color) -> ColorRect:
