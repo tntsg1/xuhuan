@@ -87,15 +87,25 @@ func _draw_parts_grid() -> void:
 func _draw_part_card(part: Dictionary, pos: Vector2) -> void:
 	_panel(pos, Vector2(444, 124), PANEL, BRASS)
 	var part_type := str(part.get("type", ""))
+	var part_id := str(part.get("id", ""))
 	var type_info: Dictionary = TYPE_LABELS.get(part_type, {"en": part_type.capitalize(), "zh": "零件", "role": ""})
+	var equipped: bool = GameManager.equipped_part_id(part_type) == part_id
 
 	_rect(pos + Vector2(18, 22), Vector2(70, 70), Color(0.070, 0.090, 0.120))
 	_draw_icon(part_type, pos + Vector2(18, 22))
 
 	_label(str(part.get("name_en", type_info["en"])), pos + Vector2(104, 16), Vector2(210, 20), 15, WARM_TEXT)
 	_label(str(type_info["zh"]), pos + Vector2(104, 38), Vector2(210, 18), 13, Color(0.78, 0.88, 0.88))
-	_label("Unlocked / 已解锁", pos + Vector2(320, 18), Vector2(100, 18), 12, Color(0.55, 0.88, 0.62), HORIZONTAL_ALIGNMENT_RIGHT)
-	_label(str(type_info["role"]), pos + Vector2(104, 60), Vector2(292, 18), 12, Color(0.92, 0.78, 0.48))
+	if equipped:
+		_label("Equipped / 已装备", pos + Vector2(310, 18), Vector2(110, 18), 12, Color(0.98, 0.82, 0.36), HORIZONTAL_ALIGNMENT_RIGHT)
+	else:
+		var equip := _button("Equip\n装备", pos + Vector2(352, 12), Vector2(76, 40))
+		equip.pressed.connect(func() -> void:
+			if GameManager.equip_part(part_id):
+				_build()
+		)
+		add_child(equip)
+	_label(str(type_info["role"]), pos + Vector2(104, 60), Vector2(240, 18), 12, Color(0.92, 0.78, 0.48))
 
 	var desc := str(part.get("description_en", ""))
 	_label(desc, pos + Vector2(104, 82), Vector2(292, 30), 11, Color(0.78, 0.84, 0.84))

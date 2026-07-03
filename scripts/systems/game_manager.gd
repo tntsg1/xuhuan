@@ -199,6 +199,30 @@ func telescope_is_ready() -> bool:
 	return bool(progress.get("telescope_ready", false)) and AssemblyManagerScript.is_complete(progress["assembly_state"], current_level().get("required_parts", []))
 
 
+func equip_part(part_id: String) -> bool:
+	var part := get_part(part_id)
+	if part.is_empty():
+		return false
+	var part_type: String = str(part.get("type", ""))
+	if part_type == "":
+		return false
+	if not progress.get("unlocked_parts", []).has(part_id):
+		return false
+	if str(progress["selected_parts"].get(part_type, "")) == part_id:
+		return true
+	progress["selected_parts"][part_type] = part_id
+	# Swapping a part means it must be reinstalled on the bench.
+	if progress["assembly_state"].has(part_type):
+		progress["assembly_state"][part_type] = {"installed": false, "alignment_score": 0, "wrong_attempts": 0}
+	progress["telescope_ready"] = AssemblyManagerScript.is_complete(progress["assembly_state"], current_level().get("required_parts", []))
+	save()
+	return true
+
+
+func equipped_part_id(part_type: String) -> String:
+	return str(progress.get("selected_parts", {}).get(part_type, ""))
+
+
 func missing_parts() -> Array:
 	return AssemblyManagerScript.missing_parts(progress["assembly_state"], current_level().get("required_parts", []))
 

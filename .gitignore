@@ -1,8 +1,10 @@
-<<<<<<< HEAD
 # Godot
 .godot/
 export/
 *.tmp
+
+# Pixel Observatory local secrets
+data/local_api_keys.json
 
 # Archives / imported downloads
 ImportedAssets/
@@ -25,21 +27,6 @@ ammunition.svg.import
 Maps/
 PlayerCharacter/
 
-# OS
-__MACOSX/
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-
-# Python
-__pycache__/
-*.pyc
-
-# Save files
-*.sav
-savegame.json
-=======
 # Unreal generated folders
 **/Binaries/
 **/DerivedDataCache/
@@ -59,10 +46,6 @@ savegame.json
 *.opensdf
 *.sdf
 *.ipch
-
-# Unreal generated files
-*.opensdf
-*.sdf
 *.sln
 *.slnx
 *.xcodeproj
@@ -84,25 +67,33 @@ savegame.json
 
 # Logs and temp files
 *.log
-*.tmp
 *.temp
 *.swp
+*.swo
 *.bak
 *.cache
 
-# OS files
+# Save files
+*.sav
+savegame.json
+
+# OS
+__MACOSX/
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Only TIWAN is tracked from this workspace.
+# Python
+__pycache__/
+*.pyc
+
+# Other workspace folders not part of this Godot project
 /Fre/
 /THREE/
 /TIWAN 5.8/
 /si/
-/游戏动画示例/
+/娓告垙鍔ㄧ敾绀轰緥/
 
 # Local tooling repositories
 /UnrealClaude/
 /Unreal_mcp/
->>>>>>> origin/main

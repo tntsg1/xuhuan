@@ -106,5 +106,41 @@
     "reward_credits": 80,
     "unlock_parts": [],
     "badge": "Red Star"
+  },
+  {
+    "id": "level_7",
+    "level_number": 7,
+    "title_en": "Collect More Light",
+    "title_zh": "收集更多光线",
+    "description_en": "Observe the Orion Nebula. Faint clouds of gas need a telescope that gathers plenty of light.",
+    "description_zh": "观察猎户座大星云。暗弱的气体云需要集光能力强的望远镜。",
+    "target_object_id": "orion_nebula",
+    "required_parts": ["tripod", "mount", "tube", "objective", "eyepiece", "finder_scope"],
+    "required_assembly_score": 70,
+    "hint_text_en": "Look for a faint purple cloud below Orion's Belt.",
+    "hint_text_zh": "在猎户座腰带下方寻找一片暗淡的紫色云雾。",
+    "success_text_en": "Dark objects need a larger aperture to collect enough light.",
+    "success_text_zh": "暗弱天体需要更大的口径来收集足够的光。",
+    "reward_credits": 90,
+    "unlock_parts": [],
+    "badge": "Nebula Hunter"
+  },
+  {
+    "id": "level_8",
+    "level_number": 8,
+    "title_en": "Deep Sky Challenge",
+    "title_zh": "深空挑战",
+    "description_en": "Find the Andromeda Galaxy — the most distant object you can see. Careful assembly matters most here.",
+    "description_zh": "寻找仙女座星系——你能看到的最遥远天体。这里最考验组装质量。",
+    "target_object_id": "andromeda",
+    "required_parts": ["tripod", "mount", "tube", "objective", "eyepiece", "finder_scope"],
+    "required_assembly_score": 75,
+    "hint_text_en": "Look for a faint oval smudge of light far from the bright stars.",
+    "hint_text_zh": "在远离亮星的地方寻找一团暗淡的椭圆形光斑。",
+    "success_text_en": "Faint galaxies need strong light gathering and a well-built telescope.",
+    "success_text_zh": "暗弱的星系需要强大的集光能力和高质量的组装。",
+    "reward_credits": 120,
+    "unlock_parts": [],
+    "badge": "Deep Sky Explorer"
   }
 ]

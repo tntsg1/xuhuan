@@ -1,0 +1,76 @@
+[
+  {
+    "id": "polaris",
+    "name": "Polaris",
+    "type": "star",
+    "ra_hours": 2.5303,
+    "dec_degrees": 89.2641,
+    "icon_type": "white_star",
+    "fallback_x": 390,
+    "fallback_y": 165
+  },
+  {
+    "id": "sirius",
+    "name": "Sirius",
+    "type": "star",
+    "ra_hours": 6.7525,
+    "dec_degrees": -16.7161,
+    "icon_type": "blue_star",
+    "fallback_x": 145,
+    "fallback_y": 330
+  },
+  {
+    "id": "betelgeuse",
+    "name": "Betelgeuse",
+    "type": "star",
+    "ra_hours": 5.9195,
+    "dec_degrees": 7.4071,
+    "icon_type": "red_star",
+    "fallback_x": 410,
+    "fallback_y": 300
+  },
+  {
+    "id": "orion_nebula",
+    "name": "Orion Nebula",
+    "type": "nebula",
+    "ra_hours": 5.5881,
+    "dec_degrees": -5.3911,
+    "icon_type": "purple_nebula",
+    "fallback_x": 330,
+    "fallback_y": 510
+  },
+  {
+    "id": "andromeda",
+    "name": "Andromeda Galaxy",
+    "type": "galaxy",
+    "ra_hours": 0.7123,
+    "dec_degrees": 41.2692,
+    "icon_type": "blue_galaxy",
+    "fallback_x": 575,
+    "fallback_y": 530
+  },
+  {
+    "id": "moon",
+    "name": "Moon",
+    "type": "moon",
+    "icon_type": "moon",
+    "fallback_x": 115,
+    "fallback_y": 125
+  },
+  {
+    "id": "mars",
+    "name": "Mars",
+    "type": "planet",
+    "icon_type": "red_planet",
+    "fallback_x": 650,
+    "fallback_y": 125
+  },
+  {
+    "id": "jupiter",
+    "name": "Jupiter",
+    "type": "planet",
+    "icon_type": "striped_planet",
+    "fallback_x": 600,
+    "fallback_y": 340
+  }
+]

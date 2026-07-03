@@ -62,15 +62,53 @@
     "description_zh": "视野较宽的目镜，适合寻找目标。"
   },
   {
-    "id": "basic_finder_scope",
-    "type": "finder_scope",
-    "name_en": "Basic Finder Scope",
-    "name_zh": "基础寻星镜",
-    "aim_assist": 40,
-    "calibration_required": false,
-    "cost": 0,
-    "unlock_level": 5,
-    "description_en": "A small scope that helps aim the main telescope.",
-    "description_zh": "帮助主望远镜瞄准的小型寻星镜。"
+   "id": "basic_finder_scope",
+   "type": "finder_scope",
+   "name_en": "Basic Finder Scope",
+   "name_zh": "基础寻星镜",
+   "aim_assist": 40,
+   "calibration_required": false,
+   "cost": 0,
+   "unlock_level": 5,
+   "description_en": "A small scope that helps aim the main telescope.",
+   "description_zh": "帮助主望远镜瞄准的小型寻星镜。"
+  },
+  {
+   "id": "eyepiece_10mm",
+   "type": "eyepiece",
+   "name_en": "10mm High Power Eyepiece",
+   "name_zh": "10mm 高倍率目镜",
+   "focal_length_mm": 10,
+   "field_of_view": 50,
+   "quality": 70,
+   "cost": 80,
+   "unlock_level": 6,
+   "description_en": "Doubles the magnification. Great for planets, but the view is narrower and dimmer.",
+   "description_zh": "倍率翻倍，适合看行星细节，但视野更窄、图像更暗。"
+  },
+  {
+   "id": "objective_100mm",
+   "type": "objective",
+   "name_en": "100mm Wide Aperture Lens",
+   "name_zh": "100mm 大口径物镜",
+   "aperture_mm": 100,
+   "focal_length_mm": 800,
+   "quality": 78,
+   "cost": 220,
+   "unlock_level": 7,
+   "description_en": "A big lens that collects much more light. Needed for faint nebulae and galaxies.",
+   "description_zh": "收集更多光线的大口径物镜。观察暗弱的星云和星系必须用它。"
+  },
+  {
+   "id": "stable_mount",
+   "type": "mount",
+   "name_en": "Heavy Stable Mount",
+   "name_zh": "重型稳定支架",
+   "stability": 70,
+   "tracking": 20,
+   "cost": 180,
+   "unlock_level": 7,
+   "description_en": "A heavy mount that keeps the telescope steady at high magnification.",
+   "description_zh": "让望远镜在高倍率下也能保持稳定的重型支架。"
   }
-]
+  ]

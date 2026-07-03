@@ -1,0 +1,8 @@
+{
+  "default_latitude": 34.0522,
+  "default_longitude": -118.2437,
+  "default_location_name": "Los Angeles",
+  "use_online_planet_data": true,
+  "offline_mode": false,
+  "minimum_visible_altitude_degrees": 10.0
+}
