@@ -1,170 +1,234 @@
-<<<<<<< HEAD
-# Godot Simple FPS Weapon System
+# Pixel Observatory / 像素观测站
 
+> **2D 像素风天文观测教育游戏 | Godot 4.7**
+>
+> 玩家扮演加入学校天文俱乐部的新生，在学姐 Maya 带领下从肉眼观测一步步学到深空追踪。
+> 纯本地运行，双语 EN/中文。
 
- A simple yet complete FPS weapon system asset made in Godot 4.
+---
 
- ![Asset logo](https://raw.githubusercontent.com/Jeh3no/Godot-simple-FPS-weapon-system/refs/heads/main/addons/JehenoSimpleFPSWeaponSystem/Arts/StoreImages/thumbnail.jpg)
+## 🎮 核心玩法
 
- 
- # **General**
+```
+肉眼观测 → 组装折射望远镜 → 调焦 → 掌握倍率 → 寻星镜导航 → 深空观测 → 追踪天体
+```
 
- 
-This asset provides a simple, fully commented, weapon system for FPS games.
+不是选择题游戏，不是点击观星。**核心特色**：亲手组装望远镜零件（三脚架、支架、镜筒、物镜、目镜、调焦旋钮、寻星镜），组装质量和零件选择直接影响观测结果。
 
-A test map with a shooting range, as well as a character controller are provided (the character controller is another asset i made some mounths ago : https://github.com/Jeh3no/Godot-Simple-State-Machine-First-Person-Controller)
+### 三段式观星流程
 
-The weapon system is resource based, designed to easely customize weapons.
+| 模式 | 视野 | 用途 |
+|------|------|------|
+| 👁 Naked Eye | 120°×70° | 广角扫天，肉眼找目标 |
+| 🔍 Finder Scope | 28°×18° | 中视野对准 |
+| 🔭 Telescope | 6°×4° | 窄视野精确定位，居中后进入望远镜视野 |
 
-The weapons are monitored by a weapon manager, designed to easely add/remove weapons to the game.
+支持 Az/Alt 方位角俯仰角导航、DMS 度分秒格式、实时星图背景（HYG 星表 1637 颗）、WASD 旋转 + Shift 加速。
 
-Each component of the weapon (shoot, reload, animation, ammunition) has his own script, neatly arranged in separate compartments.
+---
 
-The asset is 100% written in GDScript.
+## 📊 项目进度
 
-The code has been written in a way to be easely understandable and modifiable/editable, and he's as well fully commented.
+| 系统 | 完成度 |
+|------|--------|
+| 系统骨架 | 80% |
+| L1-L9 主线逻辑 | 75% |
+| 教学/剧情框架 | 70% |
+| 大厅交互 | 65% |
+| 观星体验 | 55% |
+| 关卡玩法差异 | 45% |
+| 美术/UI polish | 45% |
+| 牛顿镜/深空高级玩法 | 30% |
 
-The video showcasing the asset features : https://youtu.be/B4cASUFbamU 
+### 已完成关卡（L1-L9）
 
-  **! A precision about the showcase video : the doom-like sprites, and all the weapon sounds you heard in the video are not in the asset files, because they are under proprietary license.**
+| 关 | 教学模式 | 目标天体 | 知识点 |
+|----|---------|---------|--------|
+| L1 | 肉眼 | Moon | 人眼成像原理 |
+| L2 | 肉眼 | Polaris | 肉眼观测极限 |
+| L3 | 折射镜组装 | Moon | 物镜/目镜/折射镜光路 |
+| L4 | 调焦 | Jupiter | 焦平面与调焦 |
+| L5 | 倍率 | Jupiter | 倍率代价（高倍率≠更好） |
+| L6 | 寻星镜 | Sirius | 寻星镜辅助导航 |
+| L7 | 牛顿镜概念 | Orion Nebula | 反射镜原理/口径 |
+| L8 | 大口径 | Orion Nebula | 集光能力对比 |
+| L9 | 深空挑战 | Andromeda | 综合深空观测 |
 
-**You can see this asset as some sort of demo, for a possible, much bigger (and better) asset, which will be may more advanced, and will have a ton of new features**
+### L10-L24 已设计（待实现）
 
+螺旋式重复练习结构，每 3-5 关一个主题反复变形：
 
-# Compatibility
+| 章节 | 关卡 | 主题 |
+|------|------|------|
+| Ch3 | L10-13 | 调焦与倍率掌握 |
+| Ch4 | L14-17 | 寻星镜与星空导航 |
+| Ch5 | L18-21 | 集光与暗弱天体 |
+| Ch6 | L22-24 | 追踪与耐心 |
 
-- **Godot 4.4 - 4.7**: Fully supported.
-- **Godot 4.0 - 4.3**: Should work, but you will need to delete the `.uid` files.
+详见 [`docs/levels_10_24_design.md`](docs/levels_10_24_design.md)
 
+---
 
-# **Features**
+## 🏗️ 技术架构
 
-**Weapon system**
-- Resource based weapons
-- Weapon switching
-- Weapon shooting
-- Weapon reloading
-- Weapon bobbing
-- Weapon tilting
-- Weapon swaying
-- Hitscan and projectile types 
-- Physics behaviour for both hitscan and projectile
-- Shared ammo between weapons
-- Ammo refilling
+- **引擎**：Godot 4.7（GDScript 严格模式）
+- **分辨率**：1024×768，像素风 nearest-neighbor
+- **UI**：全部 Control 节点程序化构建（ColorRect / TextureRect / Label / Button）
+- **存档**：JSON 格式，`user://savegame.json`
+- **星图**：HYG 星表 1637 颗星 + AstronomyAPI（在线）/ 离线 fallback
 
-**World**
-- Test map, with shooting range, and hitable boxes (physics behaviour)
-- Shooting range with immobile and moving targets
+### 项目结构
 
-**Player character**
-- State machine based character controller (https://github.com/Jeh3no/Godot-Simple-State-Machine-First-Person-Controller)
-- Input action checker
+```
+├── scenes/              # 场景文件（空 Control + 脚本）
+│   ├── main_menu.tscn
+│   ├── observatory_room.tscn
+│   ├── telescope_assembly.tscn
+│   ├── sky_observation.tscn
+│   ├── telescope_view.tscn
+│   ├── learning_card.tscn
+│   ├── learning_journal.tscn
+│   └── story_dialogue.tscn
+├── scripts/
+│   ├── systems/         # 核心系统（autoload）
+│   │   ├── game_manager.gd
+│   │   ├── save_manager.gd
+│   │   ├── mission_manager.gd
+│   │   ├── telescope_math.gd
+│   │   ├── assembly_manager.gd
+│   │   ├── observation_system.gd
+│   │   ├── teaching_flow_manager.gd
+│   │   ├── story_manager.gd
+│   │   └── localization.gd
+│   └── ui/              # 各场景 UI 脚本
+├── data/                # JSON 数据
+│   ├── levels.json
+│   ├── telescope_parts.json
+│   ├── celestial_objects.json
+│   ├── bright_stars.json
+│   ├── learning_cards.json
+│   └── story_dialogues.json
+├── assets/              # 美术资源
+│   ├── pixel_observatory/   # 望远镜零件 PNG
+│   ├── telescope_view/      # 天体大图（月球/木星/星云等）
+│   ├── celestial_icons/     # 天体图标
+│   ├── learning_diagrams/   # 教学图解（11张）
+│   ├── characters/          # 角色头像
+│   ├── reference/           # 参考图/UI背景
+│   ├── ui_extracted/        # 从参考图扣下的UI素材
+│   ├── sprout_lands/        # Sprout Lands 素材包
+│   └── tiny_swords/         # Tiny Swords 素材包
+├── tools/               # 测试 & 截图工具
+├── docs/                # 设计文档
+└── AGENTS.md            # AI Agent 项目指南
+```
 
-**Camera**
-- Viewport camera to render weapons
-- Camera procedural recoil
-- Camera bobbing
-- Camera tilting
+---
 
-**Visuel effects**
-- Muzzle flash
-- Bullet hole/decal
-- Explosion effect
+## 🔧 已完成系统详情
 
-**UI**
-- Properties HUD for both player character and weapon system
+### 主大厅 Observatory Room
+- 完整伪 3D 天文台背景图
+- 角色 4 方向像素移动（WASD）
+- 7 个可交互设备：Parts Cabinet、Assembly Table、Observation Pad、Mission Board、Learning Journal、Stats Terminal、Door
+- 靠近才能交互（远距离点击提示"走近后再互动"）
+- 任务间大厅引导（高亮下一个目标设备）
+- 装备解锁通知（回大厅弹 Maya 弹窗）
 
+### 剧情系统 StoryManager
+- Maya 作为导师角色
+- New Game intro + L1/L3/L4 等关键节点剧情
+- 剧情可链入教学 brief
+- 对话场景：Maya/玩家头像、双语、Space/Enter 推进
+- 背景按当前任务目标显示对应天体
 
-# Installation / Quickstart
+### 教学系统 TeachingFlowManager
+- 操作前 Concept Brief（概念预习卡）
+- Mission Complete 后学习总结
+- 区分 `seen_teaching_steps` / `seen_concept_briefs` / `completed_concept_cards`
+- 9 张像素风教学图解（人眼成像、折射光路、焦平面、倍率视野、寻星镜对齐、口径集光等）
 
-## Step 1: Add the asset to your project
+### 组装台 Telescope Assembly
+- 支持零件：Tripod、Mount、Tube、Objective Lens、Eyepiece、Focus Knob、Finder Scope
+- 点击式安装（左选零件 → 点对应安装槽）
+- 顺序检查 + 错误提示 + 对齐评分
+- ScrollContainer 防止零件溢出
 
-Download or clone this repository and copy the `addons/` folder into your Godot project's root directory.
+### 观星台 Sky Observation
+- 三段式视角切换（肉眼/寻星镜/望远镜）
+- Az/Alt 方位角俯仰角导航（DMS 格式）
+- 星图刻度带 + 方位/俯仰引导
+- HYG 星表实时星图背景
+- AstronomyAPI 在线星体位置（离线 fallback）
 
-## Step 2(optional): Set up input actions
+### 望远镜视野 Telescope View
+- 圆形镜筒 + 天体大图 sprite
+- 调焦旋钮（Q/E 或鼠标滑条）
+- 三态判定：焦点对准 / 质量不足 / 可识别
+- 深空 tolerance 宽松（Fair 也可通关）
 
-The controller requires **14 input actions** to be defined in your project's Input Map. If they are not binded, the default keybindings will be used. Go to **Project > Project Settings > Input Map** and create each of the following actions, then bind them to your preferred keys/buttons.
+### 学习卡 + 日志
+- Concept Brief 和 Mission Complete 两种模式
+- 教学图解放大显示
+- Club Logbook 记录观测 + 概念卡
 
-By default, the key actions are defined as "play_char_{action_name}_action". Do not change this name unless you have configured your own key bindings.
+---
 
-To change the keybinds in the scripts, i have set up one that center all the inputs needed, so you won't have to go in differents files each time you want to modify something. The script is called "input_management_component_script", it is located in the player character scene.
+## ⚠️ 当前待修问题
 
-  **! Important : the play_char_restart_shooting_range_action has to be obligatory added in your project's Input Map, otherwise it will trigger an assert at the start of the game**
+1. **观星台触发剧情后不应退回大厅** — 如果玩家站在 Observation Pad 按 E，应直达观星界面
+2. **大厅引导不够醒目** — 需要 spotlight 效果（暗屏+高亮目标设备）
+3. **L5 倍率关卡缺少新操作** — 需要 Low/Med/High 三档目镜切换
+4. **Sky Observation UI 拥挤** — 右侧面板信息重复，需简化
+5. **牛顿镜阶段不完整** — 主镜/副镜/准直玩法是数据预留
+6. **Credits 无实际用途** — 需要升级商店系统
+7. **Learning Journal 需要重构** — 分为 Observations / Concepts / Equipment / Reports
 
-| Input Action Name | Purpose | Default key |
-|---|---|---|
-| `play_char_move_forward_action` | Move forward | W, Up |
-| `play_char_move_backward_action` | Move backward | S, Down |
-| `play_char_move_left_action` | Strafe left | A, Left |
-| `play_char_move_right_action` | Strafe right | D, Right |
-| `play_char_run_action` | Run / sprint | Shift |
-| `play_char_crouch_action` | Crouch | C |
-| `play_char_jump_action` | Jump | Space |
-| `play_char_zoom_action` | Camera Zoom | Z |
-| `play_char_mouse_mode_action` | Toggle mouse capture | CTRL |
-| `play_char_shoot_action` | Weapon shoot | Left Mouse Button |
-| `play_char_reload_action` | Weapon reload | R |
-| `play_char_weapon_wheel_up_action` | Change to next weapon | Up Wheel Mouse |
-| `play_char_weapon_wheel_down_action` | Change to previous weapon | Down Wheel Mouse |
-| `play_char_restart_shooting_range_action` | Restart shooting range | K |
+---
 
-## Step 3 : Create and add a new weapon to the weapon manager :
-!  There is already 5 differents weapon examples in the asset, each of them representing a different type of weapon (pistol, assault rifle, shotgun, sniper rifle, rocket launcher), you can use them as examples, and/or to speed up the creation process.
+## 🧪 测试工具
 
-- Create a new Node3D node, and add it to the "weapon container" node.
-  
-- Place your weapon model as a child of the Node3D node.
+```bash
+# 编译检查
+cd "E:/godot/ai-game-0628"
+"...Godot...exe" --headless --quit 2>&1 | grep "SCRIPT ERROR"
 
-- Add a Marker3D node as a child of the weapon model, it will be the weapon attack point.
+# 回归测试（跑前备份存档）
+"...Godot...exe" --headless --script "res://tools/flow_test.gd"      # 9关端到端
+"...Godot...exe" --headless --script "res://tools/focus_nebula_test.gd"  # 深空调焦
+```
 
-- Create a new resource for your weapon, using the "WeaponResource" class reference.
-  
-- Add a "WeaponSlotScript" script to the Node3D node, and assign the weapon resources (WeaponResource), the model (Node3D node) and attack point (Marker3D node) variables
+---
 
-- Fill the resource the way you want (the only mandatory variables are ("WeaponName", "WeaponId", a type (Hitscan or projectile), "Position"))
+## 📋 更新历史
 
-- In the "WeaponManager" node, from the editor, add the weapons you want the player character to have at the start of the game, in the "Start weapons" variable.
+### 2026-07-04
+- 三段式观星界面（肉眼/寻星镜/望远镜 + Az/Alt 导航）
+- Focus Knob 实体零件 + 调焦滑条
+- TeachingFlowManager 教学流程状态机
+- StoryManager Maya 剧情层
+- 大厅引导系统 + 角色 4 方向像素图
+- L1-L9 九关主线可完整跑通
 
-  ! The order in which you place the start weapons determine the order the play char can select them in game
+### 2026-07-02
+- 观测室 v4 浮岛布局重设计
+- Learning Journal 卡片式重设计
+- 主菜单 + 组装台 UI 美化
+- 修复 AtlasTexture filter_clip 渗色
 
-  ! You need to be sure that the each weapon has a unique id !
+### 2026-06-30
+- 项目初始化：Godot 4.7 2D 项目
+- 基础场景搭建（主菜单、观测室、组装台、星空、望远镜视野）
+- 数据系统（telescope_parts.json、celestial_objects.json、levels.json）
+- 核心系统（TelescopeMath、AssemblyManager、ObservationSystem、SaveManager）
+- Sprout Lands + Tiny Swords 素材集成
 
-  ! You need to have at least one start weapon saved in the "Start weapons" variable, it can be a empty node with only the mandatory resource variables assigned, but you need at least one !
+---
 
-- If you have done everything correctly, your weapon should be usable and work in game !
+## 📝 开发约定
 
-## Step 4(optional): Name 3D physics layers
-
-The physics layers are already set up in the project, but if you want more clarity, you can name them in the "3D Physics" section of your project settings.
-
-For this, go to **Project > Project Settings > 3D Physics** and name layer 1 to layer 6. For my tests, i named them up like this : 
-- layer 1 : world
-- layer 2 : player_character
-- layer 3 : enemies
-- layer 4 : play_char_projectiles
-- layer 5 : enemies_projectiles
-- layer 6 : ammo_refillers
-- layer 7 : hitable_boxes
-	
-  **! No element in the asset have the collision layer 4, i just add it for when you will want to add enemies projectiles.**
-
-# **Requets**
-
-- **Bug reports**: Open an issue in the [Issues](../../issues) section.
-- **Feature requests**: Post in the [Discussions](../../discussions) section.
-- **Pull requests**: Submit improvements in the [Pull Requests](../../pulls) section.
-
-
-# **Credits**
-
-Kenney Prototype Textures by Kenney, uploaded on the Godot asset library by Calinou : https://godotengine.org/asset-library/asset/781
-
-Weapons models and textures (except for the RPG weapon) by amaraha : https://amaraha.itch.io/free-low-poly-weapons-pack
-
-Ammo Canister model and texture by Stephen Yoshimura (CC-BY) via Poly Pizza : https://poly.pizza/m/b2_n3tmq02h
-
-RPG model and texture by : https://sketchfab.com/3d-models/low-poly-rpg-7-de967b52c9794d2995d4606749fcdff7
-=======
-# xuhuan
-nothing
->>>>>>> origin/main
+1. 所有面向玩家的字符串用 `GameManager.text("EN", "中文")`，不硬编码单语
+2. 改完必须编译检查（`--headless --quit`），然后跑相关测试
+3. GDScript 严格模式：`:=` 必须显式类型、float 取模用 `fmod()`、autoload 不用 `class_name`
+4. 测试会 `new_game()` 重置存档，跑前先备份 `savegame.json`
+5. 用户交流用中文，台词/UI 双语，技术回复中文为主
