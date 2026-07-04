@@ -35,7 +35,6 @@ func get_sky_positions(screen_rect: Rect2, utc_datetime: Dictionary = {}) -> Dic
 	var latitude: float = float(config.get("default_latitude", 34.0522))
 	var longitude: float = float(config.get("default_longitude", -118.2437))
 	var minimum_altitude: float = float(config.get("minimum_visible_altitude_degrees", 10.0))
-	var has_keys: bool = _has_local_api_keys()
 	var result: Dictionary = {}
 
 	for entry_value in catalog:
@@ -59,12 +58,9 @@ func get_sky_positions(screen_rect: Rect2, utc_datetime: Dictionary = {}) -> Dic
 			item["visibility_text"] = _visibility_text(float(item["altitude"]), minimum_altitude)
 			item["direction_text"] = direction_text(float(item["azimuth"]))
 			item["source"] = "calculated"
-		elif bool(config.get("offline_mode", false)) or not has_keys or not bool(config.get("use_online_planet_data", true)):
-			item["source"] = "fallback"
-			item["visibility_text"] = "Offline estimate"
-		else:
-			item["source"] = "fallback"
-			item["visibility_text"] = "Offline estimate"
+		# Otherwise keep the fallback item: it already carries the catalog's
+		# fallback alt/az estimate and source "fallback". Online data (Moon,
+		# Mars, Jupiter) replaces it later via request_online_planet_data().
 		result[id] = item
 	return result
 
@@ -338,17 +334,20 @@ func _astronomy_api_credentials() -> Dictionary:
 
 func _fallback_item(entry: Dictionary, minimum_altitude: float) -> Dictionary:
 	var pos: Vector2 = Vector2(float(entry.get("fallback_x", 100.0)), float(entry.get("fallback_y", 100.0)))
+	var has_fallback_altaz: bool = entry.has("fallback_altitude") and entry.has("fallback_azimuth")
+	var altitude: float = float(entry.get("fallback_altitude", 0.0))
+	var azimuth: float = float(entry.get("fallback_azimuth", 0.0))
 	return {
 		"id": str(entry.get("id", "")),
 		"name": str(entry.get("name", entry.get("id", ""))),
 		"type": str(entry.get("type", "object")),
 		"icon_type": str(entry.get("icon_type", "white_star")),
-		"altitude": 0.0,
-		"azimuth": 0.0,
+		"altitude": altitude,
+		"azimuth": azimuth,
 		"screen_pos": pos,
-		"visible": false,
+		"visible": has_fallback_altaz and altitude >= minimum_altitude,
 		"visibility_text": "Offline estimate",
-		"direction_text": "Estimate",
+		"direction_text": direction_text(azimuth) if has_fallback_altaz else "Estimate",
 		"source": "fallback"
 	}
 

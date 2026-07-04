@@ -44,12 +44,12 @@ func _build() -> void:
 	top_bar.size = Vector2(1024, 56)
 	add_child(top_bar)
 
-	var title := _make_label("📖  Learning Journal", 24)
+	var title := _make_label("📖  Club Logbook", 24)
 	title.position = Vector2(28, 10)
 	title.add_theme_color_override("font_color", Color(0.94, 0.92, 0.80))
 	add_child(title)
 
-	var subtitle := _make_label("学习记录", 14)
+	var subtitle := _make_label("俱乐部观测日志", 14)
 	subtitle.position = Vector2(300, 18)
 	subtitle.add_theme_color_override("font_color", Color(0.65, 0.62, 0.55))
 	add_child(subtitle)
@@ -100,6 +100,13 @@ func _populate() -> void:
 		var assembly: float = float(entry.get("assembly_score", 0.0))
 		var learn_en: String = str(entry.get("learning_text_en", ""))
 		var learn_zh: String = str(entry.get("learning_text_zh", ""))
+		# Unlocked concept card, e.g. "Concept: How Your Eye Forms an Image"
+		var concept_en: String = str(entry.get("concept_title_en", ""))
+		var concept_zh: String = str(entry.get("concept_title_zh", ""))
+		if concept_en != "":
+			learn_en = "Concept: " + concept_en + "\n" + learn_en
+		if concept_zh != "":
+			learn_zh = "学到的原理：" + concept_zh + "\n" + learn_zh
 
 		_entry_list.add_child(_build_entry_card(i + 1, name_en, name_zh, quality, assembly, learn_en, learn_zh))
 

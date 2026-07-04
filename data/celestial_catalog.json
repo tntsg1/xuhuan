@@ -55,7 +55,9 @@
     "type": "moon",
     "icon_type": "moon",
     "fallback_x": 115,
-    "fallback_y": 125
+    "fallback_y": 125,
+    "fallback_altitude": 52.0,
+    "fallback_azimuth": 155.0
   },
   {
     "id": "mars",
@@ -63,7 +65,9 @@
     "type": "planet",
     "icon_type": "red_planet",
     "fallback_x": 650,
-    "fallback_y": 125
+    "fallback_y": 125,
+    "fallback_altitude": 34.0,
+    "fallback_azimuth": 205.0
   },
   {
     "id": "jupiter",
@@ -71,6 +75,8 @@
     "type": "planet",
     "icon_type": "striped_planet",
     "fallback_x": 600,
-    "fallback_y": 340
+    "fallback_y": 340,
+    "fallback_altitude": 28.0,
+    "fallback_azimuth": 118.0
   }
 ]

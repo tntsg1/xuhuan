@@ -12,6 +12,7 @@ const TYPE_LABELS := {
 	"tube": {"en": "Tube", "zh": "镜筒", "role": "Keeps optics aligned / 保持光路对齐"},
 	"objective": {"en": "Objective Lens", "zh": "物镜", "role": "Collects light / 收集光线"},
 	"eyepiece": {"en": "Eyepiece", "zh": "目镜", "role": "Magnifies the image / 放大图像"},
+	"focus_knob": {"en": "Focus Knob", "zh": "调焦旋钮", "role": "Sharpens focus / 调整清晰度"},
 	"finder_scope": {"en": "Finder Scope", "zh": "寻星镜", "role": "Helps aiming / 帮助瞄准"}
 }
 
@@ -28,6 +29,18 @@ func _build() -> void:
 
 	_rect(Vector2.ZERO, SCREEN_SIZE, Color(0.010, 0.016, 0.032))
 	_draw_title_bar()
+	if GameManager.current_equipment_stage() == "eye":
+		# Naked-eye stage: the cabinet is still empty.
+		_panel(Vector2(212, 280), Vector2(600, 190), Color(0.040, 0.060, 0.105, 0.96), BRASS)
+		_label(
+			"No telescope parts yet.\nFinish the naked eye observations first - then you will build your first refractor!\n还没有望远镜零件。\n先完成肉眼观测任务，之后你将组装第一台折射望远镜！",
+			Vector2(240, 306),
+			Vector2(544, 140),
+			15,
+			WARM_TEXT,
+			HORIZONTAL_ALIGNMENT_CENTER
+		)
+		return
 	_draw_summary_panel()
 	_draw_parts_grid()
 
@@ -115,7 +128,17 @@ func _draw_part_card(part: Dictionary, pos: Vector2) -> void:
 
 
 func _part_stats(part: Dictionary) -> String:
-	var keys := ["aperture_mm", "focal_length_mm", "stability_bonus", "stability", "quality", "field_of_view", "aim_assist"]
+	var keys := [
+		"aperture_mm",
+		"focal_length_mm",
+		"stability_bonus",
+		"stability",
+		"quality",
+		"field_of_view",
+		"aim_assist",
+		"focus_sensitivity",
+		"focus_stability"
+	]
 	var result: Array[String] = []
 	for key in keys:
 		if part.has(key):
@@ -150,6 +173,14 @@ func _draw_icon(part_type: String, box_pos: Vector2) -> void:
 			color = Color(0.46, 0.54, 0.62)
 			_rect(box_pos + Vector2(22, 24), Vector2(30, 26), color)
 			_rect(box_pos + Vector2(12, 30), Vector2(14, 14), color.darkened(0.10))
+		"focus_knob":
+			color = Color(0.88, 0.68, 0.32)
+			_rect(box_pos + Vector2(20, 18), Vector2(30, 30), color)
+			_rect(box_pos + Vector2(26, 24), Vector2(18, 18), color.darkened(0.18))
+			_rect(box_pos + Vector2(34, 10), Vector2(4, 10), color.lightened(0.12))
+			_rect(box_pos + Vector2(34, 48), Vector2(4, 10), color.darkened(0.12))
+			_rect(box_pos + Vector2(12, 31), Vector2(10, 4), color.darkened(0.12))
+			_rect(box_pos + Vector2(48, 31), Vector2(10, 4), color.lightened(0.12))
 		_:
 			color = Color(0.38, 0.68, 0.92)
 			_rect(box_pos + Vector2(12, 30), Vector2(42, 12), color)

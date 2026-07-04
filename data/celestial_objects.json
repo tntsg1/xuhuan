@@ -16,7 +16,9 @@
     "short_hint_en": "The brightest round object in the sky.",
     "short_hint_zh": "天空中最明亮的圆形目标。",
     "learning_text_en": "The Moon is bright and close compared with most night sky objects. That makes it a good first target for beginner observers.",
-    "learning_text_zh": "月球比大多数夜空目标更近、更亮，所以很适合新手第一次观测。"
+    "learning_text_zh": "月球比大多数夜空目标更近、更亮，所以很适合新手第一次观测。",
+    "naked_eye_visible": true,
+    "apparent_magnitude": -12.7
   },
   {
     "id": "polaris",
@@ -35,7 +37,9 @@
     "short_hint_en": "Look toward the northern part of the sky.",
     "short_hint_zh": "往天空北侧寻找。",
     "learning_text_en": "Polaris is called the North Star because it appears close to the north celestial pole. It can help people find north.",
-    "learning_text_zh": "北极星看起来靠近北天极，因此常被用来帮助判断北方。"
+    "learning_text_zh": "北极星看起来靠近北天极，因此常被用来帮助判断北方。",
+    "naked_eye_visible": true,
+    "apparent_magnitude": 1.98
   },
   {
     "id": "sirius",
@@ -54,7 +58,9 @@
     "short_hint_en": "Find a very bright blue-white star.",
     "short_hint_zh": "寻找一颗非常明亮的蓝白色恒星。",
     "learning_text_en": "Sirius is one of the brightest stars in Earth's night sky. Bright stars are easier targets for early telescope practice.",
-    "learning_text_zh": "天狼星是地球夜空中最亮的恒星之一，适合早期观测练习。"
+    "learning_text_zh": "天狼星是地球夜空中最亮的恒星之一，适合早期观测练习。",
+    "naked_eye_visible": true,
+    "apparent_magnitude": -1.46
   },
   {
     "id": "mars",
@@ -73,7 +79,9 @@
     "short_hint_en": "A reddish planet near the lower sky.",
     "short_hint_zh": "低空附近的红橙色行星。",
     "learning_text_en": "Mars can look small through a beginner telescope. A steady mount helps keep planet details from shaking.",
-    "learning_text_zh": "火星在入门望远镜里可能看起来很小，稳定支架能减少行星图像抖动。"
+    "learning_text_zh": "火星在入门望远镜里可能看起来很小，稳定支架能减少行星图像抖动。",
+    "naked_eye_visible": true,
+    "apparent_magnitude": -0.8
   },
   {
     "id": "jupiter",
@@ -92,7 +100,9 @@
     "short_hint_en": "A bright planet that needs a steady view.",
     "short_hint_zh": "一颗明亮、需要稳定视野的行星。",
     "learning_text_en": "Jupiter is the largest planet in the Solar System. Planet observation works better when the telescope is stable.",
-    "learning_text_zh": "木星是太阳系最大的行星。观测行星时，望远镜越稳定越容易看清。"
+    "learning_text_zh": "木星是太阳系最大的行星。观测行星时，望远镜越稳定越容易看清。",
+    "naked_eye_visible": true,
+    "apparent_magnitude": -2.2
   },
   {
     "id": "betelgeuse",
@@ -111,7 +121,9 @@
     "short_hint_en": "Look for a reddish star in Orion.",
     "short_hint_zh": "在猎户座方向寻找偏红的恒星。",
     "learning_text_en": "Betelgeuse is a red supergiant in Orion. Star color can tell us something about temperature.",
-    "learning_text_zh": "参宿四是猎户座中的红超巨星。恒星颜色能帮助我们理解它的温度。"
+    "learning_text_zh": "参宿四是猎户座中的红超巨星。恒星颜色能帮助我们理解它的温度。",
+    "naked_eye_visible": true,
+    "apparent_magnitude": 0.5
   },
   {
     "id": "orion_nebula",
@@ -130,7 +142,9 @@
     "short_hint_en": "A dim cloud-like target. It needs more light.",
     "short_hint_zh": "像云雾一样的暗目标，需要更强集光能力。",
     "learning_text_en": "The Orion Nebula is a cloud of gas and dust where new stars can form.",
-    "learning_text_zh": "猎户座大星云是由气体和尘埃组成的云，新恒星可能在其中形成。"
+    "learning_text_zh": "猎户座大星云是由气体和尘埃组成的云，新恒星可能在其中形成。",
+    "naked_eye_visible": false,
+    "apparent_magnitude": 4.0
   },
   {
     "id": "andromeda",
@@ -149,6 +163,8 @@
     "short_hint_en": "A faint galaxy. High magnification will not solve low light.",
     "short_hint_zh": "暗淡的星系。单纯提高倍率不能解决集光不足。",
     "learning_text_en": "Andromeda is the nearest large galaxy to the Milky Way, but it looks faint because it is extremely far away.",
-    "learning_text_zh": "仙女座是离银河系最近的大星系，但距离极远，所以看起来很暗。"
+    "learning_text_zh": "仙女座是离银河系最近的大星系，但距离极远，所以看起来很暗。",
+    "naked_eye_visible": false,
+    "apparent_magnitude": 3.4
   }
 ]

@@ -23,35 +23,67 @@ func _initialize() -> void:
 			print("FAIL L", level_number, ": no target")
 			failures += 1
 			break
-		# Auto-equip best unlocked part per type (upgrade path)
-		for part_type in ["tripod", "mount", "tube", "objective", "eyepiece", "finder_scope"]:
-			var options: Array = gm.unlocked_parts_by_type(part_type)
-			if not options.is_empty():
-				gm.equip_part(str(options[options.size() - 1].get("id", "")))
-		# Perfect assembly of required parts
-		gm.reset_assembly()
-		for part_type in level.get("required_parts", []):
-			gm.install_part(str(part_type), 0)
-		if not gm.telescope_is_ready():
-			print("FAIL L", level_number, ": telescope not ready, missing=", gm.missing_parts())
-			failures += 1
-			break
+		var needs_telescope: bool = bool(level.get("requires_telescope", true))
+		if needs_telescope:
+			# Auto-equip best unlocked part per type (upgrade path)
+			for part_type in ["tripod", "mount", "tube", "objective", "eyepiece", "finder_scope"]:
+				var options: Array = gm.unlocked_parts_by_type(part_type)
+				if not options.is_empty():
+					gm.equip_part(str(options[options.size() - 1].get("id", "")))
+			# Perfect assembly of required parts
+			gm.reset_assembly()
+			for part_type in level.get("required_parts", []):
+				gm.install_part(str(part_type), 0)
+			if not gm.telescope_is_ready():
+				print("FAIL L", level_number, ": telescope not ready, missing=", gm.missing_parts())
+				failures += 1
+				break
 		var stats: Dictionary = gm.calculate_stats()
 		gm.selected_object_id = target_id
 		var observation: Dictionary = gm.evaluate_selected_object()
 		var ok: bool = gm.complete_current_mission(target_id, observation)
 		print("L", level_number, " target=", target_id,
 			" quality=", observation.get("quality"),
+			" min=", level.get("minimum_success_quality", "Good"),
 			" light=", stats.get("light_score"),
 			" clarity=", stats.get("clarity_score"),
 			" stability=", stats.get("stability_score"),
 			" completed=", ok)
+		if level_number == 7:
+			if str(observation.get("quality", "")) != "Fair" or not ok:
+				print("FAIL L7: first Orion Nebula should allow focused Fair quality")
+				failures += 1
+				break
+		if level_number == 8:
+			if not str(observation.get("quality", "")) in ["Good", "Excellent"] or not ok:
+				print("FAIL L8: aperture lesson should require and reach Good+ quality")
+				failures += 1
+				break
 		if not ok:
 			print("FAIL L", level_number, ": mission not completed. feedback=", observation.get("feedback_en"))
 			failures += 1
 			break
 	var completed: Array = gm.progress.get("completed_levels", [])
 	var badges: Array = gm.progress.get("badges", [])
+	var final_level: Dictionary = gm.current_level()
+	var final_target_id: String = str(final_level.get("target_object_id", ""))
+	gm.selected_object_id = final_target_id
+	var repeat_observation: Dictionary = gm.evaluate_selected_object()
+	var journal_count_before: int = gm.progress.get("journal_entries", []).size()
+	var repeated_ok: bool = gm.complete_current_mission(final_target_id, repeat_observation)
+	await process_frame
+	if not repeated_ok:
+		print("FAIL repeat final: completed mission should be acknowledged")
+		failures += 1
+	if str(gm.room_guidance_target) != "journal":
+		print("FAIL repeat final: expected journal guidance, got ", gm.room_guidance_target)
+		failures += 1
+	if gm.progress.get("journal_entries", []).size() != journal_count_before:
+		print("FAIL repeat final: duplicate journal entry added")
+		failures += 1
+	if current_scene == null or not str(current_scene.scene_file_path).contains("observatory_room"):
+		print("FAIL repeat final: expected observatory room after already-completed observation")
+		failures += 1
 	print("Completed levels: ", completed)
 	print("Badges: ", badges)
 	print("Credits: ", gm.progress.get("credits"))

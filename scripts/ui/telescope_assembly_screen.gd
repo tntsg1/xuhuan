@@ -3,7 +3,8 @@ extends Control
 const AssemblyManagerScript = preload("res://scripts/systems/assembly_manager.gd")
 
 const SCREEN_SIZE := Vector2(1024, 768)
-const PART_ORDER: Array[String] = ["tripod", "mount", "tube", "objective", "eyepiece", "finder_scope"]
+const PART_ORDER: Array[String] = ["tripod", "mount", "tube", "objective", "eyepiece", "focus_knob", "finder_scope"]
+const OPTIONAL_PARTS: Array[String] = ["focus_knob", "finder_scope"]
 const CORE_PARTS: Array[String] = ["tripod", "mount", "tube", "objective", "eyepiece"]
 const ASSET_DIR := "res://assets/pixel_observatory/"
 
@@ -22,12 +23,14 @@ const PART_LABELS := {
 	"tube": {"short": "Tube", "zh": "镜筒", "role": "Keeps optics aligned / 保持光路对齐"},
 	"objective": {"short": "Lens", "zh": "物镜", "role": "Collects light / 收集光线"},
 	"eyepiece": {"short": "Eye", "zh": "目镜", "role": "Magnifies the image / 放大图像"},
+	"focus_knob": {"short": "Focus", "zh": "调焦", "role": "Moves eyepiece for sharp focus / 移动目镜以清晰成像"},
 	"finder_scope": {"short": "Finder", "zh": "寻星镜", "role": "Helps aim the telescope / 帮助瞄准"}
 }
 
 const SLOT_RECTS := {
 	"finder_scope": Rect2(163, 40, 116, 46),
 	"eyepiece": Rect2(69, 147, 74, 54),
+	"focus_knob": Rect2(48, 216, 66, 44),
 	"tube": Rect2(144, 128, 158, 72),
 	"objective": Rect2(299, 133, 72, 62),
 	"mount": Rect2(165, 213, 72, 56),
@@ -40,12 +43,14 @@ const PART_COLORS := {
 	"tube": Color(0.31, 0.57, 0.84),
 	"objective": Color(0.63, 0.85, 0.92),
 	"eyepiece": Color(0.45, 0.53, 0.62),
+	"focus_knob": Color(0.88, 0.68, 0.32),
 	"finder_scope": Color(0.38, 0.68, 0.92)
 }
 
 var selected_part_type := ""
 var wrong_attempts: Dictionary = {}
 
+var parts_scroll: ScrollContainer
 var parts_list: Control
 var blueprint_layer: Control
 var inspector_title: Label
@@ -98,6 +103,7 @@ func _draw_title_bar() -> void:
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(subtitle)
+	subtitle.visible = false
 
 
 func _build_parts_panel() -> void:
@@ -109,10 +115,18 @@ func _build_parts_panel() -> void:
 	heading.autowrap_mode = TextServer.AUTOWRAP_OFF
 	add_child(heading)
 
+	parts_scroll = ScrollContainer.new()
+	parts_scroll.position = Vector2(36, 128)
+	parts_scroll.size = Vector2(268, 560)
+	parts_scroll.clip_contents = true
+	parts_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	parts_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	add_child(parts_scroll)
+
 	parts_list = Control.new()
-	parts_list.position = Vector2(36, 128)
-	parts_list.size = Vector2(268, 560)
-	add_child(parts_list)
+	parts_list.size = Vector2(252, 560)
+	parts_list.custom_minimum_size = Vector2(252, 560)
+	parts_scroll.add_child(parts_list)
 
 
 func _build_blueprint_panel() -> void:
@@ -135,7 +149,7 @@ func _build_blueprint_panel() -> void:
 	helper.size = Vector2(346, 58)
 	add_child(helper)
 
-	var order := _label("Order / 顺序: Tripod → Mount → Tube → Lens → Eye", 12, Color(0.66, 0.76, 0.82))
+	var order := _label("Order / 顺序: Tripod → Mount → Tube → Lens → Eye → Focus", 12, Color(0.66, 0.76, 0.82))
 	order.position = Vector2(372, 604)
 	order.size = Vector2(346, 22)
 	order.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -210,15 +224,31 @@ func _refresh_all() -> void:
 func _refresh_parts() -> void:
 	_clear(parts_list)
 	var y := 0.0
+	var selected_y := -1.0
+	var next_part := _next_installable_part()
 	for part_type in PART_ORDER:
 		var unlocked: Array = GameManager.unlocked_parts_by_type(part_type)
 		if unlocked.is_empty():
 			continue
 		var part: Dictionary = _dict_value(unlocked[0])
 		var installed := _is_installed(part_type)
-		var selected := selected_part_type == part_type
+		var selected := selected_part_type == part_type or (selected_part_type == "" and next_part == part_type)
+		if selected:
+			selected_y = y
 		_draw_part_card(part_type, part, installed, selected, Vector2(0, y))
 		y += 90.0
+	parts_list.custom_minimum_size = Vector2(252, maxf(560.0, y))
+	parts_list.size = parts_list.custom_minimum_size
+	if parts_scroll != null and selected_y >= 0.0:
+		call_deferred("_scroll_parts_to", int(maxf(0.0, selected_y - 24.0)))
+
+
+func _scroll_parts_to(value: int) -> void:
+	if parts_scroll == null:
+		return
+	var bar := parts_scroll.get_v_scroll_bar()
+	if bar != null:
+		bar.value = value
 
 
 func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selected: bool, pos: Vector2) -> void:
@@ -232,7 +262,7 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 		border_color = Color(0.34, 0.56, 0.42)
 	if selected:
 		border_color = Color(0.82, 0.72, 0.34)
-	var card := _panel_local(parts_list, pos, Vector2(268, 78), bg_color, border_color)
+	var card := _panel_local(parts_list, pos, Vector2(252, 78), bg_color, border_color)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var icon_box := _panel_local(parts_list, pos + Vector2(10, 11), Vector2(56, 56), Color(0.070, 0.085, 0.095), Color(0.22, 0.30, 0.34))
@@ -242,14 +272,14 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 
 	var name_en := _label(str(part.get("name_en", PART_LABELS[part_type]["short"])), 12, Color(0.94, 0.95, 0.92))
 	name_en.position = pos + Vector2(76, 10)
-	name_en.size = Vector2(172, 18)
+	name_en.size = Vector2(160, 18)
 	name_en.autowrap_mode = TextServer.AUTOWRAP_OFF
 	name_en.clip_text = true
 	parts_list.add_child(name_en)
 
 	var name_zh := _label(str(PART_LABELS[part_type]["zh"]), 12, Color(0.82, 0.88, 0.88))
 	name_zh.position = pos + Vector2(76, 30)
-	name_zh.size = Vector2(172, 18)
+	name_zh.size = Vector2(160, 18)
 	name_zh.autowrap_mode = TextServer.AUTOWRAP_OFF
 	name_zh.clip_text = true
 	parts_list.add_child(name_zh)
@@ -258,14 +288,14 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 	var status_color := Color(0.58, 0.86, 0.62) if installed else Color(0.86, 0.78, 0.48)
 	var status := _label(status_text, 11, status_color)
 	status.position = pos + Vector2(76, 52)
-	status.size = Vector2(172, 16)
+	status.size = Vector2(160, 16)
 	status.autowrap_mode = TextServer.AUTOWRAP_OFF
 	status.clip_text = true
 	parts_list.add_child(status)
 
 	if installed:
 		var check := _label("OK", 11, Color(0.66, 0.94, 0.70))
-		check.position = pos + Vector2(235, 52)
+		check.position = pos + Vector2(219, 52)
 		check.size = Vector2(24, 16)
 		check.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		check.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -273,7 +303,7 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 
 	var click := Button.new()
 	click.position = pos
-	click.size = Vector2(268, 78)
+	click.size = Vector2(252, 78)
 	click.text = ""
 	click.flat = true
 	click.focus_mode = Control.FOCUS_NONE
@@ -309,6 +339,16 @@ func _draw_part_icon(parent: Control, part_type: String, box_pos: Vector2, insta
 			_rect_local(parent, p + Vector2(17, 16), Vector2(23, 22), color)
 			_rect_local(parent, p + Vector2(8, 21), Vector2(13, 12), color.darkened(0.10))
 			_rect_local(parent, p + Vector2(35, 20), Vector2(8, 14), color.lightened(0.10))
+		"focus_knob":
+			# knurled knob with an axle
+			_rect_local(parent, p + Vector2(14, 14), Vector2(24, 24), color)
+			_rect_local(parent, p + Vector2(18, 18), Vector2(16, 16), color.darkened(0.18))
+			_rect_local(parent, p + Vector2(23, 23), Vector2(6, 6), color.lightened(0.22))
+			_rect_local(parent, p + Vector2(38, 22), Vector2(9, 8), color.darkened(0.10))
+			_rect_local(parent, p + Vector2(11, 10), Vector2(4, 4), color.lightened(0.10))
+			_rect_local(parent, p + Vector2(37, 10), Vector2(4, 4), color.lightened(0.10))
+			_rect_local(parent, p + Vector2(11, 38), Vector2(4, 4), color.lightened(0.10))
+			_rect_local(parent, p + Vector2(37, 38), Vector2(4, 4), color.lightened(0.10))
 		_:
 			_rect_local(parent, p + Vector2(8, 20), Vector2(34, 10), color)
 			_rect_local(parent, p + Vector2(36, 15), Vector2(10, 20), color.lightened(0.12))
@@ -323,7 +363,7 @@ func _refresh_blueprint() -> void:
 
 	var next_part := _next_installable_part()
 	for part_type in PART_ORDER:
-		if part_type == "finder_scope" and GameManager.unlocked_parts_by_type(part_type).is_empty():
+		if OPTIONAL_PARTS.has(part_type) and GameManager.unlocked_parts_by_type(part_type).is_empty():
 			continue
 		_draw_slot(part_type, next_part)
 
@@ -418,6 +458,10 @@ func _draw_installed_part(part_type: String, rect: Rect2) -> void:
 	elif part_type == "eyepiece":
 		_rect_local(blueprint_layer, inner.position + Vector2(13, 12), Vector2(34, 30), color)
 		_rect_local(blueprint_layer, inner.position + Vector2(2, 19), Vector2(17, 16), color.darkened(0.10))
+	elif part_type == "focus_knob":
+		_rect_local(blueprint_layer, inner.position + Vector2(14, 4), Vector2(20, 20), color)
+		_rect_local(blueprint_layer, inner.position + Vector2(19, 9), Vector2(10, 10), color.darkened(0.20))
+		_rect_local(blueprint_layer, inner.position + Vector2(34, 10), Vector2(10, 7), color.darkened(0.10))
 	else:
 		_rect_local(blueprint_layer, inner.position + Vector2(10, 15), Vector2(72, 15), color)
 		_rect_local(blueprint_layer, inner.position + Vector2(64, 9), Vector2(20, 28), color.lightened(0.12))
@@ -556,6 +600,8 @@ func _reset() -> void:
 
 
 func _wrong_feedback(part_type: String, slot_type: String) -> String:
+	if part_type == "focus_knob":
+		return "The focus knob belongs near the eyepiece. It moves the eyepiece to sharpen the image.\n调焦旋钮安装在目镜附近，用来移动目镜位置，让图像变清楚。"
 	return "Wrong slot. " + str(PART_LABELS[part_type]["short"]) + " belongs in the " + str(PART_LABELS[part_type]["short"]) + " slot.\n" \
 		+ "位置不对。" + str(PART_LABELS[part_type]["zh"]) + " 应安装到对应安装位。\n" \
 		+ str(PART_LABELS[part_type]["role"])
@@ -591,6 +637,8 @@ func _next_step_description(part_type: String) -> String:
 			return "Install the front lens to collect light.\n安装前端物镜来收集光线。"
 		"eyepiece":
 			return "Install the eyepiece at the viewing end.\n把目镜安装到观察端。"
+		"focus_knob":
+			return "Attach the focus knob near the eyepiece.\n把调焦旋钮安装到目镜附近。"
 		_:
 			return "Add the finder scope for easier aiming.\n安装寻星镜帮助瞄准。"
 
@@ -599,10 +647,11 @@ func _next_installable_part() -> String:
 	for part_type in CORE_PARTS:
 		if not _is_installed(part_type):
 			return part_type
-	if GameManager.unlocked_parts_by_type("finder_scope").is_empty():
-		return ""
-	if not _is_installed("finder_scope"):
-		return "finder_scope"
+	for optional_type in OPTIONAL_PARTS:
+		if GameManager.unlocked_parts_by_type(optional_type).is_empty():
+			continue
+		if not _is_installed(optional_type):
+			return optional_type
 	return ""
 
 

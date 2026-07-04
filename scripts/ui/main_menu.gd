@@ -107,6 +107,9 @@ func _build() -> void:
 
 func _on_new_game() -> void:
 	GameManager.new_game()
+	# Astronomy Club opening scene: Maya welcomes the new member.
+	if GameManager.try_story_event("intro", "observatory"):
+		return
 	GameManager.go("observatory")
 
 

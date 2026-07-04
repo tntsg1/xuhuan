@@ -9,7 +9,12 @@ const INTERACT_DISTANCE := 56.0
 const BG_TEXTURE := "res://assets/reference/observatory_room_clean_bg_1024.png"
 const PLAYER_TEXTURE := "res://assets/characters/player_observer_4dir_clean.png"
 const PLAYER_FRAME_SIZE := Vector2(96, 128)
-const PLAYER_DISPLAY_SIZE := Vector2(44, 62)
+# Uniform scale only — the old 44x62 display size squashed the 96x128 frame.
+const PLAYER_DISPLAY_HEIGHT := 72.0
+const PLAYER_DISPLAY_SCALE := PLAYER_DISPLAY_HEIGHT / PLAYER_FRAME_SIZE.y
+const PLAYER_DISPLAY_SIZE := PLAYER_FRAME_SIZE * PLAYER_DISPLAY_SCALE
+# Feet row inside the 128px frame (content ends ~y120, below is padding).
+const PLAYER_FOOT_Y := 120.0
 const PLAYER_ANIM_FPS := 8.0
 
 const NOT_READY_TEXT := "The telescope is not ready yet. Go to the Assembly Table and install the core parts."
@@ -25,9 +30,17 @@ const CYAN := Color(0.52, 0.86, 1.00)
 var player: Sprite2D
 var player_atlas: AtlasTexture
 var player_shadow: ColorRect
+var mission_board_popup: Control
+var stats_terminal_popup: Control
+var unlock_popup: Control
 var level_value_label: Label
 var credits_value_label: Label
 var telescope_status_label: Label
+var guidance_overlay: Control
+var guidance_panel: Panel
+var guidance_title_label: Label
+var guidance_hint_label: Label
+var guidance_action_label: Label
 var focus_label: Label
 var feedback_label: Label
 var interactables: Array[Dictionary] = []
@@ -49,12 +62,18 @@ func _ready() -> void:
 	if GameManager.last_guidance == "ready_to_observe":
 		active_guidance = GameManager.last_guidance
 		GameManager.last_guidance = ""
+	elif GameManager.room_guidance_target != "":
+		active_guidance = "room_guidance"
 	player_pos = _spawn_position(GameManager.take_observatory_spawn())
 	_build()
 	set_process(true)
+	call_deferred("_maybe_show_unlock_popup")
 
 
 func _process(delta: float) -> void:
+	if unlock_popup != null:
+		_update_hud()
+		return
 	_move_player(delta)
 	_poll_action_keys()
 	_update_nearby()
@@ -129,7 +148,10 @@ func _register_hitboxes() -> void:
 	_register_interactable("door", "Observatory Door", "Enter the observatory control room.", Rect2(468, 88, 88, 188))
 	_register_interactable("mission", "Mission Board", "Read the current level goal here.", Rect2(622, 108, 138, 124))
 	_register_interactable("assembly", "Assembly Table", "Build and align the telescope.", Rect2(782, 214, 170, 160))
-	_register_interactable("telescope", "Telescope Observation Pad", "Start observation here after assembly.", Rect2(455, 398, 120, 124))
+	if GameManager.current_observation_mode() == "naked_eye":
+		_register_interactable("telescope", "Naked Eye Observation", "Observe the night sky with your own eyes.", Rect2(455, 398, 120, 124))
+	else:
+		_register_interactable("telescope", "Telescope Observation Pad", "Start observation here after assembly.", Rect2(455, 398, 120, 124))
 	_register_interactable("journal", "Learning Journal", "Review completed observations and learning cards.", Rect2(96, 476, 214, 132))
 	_register_interactable("computer", "Stats Terminal", "Check telescope performance and readiness.", Rect2(730, 492, 146, 116))
 
@@ -160,14 +182,14 @@ func _register_interactable(id: String, display_name: String, hint: String, rect
 
 
 func _draw_player() -> void:
-	player_shadow = _rect(_player_shadow_position(), Vector2(20, 6), Color(0.0, 0.0, 0.0, 0.32))
+	player_shadow = _rect(_player_shadow_position(), Vector2(26, 7), Color(0.0, 0.0, 0.0, 0.32))
 	player = Sprite2D.new()
 	player_atlas = AtlasTexture.new()
 	player_atlas.atlas = load(PLAYER_TEXTURE)
 	player.texture = player_atlas
 	player.position = _player_visual_position()
 	player.centered = true
-	player.scale = Vector2(PLAYER_DISPLAY_SIZE.x / PLAYER_FRAME_SIZE.x, PLAYER_DISPLAY_SIZE.y / PLAYER_FRAME_SIZE.y)
+	player.scale = Vector2.ONE * PLAYER_DISPLAY_SCALE
 	player.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(player)
 	_set_player_animation_frame("down", 0)
@@ -182,7 +204,7 @@ func _draw_hud() -> void:
 	_corner_pins(top)
 
 	level_value_label = _label_to(top, "", Vector2(38, 10), Vector2(150, 26), 18, HORIZONTAL_ALIGNMENT_LEFT)
-	credits_value_label = _label_to(top, "", Vector2(350, 10), Vector2(150, 26), 18, HORIZONTAL_ALIGNMENT_LEFT)
+	credits_value_label = _label_to(top, "", Vector2(330, 10), Vector2(220, 26), 18, HORIZONTAL_ALIGNMENT_LEFT)
 	telescope_status_label = _label_to(top, "", Vector2(590, 11), Vector2(224, 24), 16, HORIZONTAL_ALIGNMENT_LEFT)
 
 	var menu := Button.new()
@@ -209,6 +231,23 @@ func _draw_hud() -> void:
 	_label_to(bottom, "MOVE", Vector2(406, 14), Vector2(58, 18), 13, HORIZONTAL_ALIGNMENT_LEFT)
 	_label_to(bottom, "[TAB]", Vector2(510, 13), Vector2(54, 20), 14, HORIZONTAL_ALIGNMENT_CENTER)
 	_label_to(bottom, "MISSIONS", Vector2(570, 14), Vector2(82, 18), 13, HORIZONTAL_ALIGNMENT_LEFT)
+
+	guidance_overlay = Control.new()
+	guidance_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	guidance_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(guidance_overlay)
+
+	guidance_panel = Panel.new()
+	guidance_panel.position = Vector2(222, 76)
+	guidance_panel.size = Vector2(580, 126)
+	guidance_panel.add_theme_stylebox_override("panel", _style(Color(0.030, 0.045, 0.080, 0.96), BRASS, 3, 6))
+	add_child(guidance_panel)
+	_corner_pins(guidance_panel)
+	guidance_title_label = _label_to(guidance_panel, "", Vector2(24, 14), Vector2(532, 30), 22, HORIZONTAL_ALIGNMENT_CENTER)
+	guidance_hint_label = _label_to(guidance_panel, "", Vector2(32, 50), Vector2(516, 34), 17, HORIZONTAL_ALIGNMENT_CENTER)
+	guidance_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	guidance_action_label = _label_to(guidance_panel, "", Vector2(32, 88), Vector2(516, 22), 14, HORIZONTAL_ALIGNMENT_CENTER)
+	guidance_action_label.add_theme_color_override("font_color", Color(0.52, 0.86, 1.0))
 
 	focus_label = _label("", Vector2(260, 662), Vector2(504, 20), 13, HORIZONTAL_ALIGNMENT_CENTER)
 	feedback_label = _label("Start at the Mission Board, then use the Assembly Table.", Vector2(112, 680), Vector2(800, 20), 13, HORIZONTAL_ALIGNMENT_CENTER)
@@ -253,11 +292,13 @@ func _set_player_position(pos: Vector2) -> void:
 
 
 func _player_visual_position() -> Vector2:
-	return player_pos - Vector2(0.0, PLAYER_DISPLAY_SIZE.y * 0.5)
+	# player_pos is the foot center; anchor the sprite so the drawn feet
+	# (frame row PLAYER_FOOT_Y) land exactly on it.
+	return player_pos - Vector2(0.0, (PLAYER_FOOT_Y - PLAYER_FRAME_SIZE.y * 0.5) * PLAYER_DISPLAY_SCALE)
 
 
 func _player_shadow_position() -> Vector2:
-	return player_pos - Vector2(8, 3)
+	return player_pos - Vector2(13, 4)
 
 
 func _player_collision_rect_for(pos: Vector2) -> Rect2:
@@ -334,6 +375,8 @@ func _update_nearby() -> void:
 		var id := str(data["id"])
 		if id == nearby_id:
 			frame.modulate.a = 0.82
+		elif id == GameManager.room_guidance_target:
+			frame.modulate.a = 0.72 + 0.18 * sin(float(Time.get_ticks_msec()) / 220.0)
 		else:
 			frame.modulate.a = 0.0
 
@@ -341,20 +384,27 @@ func _update_nearby() -> void:
 func _update_hud() -> void:
 	var ready := GameManager.telescope_is_ready()
 	level_value_label.text = "LEVEL %02d" % int(GameManager.progress.get("current_level", 1))
-	credits_value_label.text = "CREDITS %d" % int(GameManager.progress.get("credits", 0))
-	telescope_status_label.text = "TELESCOPE: READY" if ready else "TELESCOPE: NOT READY"
-	telescope_status_label.add_theme_color_override("font_color", Color(0.48, 0.95, 0.36) if ready else Color(0.95, 0.72, 0.36))
+	credits_value_label.text = "CLUB CREDITS %d" % int(GameManager.progress.get("credits", 0))
+	if GameManager.current_observation_mode() == "naked_eye":
+		telescope_status_label.text = "MODE: NAKED EYE"
+		telescope_status_label.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
+	else:
+		telescope_status_label.text = "TELESCOPE: READY" if ready else "TELESCOPE: NOT READY"
+		telescope_status_label.add_theme_color_override("font_color", Color(0.48, 0.95, 0.36) if ready else Color(0.95, 0.72, 0.36))
 
 	if nearby_id == "":
 		focus_label.text = "Move around the observatory room"
 		if _has_feedback_override():
 			feedback_label.text = feedback_override
+		elif GameManager.room_guidance_target != "":
+			feedback_label.text = GameManager.room_guidance_hint
 		elif active_guidance == "ready_to_observe":
 			feedback_label.text = READY_GUIDANCE_TEXT
 		elif ready:
 			feedback_label.text = READY_FOCUS_TEXT
 		else:
 			feedback_label.text = "Check the Mission Board, then build the telescope at the Assembly Table."
+		_update_room_guidance_panel()
 		return
 
 	var item := _get_interactable(nearby_id)
@@ -363,6 +413,7 @@ func _update_hud() -> void:
 		feedback_label.text = feedback_override
 	else:
 		feedback_label.text = str(item.get("hint", ""))
+	_update_room_guidance_panel()
 
 
 func _interact_with_nearby() -> void:
@@ -374,42 +425,314 @@ func _interact_at(pos: Vector2) -> void:
 	for data in interactables:
 		var rect: Rect2 = data["rect"]
 		if rect.grow(12).has_point(pos):
-			_handle_interaction(str(data["id"]))
+			_click_interactable(str(data["id"]))
 			return
+
+
+func _click_interactable(id: String) -> void:
+	if nearby_id == id:
+		_handle_interaction(id)
+		return
+	_show_feedback("Move closer to interact. / 靠近后互动。", 1800)
 
 
 func _handle_interaction(id: String) -> void:
 	if id == "mission":
 		GameManager.set_observatory_spawn("mission")
-		var level := GameManager.current_level()
-		_show_feedback(str(level.get("title_en", "Current Mission")) + " - " + str(level.get("description_en", "Check the mission target.")))
+		_toggle_mission_board()
 	elif id == "cabinet":
 		GameManager.set_observatory_spawn("cabinet")
+		GameManager.clear_room_guidance()
 		GameManager.go("parts")
 	elif id == "assembly":
 		GameManager.set_observatory_spawn("assembly")
+		if GameManager.try_story_for_trigger("before_assembly", "assembly"):
+			return
+		if GameManager.try_teaching_intercept("before_assembly", "assembly"):
+			return
+		GameManager.clear_room_guidance()
 		GameManager.go("assembly")
 	elif id == "door":
 		GameManager.set_observatory_spawn("door")
-		GameManager.go("interior")
-	elif id == "telescope":
-		if GameManager.telescope_is_ready():
-			GameManager.set_observatory_spawn("telescope")
+		if GameManager.current_observation_mode() == "naked_eye":
+			if GameManager.try_story_for_trigger("before_observation", "sky"):
+				return
+			if GameManager.try_teaching_intercept("before_observation", "sky"):
+				return
+			GameManager.clear_room_guidance()
 			GameManager.go("sky")
 		else:
-			_show_feedback(NOT_READY_TEXT, 3600)
+			GameManager.clear_room_guidance()
+			GameManager.go("interior")
+	elif id == "telescope":
+		if GameManager.try_story_for_trigger("before_observation", "sky"):
+			GameManager.set_observatory_spawn("telescope")
+			return
+		if GameManager.try_teaching_intercept("before_observation", "sky"):
+			GameManager.set_observatory_spawn("telescope")
+			return
+		var gate: Dictionary = GameManager.can_enter_observation()
+		if bool(gate.get("ok", false)):
+			GameManager.set_observatory_spawn("telescope")
+			GameManager.clear_room_guidance()
+			GameManager.go("sky")
+		else:
+			_show_feedback(GameManager.text(str(gate.get("reason_en", NOT_READY_TEXT)), str(gate.get("reason_zh", ""))), 3600)
 	elif id == "journal":
 		GameManager.set_observatory_spawn("journal")
+		GameManager.clear_room_guidance()
 		GameManager.go("journal")
 	elif id == "computer":
 		GameManager.set_observatory_spawn("computer")
-		var stats := GameManager.calculate_stats()
-		_show_feedback("Assembly %s | Clarity %s | Light %s | Stability %s" % [
-			stats.get("assembly_score", 0),
-			stats.get("clarity_score", 0),
-			stats.get("light_score", 0),
-			stats.get("stability_score", 0)
-		], 3600)
+		_toggle_stats_terminal()
+
+
+func _toggle_mission_board() -> void:
+	if mission_board_popup != null:
+		mission_board_popup.queue_free()
+		mission_board_popup = null
+		return
+	var level := GameManager.current_level()
+	var note := GameManager.mission_board_note()
+	var concept := GameManager.get_learning_card(GameManager.current_concept_card_id())
+	var stage_names := {
+		"eye": "Naked Eye / 肉眼",
+		"refractor_basic": "Basic Refractor / 基础折射镜",
+		"refractor_with_finder": "Refractor + Finder / 折射镜+寻星镜",
+		"newtonian_basic": "Newtonian Reflector / 牛顿反射镜",
+		"advanced": "Advanced Setup / 高级设备"
+	}
+
+	mission_board_popup = Control.new()
+	mission_board_popup.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(mission_board_popup)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mission_board_popup.add_child(dim)
+
+	var panel := Panel.new()
+	panel.position = Vector2(262, 148)
+	panel.size = Vector2(500, 452)
+	panel.add_theme_stylebox_override("panel", _style(Color(0.035, 0.050, 0.090, 0.98), BRASS, 3, 5))
+	mission_board_popup.add_child(panel)
+
+	_popup_label("CLUB MISSION / 俱乐部任务", Vector2(282, 164), Vector2(460, 22), 13, BRASS, HORIZONTAL_ALIGNMENT_CENTER)
+	var title_label := _popup_label(GameManager.dict_text(level, "title"), Vector2(282, 190), Vector2(460, 52), 20, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	title_label.max_lines_visible = 2
+
+	_popup_label("Maya's Note / Maya 的提示", Vector2(292, 252), Vector2(440, 18), 11, Color(0.66, 0.76, 0.86))
+	var note_label := _popup_label(
+		"\"" + GameManager.text(str(note.get("en", "")), str(note.get("zh", ""))) + "\"",
+		Vector2(292, 272), Vector2(440, 58), 12, Color(0.98, 0.85, 0.58)
+	)
+	note_label.max_lines_visible = 3
+
+	_popup_label("Objective / 目标", Vector2(292, 334), Vector2(440, 18), 11, Color(0.66, 0.76, 0.86))
+	var objective_label := _popup_label(GameManager.dict_text(level, "description"), Vector2(292, 354), Vector2(440, 56), 12, WARM_TEXT)
+	objective_label.max_lines_visible = 4
+
+	_popup_label("Equipment / 设备阶段", Vector2(292, 416), Vector2(220, 18), 11, Color(0.66, 0.76, 0.86))
+	_popup_label(str(stage_names.get(GameManager.current_equipment_stage(), GameManager.current_equipment_stage())), Vector2(292, 436), Vector2(220, 40), 12, CYAN)
+
+	_popup_label("Concept / 学习概念", Vector2(522, 416), Vector2(210, 18), 11, Color(0.66, 0.76, 0.86))
+	var concept_label := _popup_label(GameManager.dict_text(concept, "title") if not concept.is_empty() else "-", Vector2(522, 436), Vector2(210, 60), 12, Color(0.86, 0.72, 1.0))
+	concept_label.max_lines_visible = 3
+
+	var close := Button.new()
+	close.text = GameManager.text("Close", "关闭").replace("\n", " · ")
+	close.position = Vector2(432, 546)
+	close.size = Vector2(160, 40)
+	close.add_theme_font_size_override("font_size", 14)
+	close.pressed.connect(_toggle_mission_board)
+	mission_board_popup.add_child(close)
+
+
+func _popup_label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+	var label := Label.new()
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.text = text
+	label.position = pos
+	label.size = size
+	label.horizontal_alignment = align
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mission_board_popup.add_child(label)
+	return label
+
+
+func _maybe_show_unlock_popup() -> void:
+	# Announce newly unlocked equipment with an unmissable Maya popup, so
+	# upgrades never arrive silently.
+	var pending: Array = GameManager.take_pending_unlock_notice()
+	if pending.is_empty():
+		return
+
+	unlock_popup = Control.new()
+	unlock_popup.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(unlock_popup)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.60)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	unlock_popup.add_child(dim)
+
+	var line_count := mini(pending.size(), 4)
+	var panel_height := 250.0 + float(line_count) * 26.0
+	var panel := Panel.new()
+	panel.position = Vector2(252, 384.0 - panel_height * 0.5)
+	panel.size = Vector2(520, panel_height)
+	panel.add_theme_stylebox_override("panel", _style(Color(0.040, 0.055, 0.100, 0.98), Color(0.98, 0.80, 0.36), 3, 6))
+	unlock_popup.add_child(panel)
+
+	var portrait := TextureRect.new()
+	portrait.texture = load("res://assets/characters/maya_portrait.png")
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_SCALE
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	portrait.position = panel.position + Vector2(24, 40)
+	portrait.size = Vector2(96, 96)
+	unlock_popup.add_child(portrait)
+
+	var x_text := panel.position.x + 140.0
+	var y := panel.position.y + 18.0
+	_popup_label_on(unlock_popup, "NEW EQUIPMENT UNLOCKED! / 新装备已解锁！", Vector2(panel.position.x + 20, y), Vector2(480, 24), 15, Color(0.98, 0.85, 0.45), HORIZONTAL_ALIGNMENT_CENTER)
+	y += 34.0
+	var maya_line := _popup_label_on(unlock_popup,
+		GameManager.text("Maya: \"New parts just arrived for the club!\"", "Maya：“俱乐部的新零件到货啦！”"),
+		Vector2(x_text, y), Vector2(360, 40), 12, WARM_TEXT)
+	maya_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	y += 44.0
+	for index in range(line_count):
+		var part: Dictionary = GameManager.get_part(str(pending[index]))
+		var part_name := "%s / %s" % [str(part.get("name_en", pending[index])), str(part.get("name_zh", ""))]
+		_popup_label_on(unlock_popup, "•  " + part_name, Vector2(x_text, y), Vector2(360, 22), 13, Color(0.60, 0.95, 0.70))
+		y += 26.0
+	y += 10.0
+	var hint := _popup_label_on(unlock_popup,
+		GameManager.text("Equip them at the Parts Cabinet, then reassemble at the Assembly Table.", "到零件柜装备它们，然后在组装台重新组装。"),
+		Vector2(x_text, y), Vector2(360, 40), 11, Color(0.78, 0.86, 0.92))
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+	var ok := Button.new()
+	ok.text = GameManager.text("Got it!", "知道了！").replace("\n", " · ")
+	ok.position = Vector2(432, panel.position.y + panel_height - 52.0)
+	ok.size = Vector2(160, 38)
+	ok.add_theme_font_size_override("font_size", 14)
+	ok.pressed.connect(func() -> void:
+		if unlock_popup != null:
+			unlock_popup.queue_free()
+			unlock_popup = null
+	)
+	unlock_popup.add_child(ok)
+
+
+func _popup_label_on(parent: Control, text: String, pos: Vector2, size: Vector2, font_size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.position = pos
+	label.size = size
+	label.horizontal_alignment = align
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(label)
+	return label
+
+
+func _toggle_stats_terminal() -> void:
+	# Stats Terminal popup: telescope performance + what Club Credits are for.
+	if stats_terminal_popup != null:
+		stats_terminal_popup.queue_free()
+		stats_terminal_popup = null
+		return
+	var stats := GameManager.calculate_stats()
+
+	stats_terminal_popup = Control.new()
+	stats_terminal_popup.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(stats_terminal_popup)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	stats_terminal_popup.add_child(dim)
+
+	var panel := Panel.new()
+	panel.position = Vector2(272, 168)
+	panel.size = Vector2(480, 412)
+	panel.add_theme_stylebox_override("panel", _style(Color(0.030, 0.055, 0.060, 0.98), Color(0.35, 0.85, 0.55), 3, 5))
+	stats_terminal_popup.add_child(panel)
+
+	_terminal_label("STATS TERMINAL / 统计终端", Vector2(292, 184), Vector2(440, 22), 13, Color(0.45, 0.95, 0.60), HORIZONTAL_ALIGNMENT_CENTER)
+
+	var rows: Array = [
+		["Assembly / 组装", float(stats.get("assembly_score", 0.0))],
+		["Light / 集光", float(stats.get("light_score", 0.0))],
+		["Clarity / 清晰", float(stats.get("clarity_score", 0.0))],
+		["Stability / 稳定", float(stats.get("stability_score", 0.0))],
+		["Focus Ctrl / 调焦", float(stats.get("focus_control_score", 0.0))]
+	]
+	var y := 220.0
+	for row_value in rows:
+		var row: Array = row_value
+		var value: float = float(row[1])
+		_terminal_label(str(row[0]), Vector2(300, y), Vector2(160, 18), 12, WARM_TEXT)
+		var bar_bg := ColorRect.new()
+		bar_bg.position = Vector2(470, y + 4)
+		bar_bg.size = Vector2(180, 10)
+		bar_bg.color = Color(0.06, 0.10, 0.10)
+		stats_terminal_popup.add_child(bar_bg)
+		var fill := ColorRect.new()
+		fill.position = Vector2(470, y + 4)
+		fill.size = Vector2(clampf(value, 0.0, 100.0) * 1.8, 10)
+		fill.color = Color(0.40, 0.85, 0.55)
+		stats_terminal_popup.add_child(fill)
+		_terminal_label(str(snapped(value, 0.1)), Vector2(660, y), Vector2(60, 18), 12, Color(0.80, 0.95, 0.85), HORIZONTAL_ALIGNMENT_RIGHT)
+		y += 28.0
+
+	var divider := ColorRect.new()
+	divider.position = Vector2(292, y + 8)
+	divider.size = Vector2(440, 1)
+	divider.color = Color(0.35, 0.85, 0.55, 0.4)
+	stats_terminal_popup.add_child(divider)
+
+	_terminal_label("CLUB CREDITS: %d" % int(GameManager.progress.get("credits", 0)), Vector2(292, y + 20), Vector2(440, 24), 16, Color(0.98, 0.85, 0.45), HORIZONTAL_ALIGNMENT_CENTER)
+	var note := _terminal_label(
+		"Club Credits are saved for future equipment upgrades.\n社团积分将用于后续设备升级。",
+		Vector2(300, y + 50), Vector2(424, 40), 11, Color(0.78, 0.88, 0.82), HORIZONTAL_ALIGNMENT_CENTER
+	)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+	var shop := Button.new()
+	shop.text = "Upgrade Shop - Coming Soon / 升级商店暂未开放"
+	shop.disabled = true
+	shop.position = Vector2(312, y + 96)
+	shop.size = Vector2(400, 34)
+	shop.add_theme_font_size_override("font_size", 12)
+	stats_terminal_popup.add_child(shop)
+
+	var close := Button.new()
+	close.text = GameManager.text("Close", "关闭").replace("\n", " · ")
+	close.position = Vector2(432, y + 140)
+	close.size = Vector2(160, 36)
+	close.add_theme_font_size_override("font_size", 14)
+	close.pressed.connect(_toggle_stats_terminal)
+	stats_terminal_popup.add_child(close)
+
+
+func _terminal_label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.position = pos
+	label.size = size
+	label.horizontal_alignment = align
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_terminal_popup.add_child(label)
+	return label
 
 
 func _show_feedback(text: String, duration_msec: int = 2800) -> void:
@@ -426,6 +749,73 @@ func _has_feedback_override() -> bool:
 		return true
 	feedback_override = ""
 	return false
+
+
+func _update_room_guidance_panel() -> void:
+	if guidance_panel == null:
+		return
+	if GameManager.room_guidance_target == "":
+		guidance_panel.visible = false
+		_update_guidance_overlay({})
+		return
+	guidance_panel.visible = true
+	guidance_title_label.text = GameManager.room_guidance_title
+	var target_name := ""
+	var item := _get_interactable(GameManager.room_guidance_target)
+	if not item.is_empty():
+		target_name = str(item.get("name", ""))
+	if nearby_id == GameManager.room_guidance_target:
+		guidance_hint_label.text = "[E] " + target_name
+		guidance_action_label.text = "Press E to continue / 按 E 继续"
+	else:
+		guidance_hint_label.text = GameManager.room_guidance_hint
+		guidance_action_label.text = "Follow the highlighted area / 跟随高亮区域"
+	_update_guidance_overlay(item)
+
+
+func _update_guidance_overlay(item: Dictionary) -> void:
+	if guidance_overlay == null:
+		return
+	_clear(guidance_overlay)
+	if item.is_empty():
+		guidance_overlay.visible = false
+		return
+	guidance_overlay.visible = true
+	var rect: Rect2 = item.get("rect", Rect2()).grow(24.0)
+	rect.position.x = clampf(rect.position.x, 0.0, W)
+	rect.position.y = clampf(rect.position.y, 0.0, H)
+	rect.size.x = clampf(rect.size.x, 0.0, W - rect.position.x)
+	rect.size.y = clampf(rect.size.y, 0.0, H - rect.position.y)
+	var shade := Color(0.0, 0.0, 0.0, 0.50)
+	_rect_to(guidance_overlay, Vector2.ZERO, Vector2(W, rect.position.y), shade)
+	_rect_to(guidance_overlay, Vector2(0, rect.end.y), Vector2(W, H - rect.end.y), shade)
+	_rect_to(guidance_overlay, Vector2(0, rect.position.y), Vector2(rect.position.x, rect.size.y), shade)
+	_rect_to(guidance_overlay, Vector2(rect.end.x, rect.position.y), Vector2(W - rect.end.x, rect.size.y), shade)
+
+	var pulse := 0.70 + 0.25 * sin(float(Time.get_ticks_msec()) / 180.0)
+	var outer := _thin_highlight_frame_to(guidance_overlay, rect.grow(8.0), Color(1.0, 0.78, 0.26, pulse))
+	outer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var inner := _thin_highlight_frame_to(guidance_overlay, rect.grow(2.0), Color(1.0, 0.95, 0.58, 0.92))
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_draw_guidance_arrow(guidance_overlay, rect)
+
+
+func _draw_guidance_arrow(parent: Control, target_rect: Rect2) -> void:
+	var label := Label.new()
+	label.text = ">>>"
+	label.add_theme_font_size_override("font_size", 26)
+	label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.32, 0.92))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var from := player_pos
+	var to := target_rect.get_center()
+	var mid := from.lerp(to, 0.55)
+	label.position = mid - Vector2(32, 18)
+	label.size = Vector2(64, 36)
+	var direction := to - from
+	label.rotation = atan2(direction.y, direction.x)
+	parent.add_child(label)
 
 
 func _spawn_position(spawn_id: String) -> Vector2:
@@ -448,7 +838,7 @@ func _spawn_position(spawn_id: String) -> Vector2:
 
 
 func _is_ready_observation_target(id: String) -> bool:
-	return GameManager.telescope_is_ready() and (id == "door" or id == "telescope")
+	return bool(GameManager.can_enter_observation().get("ok", false)) and (id == "door" or id == "telescope")
 
 
 func _get_interactable(id: String) -> Dictionary:
@@ -471,6 +861,19 @@ func _thin_highlight_frame(rect: Rect2, color: Color) -> Control:
 	return frame
 
 
+func _thin_highlight_frame_to(parent: Control, rect: Rect2, color: Color) -> Control:
+	var frame := Control.new()
+	frame.position = rect.position
+	frame.size = rect.size
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(frame)
+	_frame_rect(frame, Vector2.ZERO, Vector2(rect.size.x, 3), color)
+	_frame_rect(frame, Vector2(0, rect.size.y - 3), Vector2(rect.size.x, 3), color)
+	_frame_rect(frame, Vector2.ZERO, Vector2(3, rect.size.y), color)
+	_frame_rect(frame, Vector2(rect.size.x - 3, 0), Vector2(3, rect.size.y), color)
+	return frame
+
+
 func _transparent_click_target(rect: Rect2, id: String) -> Button:
 	var button := Button.new()
 	button.position = rect.position
@@ -484,7 +887,7 @@ func _transparent_click_target(rect: Rect2, id: String) -> Button:
 	button.add_theme_stylebox_override("hover", empty)
 	button.add_theme_stylebox_override("pressed", empty)
 	button.add_theme_stylebox_override("focus", empty)
-	button.pressed.connect(_handle_interaction.bind(id))
+	button.pressed.connect(_click_interactable.bind(id))
 	add_child(button)
 	return button
 
@@ -507,6 +910,21 @@ func _rect(pos: Vector2, rect_size: Vector2, color: Color) -> ColorRect:
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(rect)
 	return rect
+
+
+func _rect_to(parent: Control, pos: Vector2, rect_size: Vector2, color: Color) -> ColorRect:
+	var rect := ColorRect.new()
+	rect.position = pos
+	rect.size = rect_size
+	rect.color = color
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(rect)
+	return rect
+
+
+func _clear(parent: Node) -> void:
+	for child in parent.get_children():
+		child.queue_free()
 
 
 func _style(color: Color, border: Color, border_width: int, radius: int) -> StyleBoxFlat:

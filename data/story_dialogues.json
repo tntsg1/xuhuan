@@ -1,0 +1,288 @@
+{
+  "intro": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Hey, you made it! Welcome to the Astronomy Club.",
+      "text_zh": "你来了！欢迎加入天文俱乐部。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Before we touch any telescope, we start with the oldest observing tool we have.",
+      "text_zh": "在碰望远镜之前，我们先用最古老的观测工具。"
+    },
+    {
+      "speaker": "You",
+      "portrait": "player",
+      "text_en": "Our eyes?",
+      "text_zh": "我们的眼睛？"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Exactly. Tonight you'll learn how your eyes see the sky - and why astronomers build tools to see more.",
+      "text_zh": "没错。今晚你会先了解眼睛如何看天空，也会明白为什么天文学家需要制造更多观测工具。"
+    }
+  ],
+  "level_1_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Let's begin without a telescope. The Moon is bright enough for your eyes.",
+      "text_zh": "我们先不用望远镜。月亮足够明亮，肉眼就能看到。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Try to find it, center it, and really look.",
+      "text_zh": "试着找到它，把它放到视野中间，认真看一看。"
+    }
+  ],
+  "level_1_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Nice. Your eyes collected light from the Moon and focused it on your retina.",
+      "text_zh": "很好。你的眼睛收集了来自月球的光，并把它聚焦在视网膜上。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "But did you notice? You could see the Moon, but not much detail.",
+      "text_zh": "但你注意到了吗？你能看到月亮，却看不到太多细节。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "That's where telescopes come in.",
+      "text_zh": "这就是望远镜登场的原因。"
+    }
+  ],
+  "level_2_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Some stars are bright enough to find with your eyes. Others are too faint.",
+      "text_zh": "有些星星足够亮，肉眼可以找到。另一些就太暗了。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Polaris sits toward the north. See if you can catch it.",
+      "text_zh": "北极星在北边。看看你能不能找到它。"
+    }
+  ],
+  "level_2_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Your eyes are amazing, but they're small light collectors.",
+      "text_zh": "眼睛很了不起，但它能收集的光很有限。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "If we want more detail, we need a bigger light collector.",
+      "text_zh": "如果想看到更多细节，我们需要更大的集光工具。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The parts cabinet is open. Tomorrow night, we build.",
+      "text_zh": "零件柜已经打开了。下一晚，我们动手组装。"
+    }
+  ],
+  "level_3_before_assembly": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "This is a refractor telescope. The front lens collects light.",
+      "text_zh": "这是一台折射望远镜。前端的物镜收集光线。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The eyepiece helps your eye inspect the image. Let's build it together.",
+      "text_zh": "目镜帮助眼睛观察被放大的图像。我们一起把它装起来。"
+    }
+  ],
+  "level_3_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You just built your first telescope.",
+      "text_zh": "你刚刚组装了第一台望远镜。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Now look at the Moon again. Same Moon, better tool.",
+      "text_zh": "现在再看看月亮。同一个月亮，不同的工具。"
+    }
+  ],
+  "level_4_before_focus": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The telescope is built, but the image may still be blurry. That doesn't mean it's broken.",
+      "text_zh": "望远镜装好了，但图像可能仍然模糊。这不代表它坏了。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Turning the focus knob moves the eyepiece until the image lines up with your eye.",
+      "text_zh": "转动调焦旋钮，会移动目镜位置，直到图像和你的眼睛对齐。"
+    }
+  ],
+  "level_4_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "There it is. You didn't just look - you adjusted the instrument.",
+      "text_zh": "看到了吧。你不只是观看，你调整了仪器。"
+    }
+  ],
+  "level_5_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "New observers often chase the highest magnification. It feels powerful - but it has a cost.",
+      "text_zh": "新手常常追求最高倍率。听起来很强，但它有代价。"
+    }
+  ],
+  "level_5_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Power is useful only when the view stays clear.",
+      "text_zh": "只有图像还能保持清楚时，倍率才有意义。"
+    }
+  ],
+  "level_6_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Now that your telescope zooms in, finding targets gets harder.",
+      "text_zh": "现在你的望远镜能放大了，但找目标反而更难了。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "That's why observers use a finder scope.",
+      "text_zh": "这就是为什么观测者会使用寻星镜。"
+    }
+  ],
+  "level_6_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Wide view to find. Narrow view to study.",
+      "text_zh": "宽视野用来找目标，窄视野用来看细节。"
+    }
+  ],
+  "level_7_before_assembly": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Lenses are not the only way to gather light.",
+      "text_zh": "透镜不是收集光线的唯一方法。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Some telescopes use mirrors. Tonight, you'll meet the Newtonian reflector.",
+      "text_zh": "有些望远镜使用镜子。今晚，你会认识牛顿反射望远镜。"
+    }
+  ],
+  "level_7_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Mirrors let us build larger light collectors. That matters when targets are faint.",
+      "text_zh": "镜子让我们能制造更大的集光工具。观测暗目标时，这非常重要。"
+    }
+  ],
+  "level_8_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The Orion Nebula is not like the Moon. It's faint. You need light, not just magnification.",
+      "text_zh": "猎户座大星云不像月亮。它很暗。你需要的是光，而不只是倍率。"
+    }
+  ],
+  "level_8_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You collected more light, and the nebula started to appear.",
+      "text_zh": "你收集了更多光，星云才开始显现。"
+    }
+  ],
+  "level_9_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Andromeda is far beyond our galaxy. It won't look dramatic at first.",
+      "text_zh": "仙女座远在银河系之外。它一开始不会显得很震撼。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "But finding it means you're becoming an observer.",
+      "text_zh": "但能找到它，说明你正在成为真正的观测者。"
+    }
+  ],
+  "level_9_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Tonight, you joined the club. Now you've earned your place in the logbook.",
+      "text_zh": "今晚你加入了俱乐部。现在，你已经值得把名字写进观测日志了。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Welcome, Young Observer.",
+      "text_zh": "欢迎你，年轻的观测者。"
+    }
+  ],
+  "board_notes": {
+    "1": {
+      "en": "Start with your eyes. Every astronomer begins by learning how to see.",
+      "zh": "先用眼睛。每个天文学家都是从学会观看开始的。"
+    },
+    "2": {
+      "en": "Bright stars first. Learn what your eyes can and cannot do.",
+      "zh": "先找亮星。了解眼睛能做什么、不能做什么。"
+    },
+    "3": {
+      "en": "Time to build. The objective collects, the eyepiece magnifies.",
+      "zh": "该动手组装了。物镜收集光，目镜放大图像。"
+    },
+    "4": {
+      "en": "Blurry is not broken. Turn the knob until it's sharp.",
+      "zh": "模糊不等于坏了。转动旋钮直到清晰。"
+    },
+    "5": {
+      "en": "More power is not always more detail.",
+      "zh": "更高倍率不等于更多细节。"
+    },
+    "6": {
+      "en": "Find wide, study narrow.",
+      "zh": "宽视野找目标，窄视野看细节。"
+    },
+    "7": {
+      "en": "Mirrors gather light too - often more of it.",
+      "zh": "镜子也能收集光，而且往往收集得更多。"
+    },
+    "8": {
+      "en": "Faint targets need light buckets, not zoom.",
+      "zh": "暗目标需要接光桶，而不是放大镜。"
+    },
+    "9": {
+      "en": "One last target. Make the logbook proud.",
+      "zh": "最后一个目标。让观测日志为你骄傲。"
+    }
+  }
+}

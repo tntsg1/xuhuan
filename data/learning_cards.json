@@ -1,0 +1,82 @@
+[
+  {
+    "id": "eye_imaging",
+    "title_en": "How Your Eye Forms an Image",
+    "title_zh": "眼睛如何成像",
+    "image": "res://assets/learning_diagrams/eye_imaging_diagram.png",
+    "text_en": "Light enters through the pupil. The lens focuses the light onto the retina, where cells detect the image.",
+    "text_zh": "光线通过瞳孔进入眼睛。晶状体把光聚焦到视网膜上，视网膜上的细胞接收图像。"
+  },
+  {
+    "id": "naked_eye_limits",
+    "title_en": "Why Some Objects Are Hard to See",
+    "title_zh": "为什么有些天体肉眼难以看见",
+    "image": "res://assets/learning_diagrams/naked_eye_limits_diagram.png",
+    "text_en": "Your eyes collect only a small amount of light. Bright objects like the Moon are easy to see, but faint galaxies need a telescope.",
+    "text_zh": "眼睛能收集的光很少。月亮这样的明亮目标容易看见，但暗淡的星系需要望远镜。"
+  },
+  {
+    "id": "refractor_light_path",
+    "title_en": "How a Refractor Telescope Works",
+    "title_zh": "折射望远镜如何工作",
+    "image": "res://assets/learning_diagrams/refractor_light_path.png",
+    "text_en": "The objective lens collects light and forms an image. The eyepiece magnifies that image for your eye.",
+    "text_zh": "物镜收集光线并形成图像。目镜把这个图像放大给眼睛观看。"
+  },
+  {
+    "id": "focus_focal_plane",
+    "title_en": "Focus and the Focal Plane",
+    "title_zh": "对焦与焦平面",
+    "image": "res://assets/learning_diagrams/focus_focal_plane_diagram.png",
+    "text_en": "Most sky objects are so far away that their light reaches the telescope almost parallel. The focus knob moves the eyepiece until the image formed at the focal plane looks sharp.",
+    "text_zh": "多数天体距离非常远，进入望远镜的光几乎是平行的。调焦旋钮会移动目镜位置，让焦平面上的图像变清楚。"
+  },
+  {
+    "id": "magnification_field_of_view",
+    "title_en": "Magnification Is Not Always Better",
+    "title_zh": "倍率不是越高越好",
+    "image": "res://assets/learning_diagrams/magnification_field_of_view_diagram.png",
+    "text_en": "Higher magnification makes objects look larger, but it also narrows the view and can make the image dimmer or shakier.",
+    "text_zh": "更高倍率会让目标看起来更大，但也会让视野变窄，并可能让图像更暗、更抖。"
+  },
+  {
+    "id": "finder_scope_alignment",
+    "title_en": "Why a Finder Scope Helps",
+    "title_zh": "为什么寻星镜有帮助",
+    "image": "res://assets/learning_diagrams/finder_scope_alignment_diagram.png",
+    "text_en": "A finder scope shows a wider view than the main telescope. It helps you aim before using higher magnification.",
+    "text_zh": "寻星镜的视野比主望远镜更宽，可以帮助你在高倍率观测前先对准目标。"
+  },
+  {
+    "id": "newtonian_light_path",
+    "title_en": "How a Newtonian Reflector Works",
+    "title_zh": "牛顿反射望远镜如何工作",
+    "image": "res://assets/learning_diagrams/newtonian_light_path.png",
+    "text_en": "A curved primary mirror gathers and reflects light. A small secondary mirror sends the light to the eyepiece on the side.",
+    "text_zh": "弯曲的主镜收集并反射光线。小斜镜把光反射到侧面的目镜。"
+  },
+  {
+    "id": "aperture_light_gathering",
+    "title_en": "Aperture Collects Light",
+    "title_zh": "口径决定集光能力",
+    "image": "res://assets/learning_diagrams/aperture_light_gathering_diagram.png",
+    "text_en": "A larger aperture collects more light. This helps faint objects like nebulae and galaxies become easier to see.",
+    "text_zh": "更大的口径可以收集更多光，让星云和星系这类暗目标更容易被看见。"
+  },
+  {
+    "id": "deep_sky_observation",
+    "title_en": "Observing Deep-Sky Objects",
+    "title_zh": "观测深空天体",
+    "image": "res://assets/learning_diagrams/deep_sky_observation_diagram.png",
+    "text_en": "Deep-sky objects are faint. A stable telescope, large aperture, and suitable low magnification are more useful than simply increasing power.",
+    "text_zh": "深空天体很暗。稳定的望远镜、大口径和合适的低倍率，比单纯提高倍率更有用。"
+  },
+  {
+    "id": "collimation_alignment",
+    "title_en": "Collimation: Aligning the Mirrors",
+    "title_zh": "准直：让镜子对齐",
+    "image": "res://assets/learning_diagrams/collimation_alignment_diagram.png",
+    "text_en": "A reflector only works when its mirrors line up. Collimation tilts the mirrors until light converges exactly at the eyepiece.",
+    "text_zh": "反射望远镜的镜子必须对齐才能成像。准直就是微调镜子的角度，让光线恰好汇聚到目镜位置。"
+  }
+]
