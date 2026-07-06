@@ -39,6 +39,7 @@ var default_visual_rect: TextureRect
 
 
 func _ready() -> void:
+	GameManager.language_changed.connect(_on_language_changed)
 	if StoryManager.active_lines.is_empty():
 		GameManager.call_deferred("go", "observatory")
 		return
@@ -236,3 +237,6 @@ func _label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Co
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(label)
 	return label
+
+func _on_language_changed() -> void:
+	_build()

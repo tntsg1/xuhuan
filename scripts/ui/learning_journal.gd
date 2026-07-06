@@ -14,6 +14,7 @@ var _entry_list: VBoxContainer
 
 
 func _ready() -> void:
+	GameManager.language_changed.connect(_on_language_changed)
 	_build()
 
 
@@ -56,7 +57,7 @@ func _build() -> void:
 
 	# Back button — top right, clean
 	var back_btn := Button.new()
-	back_btn.text = "←  Back / 返回"
+	back_btn.text = GameManager.text("←  Back", "←  返回")
 	back_btn.position = Vector2(850, 10)
 	back_btn.size = Vector2(150, 36)
 	back_btn.add_theme_font_size_override("font_size", 14)
@@ -198,3 +199,6 @@ func _make_label(text: String, font_size: int) -> Label:
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
 	return label
+
+func _on_language_changed() -> void:
+	_build()

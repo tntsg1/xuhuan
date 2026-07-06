@@ -59,6 +59,7 @@ var player_is_moving := false
 
 
 func _ready() -> void:
+	GameManager.language_changed.connect(_on_language_changed)
 	if GameManager.last_guidance == "ready_to_observe":
 		active_guidance = GameManager.last_guidance
 		GameManager.last_guidance = ""
@@ -208,7 +209,7 @@ func _draw_hud() -> void:
 	telescope_status_label = _label_to(top, "", Vector2(590, 11), Vector2(224, 24), 16, HORIZONTAL_ALIGNMENT_LEFT)
 
 	var menu := Button.new()
-	menu.text = "ESC Menu"
+	menu.text = GameManager.text("Menu", "菜单")
 	menu.position = Vector2(900, 18)
 	menu.size = Vector2(76, 32)
 	menu.add_theme_font_size_override("font_size", 10)
@@ -226,7 +227,7 @@ func _draw_hud() -> void:
 	add_child(bottom)
 	_corner_pins(bottom)
 	_label_to(bottom, "[E]", Vector2(40, 13), Vector2(38, 20), 16, HORIZONTAL_ALIGNMENT_CENTER)
-	_label_to(bottom, "INTERACT", Vector2(84, 14), Vector2(96, 18), 13, HORIZONTAL_ALIGNMENT_LEFT)
+	_label_to(bottom, GameManager.text("INTERACT", "互动"), Vector2(84, 14), Vector2(96, 18), 13, HORIZONTAL_ALIGNMENT_LEFT)
 	_label_to(bottom, "WASD / ARROWS", Vector2(250, 14), Vector2(150, 18), 13, HORIZONTAL_ALIGNMENT_CENTER)
 	_label_to(bottom, "MOVE", Vector2(406, 14), Vector2(58, 18), 13, HORIZONTAL_ALIGNMENT_LEFT)
 	_label_to(bottom, "[TAB]", Vector2(510, 13), Vector2(54, 20), 14, HORIZONTAL_ALIGNMENT_CENTER)
@@ -710,7 +711,7 @@ func _toggle_stats_terminal() -> void:
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	var shop := Button.new()
-	shop.text = "Upgrade Shop - Coming Soon / 升级商店暂未开放"
+	shop.text = GameManager.text("Upgrade Shop - Coming Soon", "升级商店 - 即将开放")
 	shop.disabled = true
 	shop.position = Vector2(312, y + 96)
 	shop.size = Vector2(400, 34)
@@ -981,3 +982,6 @@ func _setup_label(label: Label, text: String, font_size: int, align: HorizontalA
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _on_language_changed() -> void:
+	_build()

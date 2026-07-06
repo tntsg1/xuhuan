@@ -18,6 +18,7 @@ var button_visuals: Dictionary = {}
 
 
 func _ready() -> void:
+	GameManager.language_changed.connect(_on_language_changed)
 	_build()
 
 
@@ -94,18 +95,18 @@ func _on_new_game() -> void:
 
 func _on_continue() -> void:
 	if not _has_meaningful_save():
-		_show_feedback("No save found yet.")
+		_show_feedback(GameManager.text("No save found yet.", "还没有存档。"))
 		return
 	GameManager.go("observatory")
 
 
 func _on_settings() -> void:
-	_show_feedback("Settings coming soon.")
+	_show_feedback(GameManager.text("Settings coming soon.", "设置功能即将推出。"))
 
 
 func _on_language() -> void:
 	GameManager.cycle_language()
-	_show_feedback("Language changed.")
+	_show_feedback(GameManager.text("Language changed.", "语言已切换。"))
 
 
 func _has_meaningful_save() -> bool:
@@ -198,3 +199,6 @@ func _rect(parent: Control, pos: Vector2, size: Vector2, color: Color) -> ColorR
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(rect)
 	return rect
+
+func _on_language_changed() -> void:
+	_build()

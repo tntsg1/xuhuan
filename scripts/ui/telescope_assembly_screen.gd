@@ -72,6 +72,7 @@ var stats_list: Control
 
 
 func _ready() -> void:
+	GameManager.language_changed.connect(_on_language_changed)
 	_load_wrong_attempts()
 	_build()
 
@@ -102,7 +103,7 @@ func _draw_title_bar() -> void:
 	_rect(Vector2(0, 0), Vector2(1024, 58), Color(0.030, 0.045, 0.085, 0.96))
 	_rect(Vector2(18, 12), Vector2(988, 3), Color(0.78, 0.56, 0.28))
 	_rect(Vector2(18, 52), Vector2(988, 3), Color(0.17, 0.25, 0.40))
-	var title := _label("Telescope Assembly Table / 望远镜组装台", 24, Color(0.96, 0.95, 0.90))
+	var title := _label(GameManager.text("Telescope Assembly", "望远镜组装台"), 24, Color(0.96, 0.95, 0.90))
 	title.position = Vector2(216, 13)
 	title.size = Vector2(592, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -904,3 +905,6 @@ func _label(text: String, font_size: int, color: Color) -> Label:
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	return label
+
+func _on_language_changed() -> void:
+	_build()

@@ -25,6 +25,7 @@ const MISSION_CREDIT := "res://assets/mission_complete/credit_coin_64_clean.png"
 
 
 func _ready() -> void:
+	GameManager.language_changed.connect(_on_language_changed)
 	_build()
 
 
@@ -545,3 +546,6 @@ func _button(text: String, pos: Vector2, size: Vector2) -> Button:
 	button.add_theme_font_size_override("font_size", 16)
 	add_child(button)
 	return button
+
+func _on_language_changed() -> void:
+	_build()

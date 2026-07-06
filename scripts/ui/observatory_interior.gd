@@ -9,6 +9,7 @@ var start_button: Button
 
 
 func _ready() -> void:
+	GameManager.language_changed.connect(_on_language_changed)
 	_build()
 
 
@@ -140,3 +141,6 @@ func _button_style(color: Color, border: Color) -> StyleBoxFlat:
 	style.set_border_width_all(3)
 	style.set_corner_radius_all(3)
 	return style
+
+func _on_language_changed() -> void:
+	_build()

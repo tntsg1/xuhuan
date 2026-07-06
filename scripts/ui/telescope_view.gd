@@ -211,6 +211,7 @@ var target_off_center := false
 
 
 func _ready() -> void:
+	GameManager.language_changed.connect(_on_language_changed)
 	selected_object = GameManager.get_object(GameManager.selected_object_id)
 	if selected_object.is_empty():
 		selected_object = GameManager.current_target()
@@ -2164,3 +2165,6 @@ func _plabel(text: String, pos: Vector2, size: Vector2, font_size: int, color: C
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(label)
 	return label
+
+func _on_language_changed() -> void:
+	_build()

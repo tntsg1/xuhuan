@@ -58,6 +58,7 @@ var next_step_part_type := ""
 
 
 func _ready() -> void:
+	GameManager.language_changed.connect(_on_language_changed)
 	_build()
 	call_deferred("_scroll_to_next_step")
 
@@ -81,7 +82,7 @@ func _build() -> void:
 
 func _draw_title_bar() -> void:
 	_panel(HEADER_RECT.position, HEADER_RECT.size, Color(0.030, 0.045, 0.085, 0.98), BLUE_EDGE)
-	var title := _label_to(self, "Parts Cabinet / 零件柜", Vector2(252, 24), Vector2(520, 32), 24, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	var title := _label_to(self, GameManager.text("Parts Cabinet", "零件柜"), Vector2(252, 24), Vector2(520, 32), 24, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 
 	var back := _button("Back to Base\n返回基地", Vector2(842, 22), Vector2(144, 40))
@@ -219,13 +220,13 @@ func _draw_action_column(root: Control, part: Dictionary, unlocked: bool, equipp
 	var part_id := str(part.get("id", ""))
 	var part_type := str(part.get("type", ""))
 	var column_x := CARD_SIZE.x - 174.0
-	var badge_text := "Locked / 未解锁"
+	var badge_text := GameManager.text("Locked", "未解锁")
 	var badge_color := Color(0.42, 0.46, 0.50)
 	if equipped:
-		badge_text = "Equipped / 已装备"
+		badge_text = GameManager.text("Equipped", "已装备")
 		badge_color = GREEN
 	elif unlocked:
-		badge_text = "Available / 可装备"
+		badge_text = GameManager.text("Available", "可装备")
 		badge_color = GOLD
 	_badge_to(root, badge_text, Vector2(column_x, 24), Vector2(146, 24), badge_color, HORIZONTAL_ALIGNMENT_CENTER)
 
@@ -235,24 +236,24 @@ func _draw_action_column(root: Control, part: Dictionary, unlocked: bool, equipp
 	button.add_theme_font_size_override("font_size", 12)
 	button.focus_mode = Control.FOCUS_NONE
 	if equipped:
-		button.text = "Check\n已选"
+		button.text = GameManager.text("Equipped", "已装备")
 		button.disabled = true
 		button.add_theme_stylebox_override("disabled", _style(Color(0.07, 0.14, 0.10), GREEN, 2, 3))
 		button.add_theme_color_override("font_disabled_color", Color(0.72, 1.0, 0.76))
 	elif not unlocked:
-		button.text = "Locked\n未解锁"
+		button.text = GameManager.text("Locked", "未解锁")
 		button.disabled = true
 		button.add_theme_stylebox_override("disabled", _style(Color(0.05, 0.055, 0.065), Color(0.16, 0.17, 0.19), 2, 3))
 		button.add_theme_color_override("font_disabled_color", Color(0.42, 0.44, 0.48))
 	else:
-		button.text = "Equip\n装备"
+		button.text = GameManager.text("Equip", "装备")
 		button.add_theme_stylebox_override("normal", _style(Color(0.08, 0.13, 0.22), BLUE_EDGE, 2, 3))
 		button.add_theme_stylebox_override("hover", _style(Color(0.13, 0.22, 0.34), BRASS, 2, 3))
 		button.add_theme_stylebox_override("pressed", _style(Color(0.20, 0.14, 0.08), BRASS, 2, 3))
 		button.pressed.connect(func() -> void:
 			if GameManager.equip_part(part_id):
 				feedback_color = GREEN
-				feedback_text = "Equipped %s. Reassembly required at Assembly Table. / 已装备%s，需要回组装台重新安装。" % [str(part.get("name_en", part_id)), _safe_zh_name(part, str(part_type))]
+				feedback_text = GameManager.text("Equipped %s. Reassembly required." % str(part.get("name_en", part_id)), "已装备%s。请回组装台重新安装。" % _safe_zh_name(part, str(part_type)))
 				GameManager.set_room_guidance("assembly", "Maya: Assembly Table", "Reassemble the telescope with the new part. / 使用新零件重新组装望远镜。")
 				_build()
 				call_deferred("_scroll_to_part_type", part_type)
@@ -621,3 +622,6 @@ func _label_to(parent: Control, text: String, pos: Vector2, label_size: Vector2,
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(label)
 	return label
+
+func _on_language_changed() -> void:
+	_build()

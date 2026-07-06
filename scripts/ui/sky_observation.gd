@@ -157,6 +157,7 @@ var workflow_prompt_shown := false
 
 
 func _ready() -> void:
+	GameManager.language_changed.connect(_on_language_changed)
 	if str(GameManager.current_level().get("variation", "")) == "finder_calibration":
 		GameManager.seed_finder_offset_if_needed()
 	target_id = GameManager.current_target_object_id()
@@ -1407,9 +1408,9 @@ func _update_sky_condition_text() -> void:
 	if cover > 0.0:
 		var tier := "Thin薄云"
 		if cover >= 0.67:
-			tier = "Heavy厚云"
+			tier = GameManager.text("Heavy clouds", "厚云")
 		elif cover >= 0.34:
-			tier = "Moderate中云"
+			tier = GameManager.text("Moderate clouds", "中云")
 		parts.append("Cloud云: %s" % tier)
 	sky_condition_label.text = "  ·  ".join(parts)
 	sky_condition_label.visible = not parts.is_empty()
@@ -1763,3 +1764,6 @@ func _label(parent: Control, text: String, pos: Vector2, size: Vector2, font_siz
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(label)
 	return label
+
+func _on_language_changed() -> void:
+	_build()
