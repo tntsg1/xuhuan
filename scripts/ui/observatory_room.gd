@@ -228,10 +228,10 @@ func _draw_hud() -> void:
 	_corner_pins(bottom)
 	_label_to(bottom, "[E]", Vector2(40, 13), Vector2(38, 20), 16, HORIZONTAL_ALIGNMENT_CENTER)
 	_label_to(bottom, GameManager.text("INTERACT", "互动"), Vector2(84, 14), Vector2(96, 18), 13, HORIZONTAL_ALIGNMENT_LEFT)
-	_label_to(bottom, "WASD / ARROWS", Vector2(250, 14), Vector2(150, 18), 13, HORIZONTAL_ALIGNMENT_CENTER)
-	_label_to(bottom, "MOVE", Vector2(406, 14), Vector2(58, 18), 13, HORIZONTAL_ALIGNMENT_LEFT)
+	_label_to(bottom, GameManager.text("WASD / ARROWS", "WASD / 方向键"), Vector2(250, 14), Vector2(150, 18), 13, HORIZONTAL_ALIGNMENT_CENTER)
+	_label_to(bottom, GameManager.text("MOVE", "移动"), Vector2(406, 14), Vector2(58, 18), 13, HORIZONTAL_ALIGNMENT_LEFT)
 	_label_to(bottom, "[TAB]", Vector2(510, 13), Vector2(54, 20), 14, HORIZONTAL_ALIGNMENT_CENTER)
-	_label_to(bottom, "MISSIONS", Vector2(570, 14), Vector2(82, 18), 13, HORIZONTAL_ALIGNMENT_LEFT)
+	_label_to(bottom, GameManager.text("MISSIONS", "任务"), Vector2(570, 14), Vector2(82, 18), 13, HORIZONTAL_ALIGNMENT_LEFT)
 
 	guidance_overlay = Control.new()
 	guidance_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -384,17 +384,17 @@ func _update_nearby() -> void:
 
 func _update_hud() -> void:
 	var ready := GameManager.telescope_is_ready()
-	level_value_label.text = "LEVEL %02d" % int(GameManager.progress.get("current_level", 1))
-	credits_value_label.text = "CLUB CREDITS %d" % int(GameManager.progress.get("credits", 0))
+	level_value_label.text = GameManager.text("LEVEL %02d", "第 %02d 关") % int(GameManager.progress.get("current_level", 1))
+	credits_value_label.text = GameManager.text("CLUB CREDITS %d", "社团积分 %d") % int(GameManager.progress.get("credits", 0))
 	if GameManager.current_observation_mode() == "naked_eye":
-		telescope_status_label.text = "MODE: NAKED EYE"
+		telescope_status_label.text = GameManager.text("MODE: NAKED EYE", "模式: 肉眼")
 		telescope_status_label.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
 	else:
-		telescope_status_label.text = "TELESCOPE: READY" if ready else "TELESCOPE: NOT READY"
+		telescope_status_label.text = GameManager.text("TELESCOPE: READY", "望远镜: 就绪") if ready else GameManager.text("TELESCOPE: NOT READY", "望远镜: 未就绪")
 		telescope_status_label.add_theme_color_override("font_color", Color(0.48, 0.95, 0.36) if ready else Color(0.95, 0.72, 0.36))
 
 	if nearby_id == "":
-		focus_label.text = "Move around the observatory room"
+		focus_label.text = GameManager.text("Move around the observatory room", "在观测室里移动")
 		if _has_feedback_override():
 			feedback_label.text = feedback_override
 		elif GameManager.room_guidance_target != "":
@@ -404,7 +404,7 @@ func _update_hud() -> void:
 		elif ready:
 			feedback_label.text = READY_FOCUS_TEXT
 		else:
-			feedback_label.text = "Check the Mission Board, then build the telescope at the Assembly Table."
+			feedback_label.text = GameManager.text("Check the Mission Board, then build the telescope at the Assembly Table.", "先查看任务公告板，然后去组装台制造望远镜。")
 		_update_room_guidance_panel()
 		return
 
