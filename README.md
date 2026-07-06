@@ -1,432 +1,234 @@
-# Pixel Observatory / 像素观测站
+# 🔭 Pixel Observatory / 像素观测站
 
-> **2D 像素风天文观测教育游戏 | Godot 4.7**
+> **这不是选择题。这不是点击观星。**
 >
-> 玩家扮演加入学校天文俱乐部的新生，在学姐 Maya 带领下从肉眼观测一步步学到深空追踪。
-> 纯本地运行，双语 EN/中文。
+> 你要亲手组装望远镜——拧上物镜、装上目镜、校准寻星镜、调焦——然后你看到的天体画面**真的会因为你装得好不好而变清晰或变模糊**。
+>
+> 地球在转，大气在抖，云层会飘过来。16-bit 像素风。纯本地。双语。
+>
+> *"The Moon is bright enough to take the power. But every new eyepiece needs a new focus."* — Maya
 
 ---
 
-## 🎮 核心玩法
+## 为什么这游戏不一样
 
-```
-肉眼观测 → 组装折射望远镜 → 调焦 → 掌握倍率 → 寻星镜导航 → 深空观测 → 追踪天体
-```
+市面上大多数"天文教育游戏"是选择题+图片库。这个是**物理模拟 + 手工操作**：
 
-不是选择题游戏，不是点击观星。**核心特色**：亲手组装望远镜零件（三脚架、支架、镜筒、物镜、目镜、调焦旋钮、寻星镜），组装质量和零件选择直接影响观测结果。
+| 你说"我要看木星" | 你实际要做的 |
+|---|---|
+| ❌ 点一下木星图标 | ✅ 先装三脚架→支架→镜筒→物镜→目镜→调焦旋钮→寻星镜 |
+| ❌ 自动对焦 | ✅ 手动转调焦旋钮，盯着画面从模糊变清晰 |
+| ❌ 永久清晰 | ✅ 换目镜后焦点偏移，必须重新调 |
+| ❌ 永远稳定 | ✅ 大气扰动让低空目标抖动，倍率越高越明显 |
+| ❌ 目标停在原地 | ✅ 地球在转，天体从视野里漂走，你得追着它 |
 
-### 三段式观星流程
-
-| 模式 | 视野 | 用途 |
-|------|------|------|
-| 👁 Naked Eye | 120°×70° | 广角扫天，肉眼找目标 |
-| 🔍 Finder Scope | 28°×18° | 中视野对准 |
-| 🔭 Telescope | 6°×4° | 窄视野精确定位，居中后进入望远镜视野 |
-
-支持 Az/Alt 方位角俯仰角导航、DMS 度分秒格式、实时星图背景（HYG 星表 1637 颗）、WASD 旋转 + Shift 加速。
+**你的操作真的影响结果。** 装错顺序 → 系统不让你观测。对齐差 → 画面模糊。口径太小 → 深空天体暗到看不见。忘记装寻星镜 → 在120°广角里大海捞针。
 
 ---
 
-## 📊 项目进度
-
-| 系统 | 完成度 |
-|------|--------|
-| 系统骨架 | 80% |
-| L1-L9 主线逻辑 | 75% |
-| 教学/剧情框架 | 70% |
-| 大厅交互 | 65% |
-| 观星体验 | 55% |
-| 关卡玩法差异 | 45% |
-| 美术/UI polish | 45% |
-| 牛顿镜/深空高级玩法 | 30% |
-
-### 已完成关卡（L1-L9）
-
-| 关 | 教学模式 | 目标天体 | 知识点 |
-|----|---------|---------|--------|
-| L1 | 肉眼 | Moon | 人眼成像原理 |
-| L2 | 肉眼 | Polaris | 肉眼观测极限 |
-| L3 | 折射镜组装 | Moon | 物镜/目镜/折射镜光路 |
-| L4 | 调焦 | Jupiter | 焦平面与调焦 |
-| L5 | 倍率 | Jupiter | 倍率代价（高倍率≠更好） |
-| L6 | 寻星镜 | Sirius | 寻星镜辅助导航 |
-| L7 | 牛顿镜概念 | Orion Nebula | 反射镜原理/口径 |
-| L8 | 大口径 | Orion Nebula | 集光能力对比 |
-| L9 | 深空挑战 | Andromeda | 综合深空观测 |
-
-### L10-L24 已设计（待实现）
-
-螺旋式重复练习结构，每 3-5 关一个主题反复变形：
-
-| 章节 | 关卡 | 主题 |
-|------|------|------|
-| Ch3 | L10-13 | 调焦与倍率掌握 |
-| Ch4 | L14-17 | 寻星镜与星空导航 |
-| Ch5 | L18-21 | 集光与暗弱天体 |
-| Ch6 | L22-24 | 追踪与耐心 |
-
-详见 [`docs/levels_10_24_design.md`](docs/levels_10_24_design.md)
-
----
-
-## 🏗️ 技术架构
-
-- **引擎**：Godot 4.7（GDScript 严格模式）
-- **分辨率**：1024×768，像素风 nearest-neighbor
-- **UI**：全部 Control 节点程序化构建（ColorRect / TextureRect / Label / Button）
-- **存档**：JSON 格式，`user://savegame.json`
-- **星图**：HYG 星表 1637 颗星 + AstronomyAPI（在线）/ 离线 fallback
-
-### 项目结构
+## 🎮 核心循环
 
 ```
-├── scenes/              # 场景文件（空 Control + 脚本）
-│   ├── main_menu.tscn
-│   ├── observatory_room.tscn
-│   ├── telescope_assembly.tscn
-│   ├── sky_observation.tscn
-│   ├── telescope_view.tscn
-│   ├── learning_card.tscn
-│   ├── learning_journal.tscn
-│   └── story_dialogue.tscn
-├── scripts/
-│   ├── systems/         # 核心系统（autoload）
-│   │   ├── game_manager.gd         # 中枢：场景切换、进度、评估、双语
-│   │   ├── save_manager.gd         # user://savegame.json 读写
-│   │   ├── mission_manager.gd      # 关卡数据加载与推进
-│   │   ├── telescope_math.gd       # 望远镜性能计算
-│   │   ├── assembly_manager.gd     # 组装顺序检查、完整性
-│   │   ├── observation_system.gd   # 观测质量评估（含视觉特效）
-│   │   ├── teaching_flow_manager.gd # 教学流程状态机（Concept Brief）
-│   │   ├── story_manager.gd        # Maya 剧情层
-│   │   └── localization.gd         # EN/中文双语切换
-│   └── ui/              # 各场景 UI 脚本
-│       ├── main_menu.gd
-│       ├── observatory_room.gd     # 主大厅（979行）
-│       ├── telescope_assembly_screen.gd
-│       ├── sky_observation.gd      # 三段式观星（1199行）
-│       ├── telescope_view.gd       # 望远镜视野（762行）
-│       ├── learning_card.gd
-│       ├── learning_journal.gd
-│       ├── parts_cabinet.gd
-│       └── story_dialogue.gd
-├── data/                # JSON 数据
-│   ├── levels.json                # 9个关卡 + 设计预留字段
-│   ├── telescope_parts.json       # 6+ 零件数据
-│   ├── celestial_objects.json     # 8个天体属性
-│   ├── bright_stars.json          # HYG星表1637颗
-│   ├── learning_cards.json        # 概念卡+教学图映射
-│   ├── story_dialogues.json       # Maya剧情台词
-│   └── celestial_catalog.json     # 天体目录
-├── assets/              # 美术资源
-│   ├── pixel_observatory/   # 望远镜零件 PNG（tripod/mount/tube/objective/eyepiece等）
-│   ├── telescope_view/      # 天体大图（moon/jupiter/mars/orion_nebula/andromeda等）
-│   ├── celestial_icons/     # 8个天体图标
-│   ├── learning_diagrams/   # 11张教学图解
-│   ├── characters/          # 角色头像 + 4方向像素图
-│   ├── reference/           # 参考图/UI背景 mockup
-│   ├── ui_extracted/        # 从参考图扣下的UI素材（金框、铭牌、道具图）
-│   ├── sprout_lands/        # Sprout Lands 素材包（农场/家具/栅栏/草地）
-│   └── tiny_swords/         # Tiny Swords 素材包（树木/云朵/岩石/水面）
-├── tools/               # 测试 & 截图工具（17个脚本）
-├── docs/                # 设计文档
-│   ├── levels_10_24_design.md
-│   └── PROJECT_HANDOFF.md
-└── AGENTS.md            # AI Agent 项目指南（可丢给 Claude Code/Codex）
-```
-
-### Autoload 加载顺序
-
-```
-SaveManager → MissionManager → TeachingFlowManager → StoryManager → GameManager
+观测室大厅（接任务）
+    ↓
+零件工坊（组装望远镜）
+    ↓
+观测台（三段式找星：肉眼→寻星镜→主镜）
+    ↓
+望远镜视野（调焦+观测+识别）
+    ↓
+学习卡 + Maya复盘 + 解锁新零件
+    ↓
+下一关（难度螺旋上升）
 ```
 
 ---
 
-## 🔧 已完成系统详情
+## 🌟 亮点机制
 
-### 主大厅 Observatory Room
-- 完整伪 3D 天文台背景图（浮岛+水域+栅栏+悬崖+云朵）
-- 角色 4 方向像素移动（WASD）
-- 7 个可交互设备：Parts Cabinet、Assembly Table、Observation Pad、Mission Board、Learning Journal、Stats Terminal、Door
-- 靠近才能交互（远距离点击提示"走近后再互动"）
-- 任务间大厅引导（高亮下一个目标设备的 spotlight + Maya 提示卡）
-- 装备解锁通知（回大厅弹 Maya 弹窗，暂停移动）
-- 返回位置记忆（不从门口开始，回到上次离开的位置）
+### 🌍 地球自转漂移
+天体不会停在画面中央。地球在以 15°/小时旋转——你的目标会慢慢漂走。追着它，或者装追踪支架让马达替你追。**L22-L24 要求连续稳定观测 8-12 秒。**
 
-### 剧情系统 StoryManager
-- Maya 作为天文俱乐部学姐导师角色
-- New Game intro + L1/L3/L4 等关键节点剧情
-- 链式路由：入口 → `try_story_for_trigger` → `try_teaching_intercept` → 场景
-- 对话场景：Maya/玩家头像、双语、Space/Enter/点击推进
-- 背景按当前任务目标显示对应天体（TARGET_VISUALS，无则纯星空，不硬编码月亮兜底）
-- `consume_return_scene` 原样返回调用方，设备触发剧情直达目标场景
+### 🌫️ 大气视宁度 (Seeing)
+不是每天晚上都适合观星。低空目标穿过更厚的大气层，抖动更猛。高倍率放大了一切——包括大气湍流。**画面真的会抖。** 游戏里有 turbulence shader 实时渲染。
 
-### 教学系统 TeachingFlowManager
-- 操作前 Concept Brief（概念预习卡，操作前弹出）
-- Mission Complete 后学习总结
-- 状态分离：`seen_teaching_steps` / `seen_concept_briefs` / `completed_concept_cards`
-- 15+ 触发时机：before_observation/before_assembly/before_focus/before_identify/before_collimation 等
-- 9 张像素风教学图解（人眼成像、折射光路、焦平面、倍率视野、寻星镜对齐、口径集光等）
-- 旧关卡无 teaching_steps 时自动派生 fallback
+### ☁️ 云层与光污染
+城市灯光吃掉暗弱天体。薄云飘过目标时亮度骤降。**同一台设备，暗天 vs 城市 = 完全不同的观测体验。**
 
-### 组装台 Telescope Assembly
-- 支持零件：Tripod、Mount、Tube、Objective Lens、Eyepiece、Focus Knob、Finder Scope
-- 点击式安装（左侧零件列表选零件 → 点击工作台上对应的发光安装槽）
-- 安装顺序强制检查（必须先装三脚架→支架→镜筒→物镜→目镜→调焦旋钮→寻星镜）
-- 错误提示（零件类型不匹配、安装顺序不对）
-- 对齐评分（一次装对=100分，错一次=85分，错多次=70分）
-- ScrollContainer 防止零件列表溢出
-- 零件图标 UI 层绘制（不缩放原图，避免溢出）
+### 🔧 寻星镜校准
+刚装上的寻星镜有 ±3° 偏差。用方向键微调，把十字线和主镜对准。校准到 <0.5° 才算完成。**这是真实天文爱好者的第一课。**
 
-### 零件柜 Parts Cabinet
-- 查看和解锁/装备零件
-- 肉眼阶段显示"还没有望远镜零件"
-- 后续零件（100mm大口径物镜、10mm高倍目镜、稳定支架）解锁后显示
-- 可扩展为"设备柜"界面
+### 🌀 换目镜 = 重新调焦
+20mm 低倍目镜看清了 → 换 10mm 高倍 → **画面立刻失焦**。因为焦距变了，焦平面移动了。你得重新转调焦旋钮。这不是 bug，这是物理。
 
-### 状态终端 Stats Terminal
-- 显示望远镜六维性能：Assembly / Light / Clarity / Stability / Focus Control / Magnification
-- 性能条视觉化展示
-- Club Credits 用途说明（未来升级商店入口）
+### 🌌 暗适应 + 侧视法
+观测深空天体（星云、星系）时，画面会 8 秒渐进变亮——模拟眼睛的暗适应。按住 Shift = 侧视法（averted vision），用视网膜边缘更敏感的视杆细胞"看见"暗斑。
 
-### 观星台 Sky Observation（核心亮点）
-- **三段式视角切换**（肉眼/寻星镜/望远镜），按钮或 1/2/3 数字键切换
-- **Az/Alt 方位角+俯仰角导航**：顶部方位角刻度带（N/E/S/W+数字）、左侧俯仰角刻度带
-- **DMS 格式**（度°分′秒″）：`_format_dms()` 格式化所有角度显示
-- **实时星图背景**：HYG 星表 1637 颗亮星，按当前时刻+洛杉矶坐标计算 alt/az 投影
-- **SkyPositionService**：AstronomyAPI 在线获取精确天体位置 / 本地 RA-Dec / 离线 fallback
-- **v2 烘焙背景**：`sky_observation_ui_bg_v2_1024.png`（用户 ChatGPT 生成 mockup 缩放），准星/圆环/模式按钮是烘焙美术+透明热区
-- **SELECTED 面板**：默认显示任务目标（★），含 Target Az/Alt 与当前指向的 Δ 差异，每帧刷新
-- **视角继承**：`GameManager.last_sky_aim` 在退出时存、进入时恢复（含 view_mode）
-- **引导条**：底部大字引导文字镜像 guidance_label
-
-### 望远镜视野 Telescope View
-- **圆形镜筒** + 黑色外环遮罩
-- **天体大图 sprite**（`assets/telescope_view/*_large.png`，只有这里显示细节）
-- **调焦旋钮**（Q/E 键或鼠标拖滑条），target_focus 量化到滑条网格（snappedf 0.005）
-- **三态判定系统**（单一 truth source）：
-  - `is_focus_acceptable()` = focus_error ≤ focus_tolerance（不看质量）
-  - `is_quality_acceptable()` = observation.success
-  - `can_identify_object()` = 两者都需要
-  - `_focus_state()` = 容差比例式（容差内必定 sharp）
-- 深空 tolerance 0.07（比行星宽松）
-- 三态文案：调焦中 / 焦点对了但质量不足 → 指向零件柜升级 / 可识别
-- 质量不足文案区分原因：口径不够、组装质量差、环境限制
-
-### Focus Knob 实体零件
-- `basic_focus_knob`（type: focus_knob，L3 奖励解锁）
-- 组装台目镜旁有独立槽位
-- 安装顺序：tripod → mount → tube → objective → eyepiece → **focus_knob** → finder_scope
-- 未装调焦旋钮时望远镜禁用调焦+拦截识别
-- TelescopeMath 输出 `focus_control_score`
-- 旧存档 `_migrate_progress_schema` 自动补字段
-
-### 学习卡 Learning Card
-- 两种模式：Concept Brief（操作前概念预习）+ Mission Complete（完成后学习总结）
-- 教学图放大显示（不再是小缩略图）
-- Mission Complete 显示：观测结果、奖励学分、学到的概念、Maya 复盘
-- 装备解锁通知（NEW PARTS 列表）
-
-### 学习日志 Club Logbook
-- 卡片式列表（滚动），每条记录带颜色编码侧边条
-- 质量徽章（Excellent 绿/Good 黄/Fair 橙/Poor 红）
-- 双语学习文本
-- 空状态提示
-
-### 升级系统
-- `objective_100mm`（100mm 大口径物镜，L7 解锁）
-- `stable_mount`（稳定支架，L6 解锁）
-- `eyepiece_10mm`（10mm 高倍目镜，L5 解锁）
-- 零件对比显示（属性数值差异）
+### 🎨 三态画面系统
+每个天体有 **clear / blurry / dim** 三套像素 art，根据你的装备和组装质量实时切换。加上 turbulence shader、grain shader、云层叠加——**你看到的画面是你所有操作的结果，不是固定贴图。**
 
 ---
 
-## ⚠️ 当前待修问题
+## 🗺️ 关卡结构（L1-L24）
 
-1. **观星台触发剧情后不应退回大厅** — 如果玩家已经站在 Observation Pad 按 E，剧情/教学结束应直接进入 Sky Observation
-2. **大厅引导不够醒目** — 需要 spotlight 效果：屏幕暗下来，目标设备区域高光，大号 Maya 提示卡
-3. **L5 倍率关卡缺少新操作** — 需要 Low/Med/High 三档目镜切换机制，否则像重复观测 Jupiter
-4. **Sky Observation UI 拥挤** — 右侧 Mission/Selected/Current Aim/Guidance 信息重复，需简化
-5. **牛顿镜阶段不完整** — 主镜/副镜/准直/collimation 玩法仍是数据预留，L7-9 暂用折射镜零件
-6. **Credits 无实际用途** — 需要升级商店系统
-7. **Learning Journal 需要重构** — 建议分为 Observations / Concepts / Equipment / Reports 四个标签
-8. **Orion Nebula 体验可能卡关** — 基础配置下 Quality=Fair 不能过，建议 L7 允许 Fair 通关
-9. **Door 和 Observation Pad 功能重叠** — Observation Pad 应是观星入口，Door 应用剧情/屋顶
-10. **天穹遮罩 PNG** — `finder_dome_overlay.png` 已被 v2 刻度带取代，文件还在但弃用
+### 📖 Chapter 1: 从眼睛开始（L1-2）
+| 关 | 目标 | 你学到 |
+|----|------|--------|
+| L1 | 🌙 Moon | 人眼如何成像——你的第一台"光学仪器" |
+| L2 | ⭐ Polaris | 肉眼能看到什么、看不到什么——是时候造望远镜了 |
+
+### 🔧 Chapter 2: 亲手造望远镜（L3-9）
+| 关 | 目标 | 你学到 |
+|----|------|--------|
+| L3 | 🌙 Moon | 组装折射望远镜：物镜在前、目镜在后 |
+| L4 | 🪐 Jupiter | 焦平面与调焦——转旋钮直到清晰 |
+| L5 | 🪐 Jupiter | 倍率不是越高越好——高倍=更暗+更抖 |
+| L6 | ⭐ Sirius | 寻星镜帮你从 120° 缩小到 28° |
+| L7 | 🌌 Orion Nebula | 反射镜原理：用镜子收集光 |
+| L8 | 🌌 Orion Nebula | 大口径=更多光——换 100mm 物镜看区别 |
+| L9 | 🌌 Andromeda | 深空综合挑战 |
+
+### 🎯 Chapter 3: 倍率掌握（L10-13）
+每关同一个目标，不同变量。不是刷关——是**亲手体会物理**。
+
+| 关 | 目标 | 变量 |
+|----|------|------|
+| L10 | 🪐 Jupiter | 20mm/10mm 目镜切换对比，见证高倍率的代价 |
+| L11 | 🔴 Mars | 低空火星 + 大气抖动 → 高倍率反而更差 |
+| L12 | 🌙 Moon | 亮目标能扛高倍率——但要重新调焦 |
+| L13 | 自选 | 独立测试：选目标、选倍率、Maya 只旁观 |
+
+### 🧭 Chapter 4: 星空导航（L14-17）
+提示逐关递减。从跟坐标走到独立找星。
+
+| 关 | 目标 | 变量 |
+|----|------|------|
+| L14 | 🔴 Mars | 只给 Az/Alt 坐标数字，关闭提示圈 |
+| L15 | ⭐ Sirius | 寻星镜校准小游戏——偏差 ±3°，对齐到 0.5° |
+| L16 | 🪐 Jupiter | 体验"跳过寻星镜直接找"的挫败——迷路 45 秒 |
+| L17 | 随机 | 独立导航考试——无提示、无剧情带路 |
+
+### 🌠 Chapter 5: 暗弱天体（L18-21）
+深空的秘密：口径、暗天、耐心。
+
+| 关 | 目标 | 变量 |
+|----|------|------|
+| L18 | 🌌 Orion Nebula | Fair 就算成功——看到淡斑就是胜利 |
+| L19 | 🌌 Orion Nebula | 同目标换 100mm 口径直接对比 |
+| L20 | 🌌 Andromeda | 城市光污染下观测——被路灯吃掉的光 |
+| L21 | 🌌 Andromeda | 同设备、暗天空——区别是天，不是你 |
+
+### ⏱️ Chapter 6: 追踪与耐心（L22-24）
+地球在转。好观测是"保持"不是"点击"。
+
+| 关 | 目标 | 变量 |
+|----|------|------|
+| L22 | ⭐ Sirius | 天体漂移——手动追星 8 秒 |
+| L23 | 🪐 Jupiter | 解锁追踪支架——让马达替你追 |
+| L24 | 🌌 Andromeda | 12 秒连续深空驻留——全课程毕业考 |
 
 ---
 
-## 🧪 测试工具
+## 🛠️ 装备系统
+
+| 零件 | 类型 | 解锁 | 效果 |
+|------|------|------|------|
+| 60mm 物镜 | Objective | L1 | 基础集光，月球和亮星够用 |
+| 100mm 物镜 | Objective | L7 | 2.8× 集光面积，深空必备 |
+| 20mm 目镜 | Eyepiece | L1 | 低倍率，宽视野，适合找目标 |
+| 10mm 目镜 | Eyepiece | L5 | 高倍率，窄视野，行星细节 |
+| 基础支架 | Mount | L1 | 能用，但高倍率时会抖 |
+| 稳定支架 | Mount | L6 | 减少抖动，行星观测体验质变 |
+| 调焦旋钮 | Focus Knob | L3 | 不装 = 不能调焦 = 永远是糊的 |
+| 寻星镜 | Finder | L6 | 28° 中视野，缩小搜索范围 |
+| 追踪支架 | Mount | L23 | 自动抵消地球自转——手可以离开键盘 |
+
+---
+
+## 🎨 视觉特色
+
+- **16-bit 像素风**（SNES/Genesis 时代调色板），所有天体图、零件图、UI 全部统一风格
+- **实时大气效果**：turbulence shader（大气抖动）、grain shader（噪点）、cloud wisp overlay（云层飘过）
+- **三态画面**：每个天体的 clear/blurry/dim 版本根据你的装备实时切换
+- **三段式观星**：肉眼(120°广角) → 寻星镜(28°中距) → 主镜(6°窄视野)，Az/Alt DMS 导航
+- **实时星图**：HYG 星表 1637 颗真实亮星，按时间+地理位置计算位置
+
+---
+
+## 🏗️ 技术栈
+
+| 层 | 技术 |
+|----|------|
+| 引擎 | Godot 4.7 (GDScript) |
+| 分辨率 | 1024×768 |
+| UI | 全部程序化 Control 节点 |
+| 存档 | JSON 本地存储 |
+| 星图 | HYG 星表 + AstronomyAPI / 离线 fallback |
+| 着色器 | 自定义 turbulence.gdshader + grain.gdshader |
+| 语言 | 双语 EN/中文，GameManager.text() 统一管理 |
+
+---
+
+## 🚀 快速开始
 
 ```bash
-# 编译检查（每次改完必跑）
-cd "E:/godot/ai-game-0628"
-"...Godot...exe" --headless --quit 2>&1 | grep "SCRIPT ERROR"
+# 1. 用 Godot 4.7 打开项目
+Godot_v4.7-stable_win64.exe E:\godot\ai-game-0628\project.godot
 
-# 回归测试套件（跑前先备份存档）
-for t in flow_test v2_progression_test teaching_flow_test story_flow_test sky_view_test focus_nebula_test; do
-  "...Godot...exe" --headless --script "res://tools/$t.gd" 2>&1 | grep -E "PASS|FAIL" | tail -1
-done
+# 2. 按 F5 运行
+
+# 3. 编译检查（CI用）
+Godot_v4.7-stable_win64.exe --headless --quit --path E:\godot\ai-game-0628
 ```
 
-| 测试 | 覆盖范围 |
-|------|---------|
-| `flow_test.gd` | 9关端到端通关 |
-| `v2_progression_test.gd` | 教学进度 + 调焦 + 星云焦点 |
-| `teaching_flow_test.gd` | Concept Brief 拦截/路由 |
-| `story_flow_test.gd` | Maya 剧情链 + room guidance |
-| `sky_view_test.gd` | DMS 格式 + 天体位置计算 |
-| `focus_nebula_test.gd` | 深空调焦可解性验证 |
+存档位置：`%APPDATA%\Godot\app_userdata\Pixel Observatory\savegame.json`
 
 ---
 
-## 📋 详细更新历史
+## 📋 更新历史
 
-### Phase 1 — 项目初始化（2026-06-28 ~ 06-30）
+**2026-07-05** — 机制大更新
+- 🌍 地球自转漂移系统（天体在视野中缓慢移动，离开中心=失败）
+- 🌫️ 大气视宁度 (Seeing) — 低空+高倍率=画面抖动，turbulence shader
+- ☁️ 云层/光污染 — sky_brightness + cloud_cover 影响集光能力
+- 🔧 寻星镜校准小游戏（L15）— 方向键微调 offset
+- 🌀 换目镜自动失焦 — 焦距变化→焦平面移动→必须重新调
+- 🌌 暗适应 + 侧视法（L18+）— 8秒渐进 + Shift 侧视
+- 🎨 三态画面系统 — clear/blurry/dim 像素 art 实时切换
+- 🧪 turbulence.gdshader + grain.gdshader 实时渲染
+- 📝 日志记录装备+环境+实验结论
+- 🗺️ L1-L24 完整关卡数据 + 剧情文案
 
-**06-28**
-- 根据 Spec §30 的 19 步开发计划搭建项目
-- 创建 Godot 4.7 2D 项目，1024×768 分辨率
-- 建立项目结构：`scenes/`、`scripts/systems/`、`scripts/ui/`、`data/`、`assets/`
+**2026-07-04** — 三段式观星 + 教学剧情
+- 三段式观星界面（肉眼/寻星镜/主镜 + Az/Alt DMS 导航）
+- TeachingFlowManager（概念预习卡+完成卡）
+- StoryManager（Maya 剧情层，双语对话）
+- Focus Knob 实体零件 + 调焦滑条
+- 角色 4 方向像素图
+- HYG 星表 1637 颗实时星图
 
-**06-29 ~ 06-30**
-- **主菜单**：星空背景 + New Game/Continue/Quit + 语言切换
-- **观测室**：最初版本 — 绿色校园场景，十字路径，Mission Board/Parts Cabinet/Telescope/Journal/Computer 五个交互物
-- **组装台**：左面板（零件列表+图标）、中面板（工作台+望远镜轮廓+6个发光安装槽）、右面板（性能统计+反馈）
-- **星空观测**：深色星空背景 + ✦ 天体按钮 + 右侧任务面板
-- **望远镜视野**：圆形镜筒视觉 + 质量评级 + 天体识别选项
-- **核心数据系统**：
-  - `telescope_parts.json`：6 个零件（basic_tripod、basic_mount、starter_tube、objective_60mm、eyepiece_20mm、basic_finder_scope）
-  - `celestial_objects.json`：8 个天体（Moon、Polaris、Sirius、Mars、Jupiter、Betelgeuse、Orion Nebula、Andromeda）
-  - `levels.json`：6 个关卡
-- **核心算法**：
-  - `TelescopeMath`：Magnification / Light / Stability / Clarity / FOV / Assembly Score 计算
-  - `AssemblyManager`：安装顺序检查、完整性判断、对齐评分
-  - `ObservationSystem`：stats vs 天体要求 → 质量评级 + 视觉特效 + 反馈文本
-- **SaveManager**：JSON 存取 user://savegame.json
-- **GameManager**：场景切换、进度管理、双语系统、数据加载
-- **Localization**：EN/EN+中文 双语切换
+**2026-07-02** — UI 重设计
+- 浮岛风格观测室 v4（水域+栅栏+悬崖+路径+区域名牌）
+- Learning Journal 卡片式重设计（颜色编码+质量徽章）
+- 主菜单星空背景+组装台深色工坊风格
 
-**06-30（下午）— 贴图 Bug 修复**
-- 修复 `AtlasTexture.filter_clip`：添加 `filter_clip = true`，消除区域渗色
-- 修复像素贴图渲染：`project.godot` 添加 `textures/canvas_textures/default_texture_filter=0`（nearest-neighbor）
-- 修复玩家动画内存泄漏：预缓存 `player_idle_tex` / `player_move_tex`，不再每帧创建 AtlasTexture
-- 所有 `%` 浮点取模改为 `fmod()`（GDScript 严格模式要求）
-
----
-
-### Phase 2 — UI 重设计与美术集成（2026-07-01 ~ 07-02）
-
-**07-01 — 观测室 v1→v2：浮岛风格**
-- 导入 Sprout Lands 栅栏（`fences.png`）+ Tiny Swords 云朵、岩石、树木
-- 重写观测室为浮岛风格：水域背景+云朵+草地+悬崖石柱+栅栏
-- 望远镜缩小（从巨型装饰 → 120×72 组装台尺寸）
-- 添加路径系统（入口→任务板/工坊→望远镜→日志）
-- 添加区域名牌（📋 Mission Board、🔧 Parts Workshop、🔭 Telescope Pad 等）
-- 修复草地 tileset 平铺 bug：改用纯色 ColorRect + 散落草簇装饰
-- 修复栅栏 tileset 拉伸问题：改用纯色木桩 ColorRect
-- 天文台建筑：从黑色空框 → 圆顶+观测窗+门
-- 底部 UI 文字重叠修复：3行独立区域，英文+中文不再叠压
-- 添加预提取参考图素材（`assets/ui_extracted/`：金框UI条、黄铜铭牌、道具图）
-
-**07-02 — 观测室 v3→v4**
-- 树木改用 Tiny Swords Tree1.png 精确 AtlasTexture 区域（119×190）
-- 云朵改用 Tiny Swords Clouds_01.png 精确区域
-- 岩石改用 Tiny Swords Rock1/2.png 独立 PNG
-- **观测室 v4 最终版**：路径引导+区域分区+清晰视觉层级
-- **Learning Journal 重设计**：从纯文字墙 → 卡片式列表（颜色编码侧边条+质量徽章+编号+学习文本）
-- 主菜单重设计：星空+浮岛剪影+望远镜轮廓
-- 组装台 UI 美化：深色工坊风格+网格底纹+蓝色点缀线
-- 星空观测 UI 更新：深空背景+深色右侧面板
-- 望远镜视野 UI 更新：深色观测室氛围+可读性提升
-- **GitHub 上传**：初始化 git 仓库，推送到 `tntsg1/xuhuan`，后续持续 commit
-
----
-
-### Phase 3 — 系统深化与可玩性（2026-07-03 ~ 07-04）
-
-**07-03 — 深空关卡 + 升级系统**
-- **L7 Collect More Light**（Orion Nebula）+ **L8 Deep Sky Challenge**（Andromeda）关卡数据
-- 升级零件系统：
-  - `objective_100mm`（100mm 大口径物镜，L7 解锁）
-  - `stable_mount`（稳定支架，L6 解锁）
-  - `eyepiece_10mm`（10mm 高倍目镜，L5 解锁）
-- 零件柜装备/卸载 UI
-- 头显端到端测试（`flow_test.gd`）+ 平衡性检查工具
-
-**07-04 — 三段式观星 + 教学系统 + 剧情系统**
-- **三段式观星界面重写**（1199行）：肉眼 120° / 寻星镜 28° / 望远镜 6°
-- Az/Alt 方位角俯仰角导航（DMS 度分秒格式）
-- HYG 星表 1637 颗星实时星图背景
-- SkyPositionService（AstronomyAPI 在线 / 本地 RA-Dec / 离线 fallback）
-- v2 烘焙背景 mockup 集成
-- SELECTED 面板（目标方位角 + Δ差异实时刷新）
-- 视角继承（离开时保存，回来时恢复）
-- **TeachingFlowManager**：教学流程状态机，15+ 触发时机
-- **StoryManager**：Maya 剧情层，对话场景（头像+双语+推进）
-- **Focus Knob 实体零件**：L3 解锁，独立槽位，调焦滑条
-- **大厅引导系统**：room_guidance 按关卡派生下一步
-- **装备解锁通知**：Maya 弹窗 + NEW PARTS 列表
-- **角色 4 方向像素图**（`player_observer_4dir_clean.png`）
-- **9 张像素风教学图解**（人眼成像、折射光路、焦平面、倍率视野、寻星镜对齐、口径集光、反射光路、深空观测、准直对齐）
-- **8 个天体图标 + 大图 sprite**（用于望远镜视野细节显示）
-- **11 张教学图** 全部 Pillow 程序生成
-- **5 个回归测试**全部通过
-- Club Logbook 改名 + Credits 改 CLUB CREDITS
-
-**07-04（晚）— Bug 修复马拉松**
-- 修复组装台左侧零件原图溢出 → UI 层绘制简化图标
-- 修复 `unlocked` 被误当成 `installed` 的问题
-- 修复组装台 installed 状态来源，只读 `assembly_state.installed`
-- 修复观星台/Stats Terminal/设备远距离点击直接进入的问题
-- 修复大厅返回位置（不再每次回门口）
-- 修复角色 spritesheet 方向和大小问题
-- 修复角色与实际位置不一致的问题
-- 修复大厅家具拼贴混乱 → 完整背景 + 透明交互层
-- 修复观测天体全部长得一样 → 加入不同 PNG 天体图
-- 修复 Telescope View 中 "Ready to identify" 和 "Quality too low" 同时出现 → 三态判定重构
-- 修复学习卡教学图太小 → 放大学图解
-- 修复 Mission Complete 概念卡重复/brief 重复
-- 修复组装台零件数量增加后溢出 → 加入 ScrollContainer
-- 修复剧情背景硬编码月亮 → 通用背景 + 按目标显示
-- 新增 `focus_nebula_test.gd`：验证 Orion Nebula 在数学上可对焦
-- 修复部分已完成概念卡重复弹出的问题
-- 修复 L9 完成后重复弹学习卡
-- 旧存档 `_migrate_progress_schema` 自动补新字段
-
----
-
-### Phase 4 — 文档与交接（2026-07-04 ~ 07-05）
-
-**07-04**
-- 编写 `AGENTS.md`（AI Agent 项目指南，288行）— 可丢给 Claude Code/Codex/Cursor
-- 编写 `docs/levels_10_24_design.md`：L10-L24 螺旋式重复练习关卡设计
-- 编写 `docs/PROJECT_HANDOFF.md`：完整技术交接文档
-- 编写 `README.md`：GitHub 项目首页
-
-**07-05**
-- README 详细化：补充完整更新历史、系统详情、测试命令
-- 全部推送到 GitHub `tntsg1/xuhuan`
+**2026-06-30** — 项目初始化
+- Godot 4.7 项目搭建
+- 6 大核心系统（TelescopeMath / AssemblyManager / ObservationSystem / SaveManager / GameManager / Localization）
+- 组装台点击式安装（顺序检查+对齐评分）
+- 星空观测+望远镜视野+学习卡+日志
+- Sprout Lands + Tiny Swords 素材集成
 
 ---
 
 ## 📝 开发约定
 
-1. 所有面向玩家的字符串用 `GameManager.text("EN", "中文")`，不硬编码单语
-2. 改完必须编译检查（`--headless --quit`），然后跑相关测试
-3. GDScript 4.7 严格模式（warnings are errors）：
-   - `Dictionary.get()` 返回 Variant，必须显式标类型：`var x: String = d.get(...)`
-   - float 取模用 `fmod()`，`%` 只能整数
-   - autoload 脚本不能用 `class_name`（加载顺序问题），消费方用 `const X = preload(...)`
-   - lambda 循环变量用 `var captured := i` 捕获
-4. Godot UI 坑：
-   - `TextureRect.expand_mode` / `Label.autowrap_mode` 必须在设 `size` 之前设置
-   - 像素图用 `TEXTURE_FILTER_NEAREST`
-5. 测试会 `new_game()` 重置存档，**跑前先备份保存**：
-   ```
-   cp savegame.json savegame.backup.json
-   ```
-6. 用户交流用中文；台词/UI 双语；技术回复中文为主
-7. 不要修改 autoload 结构和加载顺序
-8. API 密钥（`data/local_api_keys.json`）已 gitignore，绝不打印/进日志/进截图
+1. 所有面向玩家的字符串用 `GameManager.text("EN", "中文")`
+2. GDScript 严格模式：`:=` 必须显式类型、float 取模用 `fmod()`、autoload 不用 `class_name`
+3. 像素图 `TEXTURE_FILTER_NEAREST`，shader 稳定 60fps
+4. 改完 `--headless --quit` 编译检查
+5. 存档 `%APPDATA%\Godot\app_userdata\Pixel Observatory\savegame.json`
+
+---
+
+*"From naked eyes to a tracked deep-sky watch — you finished the whole path."* — Maya
