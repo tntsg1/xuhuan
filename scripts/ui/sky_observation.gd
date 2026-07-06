@@ -977,7 +977,7 @@ func _update_mode_buttons() -> void:
 		frame.visible = active
 		shade.color = Color(0.01, 0.03, 0.07, 0.0)
 	if view_mode_caption != null:
-		var captions := {"naked_eye": "EYE VIEW", "finder": "FINDER VIEW", "telescope": "SCOPE VIEW"}
+		var captions := {"naked_eye": GameManager.text("EYE VIEW", "肉眼视野"), "finder": GameManager.text("FINDER VIEW", "寻星镜视野"), "telescope": GameManager.text("SCOPE VIEW", "望远镜视野")}
 		view_mode_caption.text = "·  %s  ·" % str(captions.get(view_mode, "VIEW"))
 
 
@@ -995,7 +995,7 @@ func _build_panel_text() -> void:
 	# MISSION panel interior: (775..995, 75..228) on the v2 background.
 	var target: Dictionary = GameManager.get_object(target_id)
 
-	_label(self, "Target:", Vector2(778, 80), Vector2(70, 22), 14, WARNING)
+	_label(self, GameManager.text("Target:", "目标:"), Vector2(778, 80), Vector2(70, 22), 14, WARNING)
 	_label(self, str(target.get("name_en", target_id)), Vector2(848, 80), Vector2(140, 22), 14, Color(0.84, 0.62, 1.0))
 
 	var hint_label := _label(self, _mission_hint(target), Vector2(778, 108), Vector2(210, 62), 11, TEXT)
@@ -1048,7 +1048,7 @@ func _draw_action_hitboxes() -> void:
 	observe.pressed.connect(_observe)
 	add_child(observe)
 
-	var back := _transparent_button(BACK_RECT, "Back")
+	var back := _transparent_button(BACK_RECT, GameManager.text("Back", "返回"))
 	back.pressed.connect(func() -> void:
 		GameManager.set_observatory_spawn("telescope")
 		GameManager.go("observatory")
@@ -1390,7 +1390,7 @@ func _update_aim_text() -> void:
 func _update_mission_tonight_text() -> void:
 	var target_sky := _sky_item(target_id)
 	var direction := str(target_sky.get("direction_text", "Estimate"))
-	mission_tonight_label.text = "Tonight: %s (%s)" % [str(target_sky.get("visibility_text", "Offline estimate")), direction]
+	mission_tonight_label.text = GameManager.text("Tonight: %s (%s)", "今晚: %s (%s)") % [str(target_sky.get("visibility_text", "Offline estimate")), direction]
 	mission_tonight_label.add_theme_color_override("font_color", _visibility_color(target_sky))
 
 

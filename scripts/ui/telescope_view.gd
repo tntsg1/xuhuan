@@ -621,7 +621,7 @@ func _advance_conditions(delta: float) -> void:
 			_refresh_target_sprite()
 			if quality_label != null:
 				var quality := str(observation.get("quality", "Unknown"))
-				quality_label.text = "Quality: " + quality
+				quality_label.text = GameManager.text("Quality: ", "质量: ") + quality
 				quality_label.add_theme_color_override("font_color", _quality_color(quality))
 			if feedback_label != null:
 				feedback_label.text = _current_feedback()
@@ -938,7 +938,7 @@ func _build() -> void:
 	if observation_mode == "naked_eye":
 		_title_bar(GameManager.text("Naked Eye Observation", "肉眼观测"))
 	else:
-		_title_bar("Telescope View")
+		_title_bar(GameManager.text("Telescope View", "望远镜视野"))
 	_build_observation_panel()
 	if drift_enabled:
 		_build_drift_panel()
@@ -959,7 +959,7 @@ func _build_observation_panel() -> void:
 	_gold_panel(self, PANEL_POS, PANEL_SIZE)
 	var quality := str(observation.get("quality", "Unknown"))
 
-	var header := _plabel("Observation Quality", Vector2(CONTENT_X - 4, 118), Vector2(CONTENT_W + 8, 30), 19, COL_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	var header := _plabel(GameManager.text("Observation Quality", "观测质量"), Vector2(CONTENT_X - 4, 118), Vector2(CONTENT_W + 8, 30), 19, COL_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
 	header.autowrap_mode = TextServer.AUTOWRAP_OFF
 
 	var mystery := _mystery_description(selected_object)
@@ -969,7 +969,7 @@ func _build_observation_panel() -> void:
 	)
 	observed.max_lines_visible = 2
 
-	quality_label = _plabel("Quality: " + quality, Vector2(CONTENT_X, 198), Vector2(CONTENT_W, 22), 15, _quality_color(quality))
+	quality_label = _plabel(GameManager.text("Quality: ", "质量: ") + quality, Vector2(CONTENT_X, 198), Vector2(CONTENT_W, 22), 15, _quality_color(quality))
 
 	var feedback_y := 320.0
 	if observation_mode == "naked_eye":
@@ -998,7 +998,7 @@ func _build_observation_panel() -> void:
 	if requires_focus:
 		_build_focus_block()
 
-	_plabel("Identify", Vector2(CONTENT_X, 414), Vector2(CONTENT_W, 20), 16, Color(0.98, 0.82, 0.50))
+	_plabel(GameManager.text("Identify", "识别"), Vector2(CONTENT_X, 414), Vector2(CONTENT_W, 20), 16, Color(0.98, 0.82, 0.50))
 
 	choices_box = VBoxContainer.new()
 	choices_box.position = Vector2(CONTENT_X, 436)
@@ -1013,11 +1013,11 @@ func _build_observation_panel() -> void:
 	bottom.add_theme_constant_override("separation", 10)
 	add_child(bottom)
 
-	var retry := _pixel_button("Retry", Vector2(92, 38), 14)
+	var retry := _pixel_button(GameManager.text("Retry", "重试"), Vector2(92, 38), 14)
 	retry.pressed.connect(func() -> void: GameManager.go("sky"))
 	bottom.add_child(retry)
 
-	var back := _pixel_button("Back", Vector2(92, 38), 14)
+	var back := _pixel_button(GameManager.text("Back", "返回"), Vector2(92, 38), 14)
 	back.pressed.connect(func() -> void:
 		GameManager.set_observatory_spawn("telescope")
 		GameManager.go("observatory")
@@ -1187,7 +1187,7 @@ func _refresh_focus_ui() -> void:
 				focus_state_label.add_theme_color_override("font_color", Color(1.0, 0.40, 0.30))
 	var quality := str(observation.get("quality", "Unknown"))
 	if quality_label != null:
-		quality_label.text = "Quality: " + quality
+		quality_label.text = GameManager.text("Quality: ", "质量: ") + quality
 		quality_label.add_theme_color_override("font_color", _quality_color(quality))
 	if feedback_label != null:
 		feedback_label.text = _current_feedback()
