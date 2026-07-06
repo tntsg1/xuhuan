@@ -23,7 +23,6 @@ TeachingFlowManager="*res://scripts/systems/teaching_flow_manager.gd"
 StoryManager="*res://scripts/systems/story_manager.gd"
 GameManager="*res://scripts/systems/game_manager.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
-Spawning="*uid://gixop20d1d75"
 
 [display]
 
@@ -38,7 +37,7 @@ project/assembly_name="Starfall_Requiem"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/BulletUpHell/plugin.cfg", "res://addons/godot_ai/plugin.cfg", "res://addons/tama/plugin.cfg")
+enabled=PackedStringArray("res://addons/godot_ai/plugin.cfg", "res://addons/tama/plugin.cfg")
 
 [input]
 

@@ -78,5 +78,45 @@
     "fallback_y": 340,
     "fallback_altitude": 28.0,
     "fallback_azimuth": 118.0
+  },
+  {
+    "id": "arcturus",
+    "name": "Arcturus",
+    "type": "star",
+    "ra_hours": 14.261,
+    "dec_degrees": 19.1824,
+    "icon_type": "orange_star",
+    "fallback_x": 640,
+    "fallback_y": 210
+  },
+  {
+    "id": "canopus",
+    "name": "Canopus",
+    "type": "star",
+    "ra_hours": 6.3992,
+    "dec_degrees": -52.6957,
+    "icon_type": "white_star",
+    "fallback_x": 250,
+    "fallback_y": 610
+  },
+  {
+    "id": "alpha_centauri",
+    "name": "Alpha Centauri",
+    "type": "star",
+    "ra_hours": 14.6599,
+    "dec_degrees": -60.8339,
+    "icon_type": "yellow_star",
+    "fallback_x": 150,
+    "fallback_y": 630
+  },
+  {
+    "id": "proxima",
+    "name": "Proxima Centauri",
+    "type": "star",
+    "ra_hours": 14.4953,
+    "dec_degrees": -62.6795,
+    "icon_type": "red_star",
+    "fallback_x": 185,
+    "fallback_y": 645
   }
 ]

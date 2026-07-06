@@ -2,6 +2,7 @@ extends Control
 
 const TURBULENCE_SHADER := preload("res://shaders/turbulence.gdshader")
 const GRAIN_SHADER := preload("res://shaders/grain.gdshader")
+const LENS_RING_OCCLUDER_SHADER := preload("res://shaders/lens_ring_occluder.gdshader")
 
 const COL_BG := Color(0.004, 0.006, 0.014)
 const COL_NAVY := Color(0.030, 0.045, 0.085, 0.96)
@@ -21,7 +22,11 @@ const SPRITE_MAP := {
 	"sirius": "res://assets/telescope_view/star_blue_large.png",
 	"betelgeuse": "res://assets/telescope_view/star_red_large.png",
 	"orion_nebula": "res://assets/telescope_view/orion_nebula_large.png",
-	"andromeda": "res://assets/telescope_view/andromeda_large.png"
+	"andromeda": "res://assets/telescope_view/andromeda_large.png",
+	"arcturus": "res://assets/telescope_view/arcturus_clear.png",
+	"canopus": "res://assets/telescope_view/canopus_clear.png",
+	"alpha_centauri": "res://assets/telescope_view/alpha_cen_clear.png",
+	"proxima": "res://assets/telescope_view/proxima_clear.png"
 }
 
 # Per-object state textures: clear (sharp art) / blurry (defocus photo,
@@ -37,6 +42,56 @@ const STATE_TEXTURES := {
 		"clear": "res://assets/telescope_view/mars_clear.png",
 		"blurry": "res://assets/telescope_view/mars_blurry.png",
 		"dim": "res://assets/telescope_view/mars_dim.png"
+	},
+	"moon": {
+		"clear": "res://assets/telescope_view/moon_clear.png",
+		"blurry": "res://assets/telescope_view/moon_blurry.png",
+		"dim": "res://assets/telescope_view/moon_dim.png"
+	},
+	"andromeda": {
+		"clear": "res://assets/telescope_view/andromeda_clear.png",
+		"blurry": "res://assets/telescope_view/andromeda_blurry.png",
+		"dim": "res://assets/telescope_view/andromeda_dim.png"
+	},
+	"orion_nebula": {
+		"clear": "res://assets/telescope_view/orion_nebula_clear.png",
+		"blurry": "res://assets/telescope_view/orion_nebula_blurry.png",
+		"dim": "res://assets/telescope_view/orion_nebula_dim.png"
+	},
+	"polaris": {
+		"clear": "res://assets/telescope_view/star_white_clear.png",
+		"blurry": "res://assets/telescope_view/star_white_blurry.png",
+		"dim": "res://assets/telescope_view/star_white_dim.png"
+	},
+	"sirius": {
+		"clear": "res://assets/telescope_view/star_blue_clear.png",
+		"blurry": "res://assets/telescope_view/star_blue_blurry.png",
+		"dim": "res://assets/telescope_view/star_blue_dim.png"
+	},
+	"betelgeuse": {
+		"clear": "res://assets/telescope_view/star_red_clear.png",
+		"blurry": "res://assets/telescope_view/star_red_blurry.png",
+		"dim": "res://assets/telescope_view/star_red_dim.png"
+	},
+	"arcturus": {
+		"clear": "res://assets/telescope_view/arcturus_clear.png",
+		"blurry": "res://assets/telescope_view/arcturus_blurry.png",
+		"dim": "res://assets/telescope_view/arcturus_dim.png"
+	},
+	"canopus": {
+		"clear": "res://assets/telescope_view/canopus_clear.png",
+		"blurry": "res://assets/telescope_view/canopus_blurry.png",
+		"dim": "res://assets/telescope_view/canopus_dim.png"
+	},
+	"alpha_centauri": {
+		"clear": "res://assets/telescope_view/alpha_cen_clear.png",
+		"blurry": "res://assets/telescope_view/alpha_cen_blurry.png",
+		"dim": "res://assets/telescope_view/alpha_cen_dim.png"
+	},
+	"proxima": {
+		"clear": "res://assets/telescope_view/proxima_clear.png",
+		"blurry": "res://assets/telescope_view/proxima_blurry.png",
+		"dim": "res://assets/telescope_view/proxima_dim.png"
 	}
 }
 
@@ -116,6 +171,8 @@ var grain_intensity := 0.0
 var target_grain_intensity := 0.0
 var cloud_nodes: Array[TextureRect] = []
 var cloud_velocities: Array[Vector2] = []
+var cloud_strengths: Array[float] = []
+var cloud_veil: Panel
 var cloud_cover_level := 0.0
 var cloud_reevaluate_timer := 0.0
 const CLOUD_TEXTURES := [
@@ -123,6 +180,11 @@ const CLOUD_TEXTURES := [
 	"res://assets/telescope_view/cloud_wisp_b.png",
 	"res://assets/telescope_view/cloud_wisp_c.png"
 ]
+
+# Real-sky background stars (deep HYG catalog, mag <= 8).
+const DEEP_STARS_PATH := "res://data/deep_stars.json"
+const SCOPE_FOV_RADIUS_DEG := 2.6   # eyepiece circle spans ~5.2 deg of sky
+const EYE_FOV_RADIUS_DEG := 24.0    # naked-eye circle spans ~48 deg
 
 # --- Earth-drift and tracking (E2). drift_enabled levels move the target and
 # the scope's star field together (the sky is turning); the player fights it
@@ -363,6 +425,12 @@ func _advance_drift(delta: float) -> void:
 	if correction != Vector2.ZERO:
 		drift_offset -= correction.normalized() * DRIFT_CORRECTION_SPEED * delta
 
+	# Past 300px the target is long lost (off-view Failed hits at 250) -
+	# clamping keeps the sprite within the ring occluder's 900px cover and
+	# spares the player an endless walk back.
+	if drift_offset.length() > 300.0:
+		drift_offset = drift_offset.normalized() * 300.0
+
 	_apply_drift_offset()
 	_advance_hold(delta)
 	_refresh_drift_ui()
@@ -459,20 +527,29 @@ func _advance_visual_smoothing(delta: float) -> void:
 	var weight := 1.0 - exp(-10.0 * delta)
 	var target_blur := _target_blur_weight()
 	var moving := false
-	if absf(visual_focus_error - focus_error) > 0.0005:
-		visual_focus_error = lerpf(visual_focus_error, focus_error, weight)
-		moving = true
-	elif visual_focus_error != focus_error:
+	# SHARPNESS (focus_error + blur_weight) follows focus DIRECTLY, no lag.
+	# focus_error is already a continuous, finely-quantized input (slider
+	# step 0.005); smoothing it only added a lag that read as "blurry while
+	# dragging, sharp once you release" regardless of the actual focus. Only
+	# the quality-driven quantities below (position offset, brightness tier)
+	# still ease, since those DO step discretely between quality tiers.
+	if visual_focus_error != focus_error:
 		visual_focus_error = focus_error
+		moving = true
+	if blur_weight != target_blur:
+		blur_weight = target_blur
 		moving = true
 	if visual_target_center.distance_to(target_center) > 0.25:
 		visual_target_center = visual_target_center.lerp(target_center, weight)
 		moving = true
+	elif visual_target_center != target_center:
+		visual_target_center = target_center
+		moving = true
 	if absf(visual_base_alpha - base_alpha) > 0.004:
 		visual_base_alpha = lerpf(visual_base_alpha, base_alpha, weight)
 		moving = true
-	if absf(blur_weight - target_blur) > 0.004:
-		blur_weight = lerpf(blur_weight, target_blur, weight)
+	elif visual_base_alpha != base_alpha:
+		visual_base_alpha = base_alpha
 		moving = true
 	if moving:
 		_update_target_visuals()
@@ -518,6 +595,10 @@ func _advance_conditions(delta: float) -> void:
 	if absf(cond_cloud_atten - _cloud_target_atten()) > 0.002:
 		cond_cloud_atten = lerpf(cond_cloud_atten, _cloud_target_atten(), weight)
 		moving = true
+	if cloud_veil != null:
+		# Full-field veil density = live attenuation (whole view grays over
+		# as a cloud crosses, clears in the gaps).
+		cloud_veil.modulate.a = clampf(cond_cloud_atten * 0.55 + cloud_cover_level * 0.10, 0.0, 0.8)
 	if absf(grain_intensity - target_grain_intensity) > 0.001:
 		grain_intensity = lerpf(grain_intensity, target_grain_intensity, weight)
 		if grain_material != null:
@@ -598,15 +679,18 @@ func _apply_star_twinkle(t: float) -> void:
 
 
 func _cloud_target_atten() -> float:
-	# Weighted overlap of drifting cloud sprites over the target center.
+	# Weighted overlap of the (invisible) drifting cloud trackers over the
+	# target center - strength comes from cloud_strengths, since the nodes
+	# themselves are hidden (only the full-field veil is visible).
 	if cloud_nodes.is_empty():
 		return 0.0
 	var total := 0.0
-	for cloud in cloud_nodes:
+	for i in range(cloud_nodes.size()):
+		var cloud := cloud_nodes[i]
 		var cloud_center: Vector2 = cloud.position + cloud.size * 0.5
 		var d := cloud_center.distance_to(target_center)
 		var falloff := clampf(1.0 - d / 170.0, 0.0, 1.0)
-		total += falloff * cloud.modulate.a
+		total += falloff * cloud_strengths[i]
 	return clampf(total, 0.0, 1.0)
 
 
@@ -719,17 +803,48 @@ func can_identify_object() -> bool:
 func _check_mission_step_progress() -> void:
 	if not is_focus_acceptable() or not is_quality_acceptable():
 		return
-	var step := GameManager.next_pending_mission_step()
-	if step.is_empty():
+	# ORDER-INDEPENDENT: the lesson is comparing magnifications, not doing
+	# them in declared order - a player who equipped the 10mm first must get
+	# credit for that observation too. Any pending step whose required part
+	# is currently equipped completes.
+	var done := GameManager.completed_mission_steps()
+	for step_value in GameManager.mission_steps():
+		if not step_value is Dictionary:
+			continue
+		var step: Dictionary = step_value
+		var step_id := str(step.get("id", ""))
+		if step_id == "" or done.has(step_id):
+			continue
+		var require_part_id := str(step.get("require_part_id", ""))
+		if require_part_id == "":
+			continue
+		var part := GameManager.get_part(require_part_id)
+		var part_type := str(part.get("type", ""))
+		if part_type == "" or GameManager.equipped_part_id(part_type) != require_part_id:
+			continue
+		GameManager.mark_mission_step_done(step_id)
+		_announce_step_complete(step)
+
+
+func _announce_step_complete(step: Dictionary) -> void:
+	# Positive milestone feedback the moment a step lands - the player must
+	# never have to deduce progress from the tiny Step x/y header alone.
+	if feedback_label == null:
 		return
-	var require_part_id := str(step.get("require_part_id", ""))
-	if require_part_id == "":
-		return
-	var part := GameManager.get_part(require_part_id)
-	var part_type := str(part.get("type", ""))
-	if part_type == "" or GameManager.equipped_part_id(part_type) != require_part_id:
-		return
-	GameManager.mark_mission_step_done(str(step.get("id", "")))
+	var step_label := GameManager.dict_text(step, "label").replace("\n", " ")
+	var next_step := GameManager.next_pending_mission_step()
+	if next_step.is_empty():
+		feedback_label.text = GameManager.text(
+			"Step complete: %s. All steps done - identify the target!" % step_label,
+			"✓ 步骤完成：%s。全部步骤已完成——识别目标吧！" % step_label
+		)
+	else:
+		var next_label := GameManager.dict_text(next_step, "label").replace("\n", " ")
+		feedback_label.text = GameManager.text(
+			"Step complete: %s. Next: %s" % [step_label, next_label],
+			"✓ 步骤完成：%s。下一步：%s" % [step_label, next_label]
+		)
+	feedback_label.add_theme_color_override("font_color", Color(0.45, 0.95, 0.55))
 
 
 func _pending_step_label() -> String:
@@ -813,14 +928,16 @@ func _build() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_rect(self, Vector2.ZERO, Vector2(1024, 768), COL_BG)
 	_pixel_frame(self, Vector2(12, 10), Vector2(1000, 744), Color(0.006, 0.008, 0.018), COL_BLUE_BORDER, COL_GOLD)
-	if observation_mode == "naked_eye":
-		_title_bar(GameManager.text("Naked Eye Observation", "肉眼观测"))
-	else:
-		_title_bar("Telescope View")
 
 	var view := _scope_visual()
 	view.position = Vector2(54, 98)
 	add_child(view)
+	# Title bar AFTER the scope view: the ring occluder inside the view is
+	# oversized and would otherwise paint over the title strip.
+	if observation_mode == "naked_eye":
+		_title_bar(GameManager.text("Naked Eye Observation", "肉眼观测"))
+	else:
+		_title_bar("Telescope View")
 	_build_observation_panel()
 	if drift_enabled:
 		_build_drift_panel()
@@ -1259,6 +1376,8 @@ func _add_identify_choices() -> void:
 
 
 func _identify(choice_id: String) -> void:
+	# Reset any lingering milestone-green from _announce_step_complete.
+	feedback_label.add_theme_color_override("font_color", Color(0.86, 0.90, 0.88))
 	if requires_focus and not allow_focus_input:
 		feedback_label.text = GameManager.text(
 			"Install the Focus Knob before trying to identify this target.",
@@ -1333,6 +1452,26 @@ func _scope_visual() -> Control:
 		_add_cloud_layer(root, center)
 		_add_crosshair(root, center)
 	_add_quality_noise(root, center)
+	if observation_mode != "naked_eye":
+		# Ring occluder ABOVE all lens content: clips drifting sprites /
+		# clouds / stars to the circle by repainting the barrel on top.
+		# Wrapped in a clipper so the oversized rect never paints over the
+		# outer pixel frame (screen-safe rect 16,14 .. 748,748; this root
+		# sits at screen 54,98).
+		var clipper := Control.new()
+		clipper.position = Vector2(-38, -84)
+		clipper.size = Vector2(732, 734)
+		clipper.clip_contents = true
+		clipper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var occluder := ColorRect.new()
+		occluder.position = center - Vector2(450, 450) - clipper.position
+		occluder.size = Vector2(900, 900)
+		occluder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var occluder_mat := ShaderMaterial.new()
+		occluder_mat.shader = LENS_RING_OCCLUDER_SHADER
+		occluder.material = occluder_mat
+		clipper.add_child(occluder)
+		root.add_child(clipper)
 	return root
 
 
@@ -1388,8 +1527,8 @@ func _add_target_visual(parent: Control, scope_center: Vector2) -> void:
 	if observation_mode == "naked_eye":
 		sprite_scale = _naked_eye_scale(id)
 	else:
-		sprite_scale = _magnification_scale()
-		if base_alpha > 0.0 and sprite_scale > 1.0:
+		sprite_scale = _magnification_scale() * _object_view_scale(id)
+		if base_alpha > 0.0 and _magnification_scale() > 1.0:
 			# Higher magnification spreads the same light over a larger
 			# image: bigger but dimmer, same real telescope trade-off.
 			base_alpha *= 0.85
@@ -1449,9 +1588,12 @@ func _sprite_path_for_target(id: String, quality: String, effect: String) -> Str
 			if quality in ["Poor", "Failed"] and is_focus_acceptable():
 				return str(textures["dim"])
 			return str(textures["clear"])
-		if effect == "dim" or quality in ["Poor", "Failed"]:
+		# Quality verdict ONLY - visual_effect is a relative weakest-stat
+		# hint and can read "blurry"/"dim" even at Excellent (same bug class
+		# as the L11 mars fix, this is the no-focus/naked-eye branch).
+		if quality in ["Poor", "Failed"]:
 			return str(textures["dim"])
-		if effect == "blurry" or quality == "Fair":
+		if quality == "Fair":
 			return str(textures["blurry"])
 		return str(textures["clear"])
 	return str(SPRITE_MAP.get(id, SPRITE_MAP["polaris"]))
@@ -1475,6 +1617,25 @@ func _naked_eye_alpha() -> float:
 		return 0.06
 	var brightness := float(selected_object.get("brightness", 50.0))
 	return clampf(0.35 + brightness / 130.0, 0.35, 1.0)
+
+
+func _object_view_scale(id: String) -> float:
+	# Relative apparent size in the eyepiece - keeps the REAL ordering even
+	# though absolute angular scale is compressed for gameplay: the Moon is
+	# the only object that fills the view; planets are small resolved discs
+	# (Jupiter > Mars); Andromeda is an extended glow, not a wall of light.
+	match id:
+		"moon":
+			return 1.0
+		"jupiter":
+			return 0.60
+		"mars":
+			return 0.46
+		"andromeda":
+			return 0.62
+		"orion_nebula":
+			return 0.70
+	return 1.0
 
 
 func _magnification_scale() -> float:
@@ -1627,41 +1788,121 @@ func _add_scope_stars(parent: Control, scope_center: Vector2) -> void:
 	star_layer_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	star_layer_container.position = drift_offset
 	parent.add_child(star_layer_container)
+	# REAL sky: stars come from the deep HYG catalog (mag <= 8) projected
+	# around the current aim direction - the same star field the player saw
+	# at the sky observation deck, never a random sprinkle.
+	var fov_radius := SCOPE_FOV_RADIUS_DEG
+	var mag_limit := 8.0
 	if observation_mode == "naked_eye":
-		_add_scope_stars_count(star_layer_container, scope_center, 34, 1.0)
+		fov_radius = EYE_FOV_RADIUS_DEG
+		mag_limit = 5.0
+	else:
+		# Light pollution raises the limiting magnitude: faint stars drown
+		# in the bright sky first - "fewer, brighter dots survive".
+		var sky_key := str(GameManager.current_environment().get("sky_brightness", "")).to_lower()
+		match sky_key:
+			"city":
+				mag_limit = 6.2
+			"suburban":
+				mag_limit = 7.2
+	_add_real_sky_stars(star_layer_container, scope_center, fov_radius, mag_limit)
+
+
+static var _deep_stars_cache: Array = []
+
+
+func _load_deep_stars() -> Array:
+	# Parsed once per session (static): {"stars": [[ra_hours, dec_deg, mag],
+	# ...]} sorted by magnitude ascending (brightest first).
+	if not _deep_stars_cache.is_empty():
+		return _deep_stars_cache
+	var file := FileAccess.open(DEEP_STARS_PATH, FileAccess.READ)
+	if file == null:
+		return []
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if parsed is Dictionary:
+		var data: Dictionary = parsed
+		_deep_stars_cache = data.get("stars", [])
+	return _deep_stars_cache
+
+
+func _current_aim() -> Vector2:
+	# (azimuth, altitude) the telescope is pointed at. Capture tools / tests
+	# enter without a sky aim - fall back to a fixed patch of real sky so the
+	# view stays deterministic.
+	var aim: Dictionary = GameManager.last_sky_aim
+	if bool(aim.get("valid", false)):
+		return Vector2(float(aim.get("azimuth", 150.0)), float(aim.get("altitude", 45.0)))
+	return Vector2(150.0, 45.0)
+
+
+func _add_real_sky_stars(parent: Control, scope_center: Vector2, fov_radius: float, mag_limit: float) -> void:
+	var stars: Array = _load_deep_stars()
+	if stars.is_empty():
 		return
-	# Light pollution thins out the faint background stars: city shows only
-	# the brightest ~40%, suburban ~70%, dark sky shows all of them.
-	var sky_key := str(GameManager.current_environment().get("sky_brightness", "")).to_lower()
-	var keep_fraction := 1.0
-	match sky_key:
-		"city":
-			keep_fraction = 0.4
-		"suburban":
-			keep_fraction = 0.7
-	_add_scope_stars_count(star_layer_container, scope_center, 34, keep_fraction)
-
-
-func _add_scope_stars_count(parent: Control, scope_center: Vector2, total: int, keep_fraction: float) -> void:
-	# fmod(i, 5) buckets brightness into 5 tiers (0.50 dimmest .. 0.82
-	# brightest); keep only the brightest tiers so light pollution reads as
-	# "fewer, brighter dots survive" rather than a uniform random thin-out.
-	var keep_tiers: int = maxi(1, int(round(keep_fraction * 5.0)))
-	for i in range(total):
-		var pos := scope_center + Vector2(-178 + fmod(float(i * 83), 355.0), -178 + fmod(float(i * 47), 350.0))
-		if (pos - scope_center).length() > 205:
+	var service := SkyPositionService.new()
+	var config: Dictionary = service.load_config()
+	var latitude: float = float(config.get("default_latitude", 34.0522))
+	var longitude: float = float(config.get("default_longitude", -118.2437))
+	var utc_now: Dictionary = Time.get_datetime_dict_from_system(true)
+	var aim := _current_aim()
+	var aim_alt_rad := deg_to_rad(aim.y)
+	var az_scale := cos(aim_alt_rad)
+	# Cheap declination pre-filter: the aim direction's declination band is
+	# the only place FOV stars can live, so 41k catalog rows shrink to a few
+	# hundred full alt/az computations.
+	var lat_rad := deg_to_rad(latitude)
+	var aim_dec_rad := asin(
+		sin(aim_alt_rad) * sin(lat_rad)
+		+ cos(aim_alt_rad) * cos(lat_rad) * cos(deg_to_rad(aim.x))
+	)
+	var aim_dec := rad_to_deg(aim_dec_rad)
+	var dec_margin := fov_radius + 2.0
+	var added := 0
+	for star_value in stars:
+		if not star_value is Array:
 			continue
-		var tier := int(fmod(float(i), 5.0))
-		var bright := 0.50 + float(tier) * 0.08
-		if tier >= keep_tiers:
+		var star: Array = star_value
+		if star.size() < 3:
 			continue
-		var star_rect := _rect(parent, pos, Vector2(2, 2), Color(bright, bright + 0.03, 0.92, 0.50))
+		var magnitude := float(star[2])
+		if magnitude > mag_limit:
+			break  # sorted by magnitude - nothing fainter can qualify
+		if absf(float(star[1]) - aim_dec) > dec_margin:
+			continue
+		var alt_az: Dictionary = service.calculate_alt_az_from_ra_dec(
+			float(star[0]), float(star[1]), latitude, longitude, utc_now
+		)
+		var d_alt := float(alt_az.get("altitude", -90.0)) - aim.y
+		var d_az := wrapf(float(alt_az.get("azimuth", 0.0)) - aim.x, -180.0, 180.0) * az_scale
+		if Vector2(d_az, d_alt).length() > fov_radius:
+			continue
+		var pos := scope_center + Vector2(d_az, -d_alt) / fov_radius * 205.0
+		# Brightness from real magnitude: alpha lives in the rect color so
+		# modulate stays free for the twinkle/dark-adaptation channel.
+		var alpha := clampf(0.95 - magnitude * 0.088, 0.22, 0.95)
+		var dot_size := 2.0
+		if magnitude <= 1.5:
+			dot_size = 4.0
+		elif magnitude <= 3.5:
+			dot_size = 3.0
+		var star_rect := _rect(parent, pos - Vector2(dot_size, dot_size) * 0.5, Vector2(dot_size, dot_size), Color(0.88, 0.90, 0.97, alpha))
 		star_layer_nodes.append(star_rect)
+		added += 1
+		if added >= 170:
+			break  # brightest-first cap keeps the node count sane
 
 
 func _add_cloud_layer(parent: Control, scope_center: Vector2) -> void:
+	# The eyepiece field is only a few degrees wide - a passing cloud dims
+	# the WHOLE view, it never appears as a cute little wisp next to the
+	# planet (user-verified realism call). The wisps still exist but are
+	# INVISIBLE trackers that drive the live attenuation (wait-for-a-gap
+	# gameplay unchanged); what the player sees is a full-field gray veil
+	# whose density follows cond_cloud_atten.
 	cloud_nodes.clear()
 	cloud_velocities.clear()
+	cloud_strengths.clear()
 	if cloud_cover_level <= 0.0:
 		return
 	var tier := cloud_tier_index()  # 1 Thin / 2 Moderate / 3 Heavy
@@ -1671,17 +1912,27 @@ func _add_cloud_layer(parent: Control, scope_center: Vector2) -> void:
 			alpha_for_tier = 0.5
 		3:
 			alpha_for_tier = 0.75
+
+	cloud_veil = Panel.new()
+	cloud_veil.position = scope_center - Vector2(218, 218)
+	cloud_veil.size = Vector2(436, 436)
+	var veil_style := StyleBoxFlat.new()
+	veil_style.bg_color = Color(0.58, 0.61, 0.68)
+	veil_style.set_corner_radius_all(218)
+	cloud_veil.add_theme_stylebox_override("panel", veil_style)
+	cloud_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cloud_veil.modulate.a = 0.0
+	parent.add_child(cloud_veil)
+
 	var count: int = clampi(1 + tier, 2, 4)
 	for i in range(count):
 		var tex_path: String = CLOUD_TEXTURES[i % CLOUD_TEXTURES.size()]
 		var texture: Texture2D = _load_target_texture(tex_path)
 		var cloud := TextureRect.new()
 		cloud.texture = texture
-		cloud.stretch_mode = TextureRect.STRETCH_KEEP
-		cloud.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		cloud.size = texture.get_size()
 		cloud.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		cloud.modulate = Color(1, 1, 1, alpha_for_tier)
+		cloud.visible = false  # virtual: position/size only feed attenuation
 		# Deterministic per-index seed: same level always drifts the same
 		# way, but the field still fills the scope circle unevenly.
 		var seed_angle: float = fmod(float(i) * 137.5 + effect_seed, 360.0) * PI / 180.0
@@ -1692,6 +1943,7 @@ func _add_cloud_layer(parent: Control, scope_center: Vector2) -> void:
 		if i % 2 == 1:
 			direction.x = -direction.x
 		cloud_velocities.append(direction * speed)
+		cloud_strengths.append(alpha_for_tier)
 		parent.add_child(cloud)
 		cloud_nodes.append(cloud)
 
@@ -1754,6 +2006,12 @@ func _distractors_for(id: String) -> Array[String]:
 		"jupiter": return ["mars", "moon"]
 		"orion_nebula": return ["andromeda", "betelgeuse"]
 		"andromeda": return ["orion_nebula", "sirius"]
+		# Star vs star confusions teach color/context identification.
+		"sirius": return ["canopus", "polaris"]
+		"arcturus": return ["betelgeuse", "canopus"]
+		"canopus": return ["sirius", "arcturus"]
+		"alpha_centauri": return ["proxima", "sirius"]
+		"proxima": return ["alpha_centauri", "betelgeuse"]
 	return ["sirius", "betelgeuse"]
 
 

@@ -332,6 +332,15 @@
     "requires_telescope": true,
     "requires_focus": true,
     "required_concept_card": "magnification_field_of_view",
+    "teaching_steps": [
+      {
+        "id": "magnification_tradeoff_intro",
+        "card_id": "magnification_tradeoff",
+        "trigger": "before_observation",
+        "mode": "brief",
+        "required_once": true
+      }
+    ],
     "target_object_id": "jupiter",
     "required_parts": [
       "tripod",
@@ -358,8 +367,18 @@
     "repeat_target_reason_en": "Same Jupiter, new question: how much power is too much?",
     "repeat_target_reason_zh": "还是木星，但问题变了：多高的倍率算太高？",
     "mission_steps": [
-      {"id": "low_power", "label_en": "Observe Jupiter with the 20mm", "label_zh": "用 20mm 目镜观测木星", "require_part_id": "eyepiece_20mm"},
-      {"id": "high_power", "label_en": "Switch to 10mm and observe again", "label_zh": "换 10mm 目镜再观测一次", "require_part_id": "eyepiece_10mm"}
+      {
+        "id": "low_power",
+        "label_en": "Observe Jupiter with the 20mm",
+        "label_zh": "用 20mm 目镜观测木星",
+        "require_part_id": "eyepiece_20mm"
+      },
+      {
+        "id": "high_power",
+        "label_en": "Switch to 10mm and observe again",
+        "label_zh": "换 10mm 目镜再观测一次",
+        "require_part_id": "eyepiece_10mm"
+      }
     ]
   },
   {
@@ -374,6 +393,15 @@
     "requires_telescope": true,
     "requires_focus": true,
     "required_concept_card": "magnification_field_of_view",
+    "teaching_steps": [
+      {
+        "id": "seeing_turbulence_intro",
+        "card_id": "seeing_turbulence",
+        "trigger": "before_observation",
+        "mode": "brief",
+        "required_once": true
+      }
+    ],
     "target_object_id": "mars",
     "required_parts": [
       "tripod",
@@ -399,7 +427,9 @@
     "variation": "low_altitude_seeing",
     "repeat_target_reason_en": "Mars again - but tonight it hugs the horizon.",
     "repeat_target_reason_zh": "又是火星——但今晚它贴着地平线。",
-    "recommended_part_ids": ["eyepiece_20mm"],
+    "recommended_part_ids": [
+      "eyepiece_20mm"
+    ],
     "environment": {
       "seeing": "poor",
       "target_altitude_bias": "low"
@@ -442,7 +472,12 @@
     "variation": "bright_target_high_power",
     "repeat_target_reason_en": "Back to the Moon - the one target that rewards high power.",
     "repeat_target_reason_zh": "回到月亮——唯一奖励高倍率的目标。",
-    "required_part_ids": ["eyepiece_10mm"]
+    "required_part_ids": [
+      "eyepiece_10mm"
+    ],
+    "environment": {
+      "seeing": "average"
+    }
   },
   {
     "id": "level_13",
@@ -457,7 +492,11 @@
     "requires_focus": true,
     "required_concept_card": "magnification_field_of_view",
     "target_object_id": "jupiter",
-    "target_pool": ["jupiter", "moon", "mars"],
+    "target_pool": [
+      "jupiter",
+      "moon",
+      "mars"
+    ],
     "required_parts": [
       "tripod",
       "mount",
@@ -479,7 +518,10 @@
     "chapter_id": "ch3_magnification",
     "lesson_thread": "magnification",
     "practice_step": 4,
-    "variation": "free_choice_review"
+    "variation": "free_choice_review",
+    "environment": {
+      "seeing": "average"
+    }
   },
   {
     "id": "level_14",
@@ -518,7 +560,10 @@
     "practice_step": 1,
     "variation": "coordinate_navigation",
     "repeat_target_reason_en": "Mars a third time - but tonight you navigate by numbers, not by luck.",
-    "repeat_target_reason_zh": "第三次找火星——但今晚靠数字导航，不靠运气。"
+    "repeat_target_reason_zh": "第三次找火星——但今晚靠数字导航，不靠运气。",
+    "environment": {
+      "seeing": "good"
+    }
   },
   {
     "id": "level_15",
@@ -554,7 +599,10 @@
     "chapter_id": "ch4_navigation",
     "lesson_thread": "navigation",
     "practice_step": 2,
-    "variation": "finder_calibration"
+    "variation": "finder_calibration",
+    "environment": {
+      "seeing": "average"
+    }
   },
   {
     "id": "level_16",
@@ -590,7 +638,10 @@
     "chapter_id": "ch4_navigation",
     "lesson_thread": "navigation",
     "practice_step": 3,
-    "variation": "workflow_discipline"
+    "variation": "workflow_discipline",
+    "environment": {
+      "seeing": "average"
+    }
   },
   {
     "id": "level_17",
@@ -604,8 +655,23 @@
     "requires_telescope": true,
     "requires_focus": true,
     "required_concept_card": "finder_scope_alignment",
+    "teaching_steps": [
+      {
+        "id": "cloud_waiting_intro",
+        "card_id": "cloud_waiting",
+        "trigger": "before_observation",
+        "mode": "brief",
+        "required_once": true
+      }
+    ],
     "target_object_id": "sirius",
-    "target_pool": ["jupiter", "mars", "sirius"],
+    "target_pool": [
+      "jupiter",
+      "mars",
+      "sirius",
+      "arcturus",
+      "canopus"
+    ],
     "required_parts": [
       "tripod",
       "mount",
@@ -630,6 +696,7 @@
     "practice_step": 4,
     "variation": "independent_random_target",
     "environment": {
+      "seeing": "average",
       "cloud_cover": 0.25
     }
   },
@@ -645,6 +712,15 @@
     "requires_telescope": true,
     "requires_focus": true,
     "required_concept_card": "deep_sky_observation",
+    "teaching_steps": [
+      {
+        "id": "dark_adaptation_intro",
+        "card_id": "dark_adaptation_averted_vision",
+        "trigger": "before_observation",
+        "mode": "brief",
+        "required_once": true
+      }
+    ],
     "target_object_id": "orion_nebula",
     "required_parts": [
       "tripod",
@@ -671,7 +747,13 @@
     "variation": "accept_fair_quality",
     "repeat_target_reason_en": "Same nebula as L7 - but tonight we change what 'success' means.",
     "repeat_target_reason_zh": "还是那片星云——但今晚我们改变'成功'的定义。",
-    "recommended_part_ids": ["eyepiece_20mm"]
+    "recommended_part_ids": [
+      "eyepiece_20mm"
+    ],
+    "environment": {
+      "seeing": "average",
+      "cloud_cover": 0.15
+    }
   },
   {
     "id": "level_19",
@@ -711,7 +793,12 @@
     "variation": "aperture_upgrade_comparison",
     "repeat_target_reason_en": "Third visit to Orion - this time as a controlled experiment.",
     "repeat_target_reason_zh": "第三次看猎户座星云——这次是一场对照实验。",
-    "required_part_ids": ["objective_100mm"]
+    "required_part_ids": [
+      "objective_100mm"
+    ],
+    "environment": {
+      "seeing": "average"
+    }
   },
   {
     "id": "level_20",
@@ -725,6 +812,15 @@
     "requires_telescope": true,
     "requires_focus": true,
     "required_concept_card": "deep_sky_observation",
+    "teaching_steps": [
+      {
+        "id": "light_pollution_intro",
+        "card_id": "light_pollution_compare",
+        "trigger": "before_observation",
+        "mode": "brief",
+        "required_once": true
+      }
+    ],
     "target_object_id": "andromeda",
     "required_parts": [
       "tripod",
@@ -806,6 +902,15 @@
     "requires_telescope": true,
     "requires_focus": true,
     "required_concept_card": "deep_sky_observation",
+    "teaching_steps": [
+      {
+        "id": "earth_rotation_intro",
+        "card_id": "earth_rotation_tracking",
+        "trigger": "before_observation",
+        "mode": "brief",
+        "required_once": true
+      }
+    ],
     "target_object_id": "sirius",
     "required_parts": [
       "tripod",
@@ -830,7 +935,10 @@
     "chapter_id": "ch6_tracking",
     "lesson_thread": "tracking",
     "practice_step": 1,
-    "variation": "drift"
+    "variation": "drift",
+    "environment": {
+      "seeing": "average"
+    }
   },
   {
     "id": "level_23",
@@ -856,7 +964,9 @@
     ],
     "drift_enabled": true,
     "hold_seconds": 8,
-    "recommended_part_ids": ["tracking_mount"],
+    "recommended_part_ids": [
+      "tracking_mount"
+    ],
     "required_assembly_score": 75,
     "hint_text_en": "Dial the tracking rate close to 1x so the mount cancels the drift for you.",
     "hint_text_zh": "把追踪速率调到接近 1 倍，让支架替你抵消漂移。",
@@ -871,7 +981,11 @@
     "practice_step": 2,
     "variation": "tracking_mount",
     "repeat_target_reason_en": "Jupiter, fourth time - but tonight you don't touch the keys.",
-    "repeat_target_reason_zh": "第四次看木星——但今晚你的手可以离开按键。"
+    "repeat_target_reason_zh": "第四次看木星——但今晚你的手可以离开按键。",
+    "environment": {
+      "seeing": "average",
+      "cloud_cover": 0.15
+    }
   },
   {
     "id": "level_24",
@@ -910,6 +1024,9 @@
     "chapter_id": "ch6_tracking",
     "lesson_thread": "tracking",
     "practice_step": 3,
-    "variation": "final_endurance_watch"
+    "variation": "final_endurance_watch",
+    "environment": {
+      "seeing": "average"
+    }
   }
 ]

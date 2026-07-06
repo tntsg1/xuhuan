@@ -33,6 +33,9 @@ var text_label: Label
 var counter_label: Label
 var portrait_rect: TextureRect
 var next_button: Button
+var diagram_rect: TextureRect
+var diagram_tween: Tween
+var default_visual_rect: TextureRect
 
 
 func _ready() -> void:
@@ -92,6 +95,20 @@ func _build() -> void:
 
 	counter_label = _label("", Vector2(96, 686), Vector2(120, 20), 11, MUTED)
 
+	# Per-line learning diagram overlay. Sized to fit within the upper play
+	# area without covering the dialogue panel (which starts at y=520) or
+	# the plaque (which ends around y=124). Hidden (alpha 0) by default;
+	# lines with an "image" field fade it in centered over the night sky.
+	diagram_rect = TextureRect.new()
+	diagram_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	diagram_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	diagram_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	diagram_rect.position = Vector2(152, 140)
+	diagram_rect.size = Vector2(720, 366)
+	diagram_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	diagram_rect.modulate = Color(1, 1, 1, 0)
+	add_child(diagram_rect)
+
 	next_button = Button.new()
 	next_button.position = Vector2(812, 664)
 	next_button.size = Vector2(120, 38)
@@ -127,6 +144,7 @@ func _draw_night_sky() -> void:
 	moon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	moon.modulate = Color(1, 1, 1, 0.9)
 	add_child(moon)
+	default_visual_rect = moon
 
 
 func _story_visual_id() -> String:
@@ -155,6 +173,26 @@ func _show_line() -> void:
 		next_button.text = GameManager.text("Let's go!", "出发！").replace("\n", " · ")
 	else:
 		next_button.text = GameManager.text("Next", "继续").replace("\n", " · ")
+	_update_line_image(line)
+
+
+func _update_line_image(line: Dictionary) -> void:
+	var image_path := str(line.get("image", ""))
+	if diagram_tween:
+		diagram_tween.kill()
+	diagram_tween = create_tween()
+	if image_path != "" and ResourceLoader.exists(image_path):
+		# Swap texture while invisible, then fade in; covers the default
+		# target visual so the two never show at once.
+		diagram_rect.modulate.a = 0.0
+		diagram_rect.texture = load(image_path)
+		if default_visual_rect:
+			diagram_tween.tween_property(default_visual_rect, "modulate:a", 0.0, 0.2)
+		diagram_tween.parallel().tween_property(diagram_rect, "modulate:a", 1.0, 0.25)
+	else:
+		diagram_tween.tween_property(diagram_rect, "modulate:a", 0.0, 0.2)
+		if default_visual_rect:
+			diagram_tween.parallel().tween_property(default_visual_rect, "modulate:a", 0.9, 0.25)
 
 
 func _advance() -> void:

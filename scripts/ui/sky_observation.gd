@@ -117,7 +117,28 @@ var guidance_banner: Label
 var guidance_banner_bg: ColorRect
 var mode_buttons: Dictionary = {}
 
+# --- E3 sky-realism: background lift, cloud drift, star twinkle. All
+# purely visual; the star magnitude filter is the only thing that changes
+# what CAN be picked, and it mirrors the aim/select logic exactly.
+var sky_lift_layer: ColorRect
+var cloud_layer: Control
+var cloud_nodes: Array[TextureRect] = []
+# Clouds are anchored to SKY coordinates (azimuth, altitude in degrees) and
+# reprojected to the screen every frame - panning the telescope slides them
+# together with the stars. Velocities are angular (deg/s wind).
+var cloud_sky_anchors: Array[Vector2] = []
+var cloud_velocities: Array[Vector2] = []
+var twinkle_seed := 0.0
+const SKY_CLOUD_TEXTURES := [
+	"res://assets/telescope_view/cloud_wisp_a.png",
+	"res://assets/telescope_view/cloud_wisp_b.png",
+	"res://assets/telescope_view/cloud_wisp_c.png"
+]
+const SKY_CLOUD_SCALE := 1.8
+const TWINKLE_STAR_COUNT := 40
+
 var mission_tonight_label: Label
+var sky_condition_label: Label
 var aim_label: Label
 var selected_title: Label
 var selected_detail: Label
@@ -165,10 +186,77 @@ func _process(delta: float) -> void:
 	_handle_aim_input(delta)
 	_handle_calibration_input(delta)
 	_update_workflow_discipline_timer(delta)
+	_advance_sky_conditions(delta)
+	_advance_sky_rotation(delta)
 	# Keep the big in-view banner mirroring whatever the side panel says
 	# (guidance, observe errors, mode hints).
 	if guidance_banner != null and guidance_label != null and guidance_banner.text != guidance_label.text:
 		guidance_banner.text = guidance_label.text
+
+
+# The real sky never stands still: recompute every catalog star's alt/az
+# from the CURRENT clock every few seconds, so the whole star field creeps
+# westward at the true sidereal rate (0.25 deg/min) on every level. Mission
+# target markers stay pinned by design (they are "tracked" waypoints) - at
+# x1 real rate the mismatch within a session is far below aim tolerance.
+# The L22-24 eyepiece drift mechanic is separate and unchanged.
+const SKY_ROTATION_REFRESH_SECONDS := 10.0
+var sky_rotation_accum := 0.0
+
+
+func _advance_sky_rotation(delta: float) -> void:
+	sky_rotation_accum += delta
+	if sky_rotation_accum < SKY_ROTATION_REFRESH_SECONDS:
+		return
+	sky_rotation_accum = 0.0
+	_load_real_star_points()
+	_rebuild_view()
+
+
+func _advance_sky_conditions(delta: float) -> void:
+	var clouds_active := not cloud_nodes.is_empty()
+	if clouds_active:
+		_advance_clouds(delta)
+	if star_pool.is_empty() and object_icons.is_empty():
+		return
+	if not clouds_active and _seeing_severity() <= 0.0:
+		return
+	_apply_star_and_icon_shading(clouds_active)
+
+
+func _apply_star_and_icon_shading(clouds_active: bool) -> void:
+	# Single per-frame pass: brightest ~40 visible stars twinkle (alpha
+	# double-sine, amplitude by seeing severity); every visible star and
+	# object icon darkens under whatever cloud currently covers it. Purely
+	# visual - never touches aim/identification logic.
+	var severity := _seeing_severity()
+	var t := Time.get_ticks_msec() / 1000.0
+	var twinkle_budget := TWINKLE_STAR_COUNT
+	for i in range(star_pool.size()):
+		var star := star_pool[i]
+		if not star.visible:
+			continue
+		var base_color: Color = star.get_meta("base_color", star.color)
+		var shading := 1.0
+		if clouds_active:
+			shading = 1.0 - 0.75 * _cloud_alpha_at(star.position + star.size * 0.5)
+		var twinkle := 1.0
+		if severity > 0.0 and twinkle_budget > 0:
+			twinkle_budget -= 1
+			var phase: float = twinkle_seed + float(i) * 0.7
+			twinkle = 1.0 + 0.125 * (severity / 0.8) * sin(t * (2.0 + severity * 2.5) + phase)
+		star.color = Color(base_color.r, base_color.g, base_color.b, clampf(base_color.a * twinkle * shading, 0.0, 1.0))
+	if not clouds_active:
+		return
+	for id_value in object_icons.keys():
+		var object_id: String = str(id_value)
+		var icon: TextureRect = object_icons[object_id]
+		if not icon.visible:
+			continue
+		var base_alpha: float = float(icon.get_meta("base_alpha", icon.modulate.a))
+		var local_pos: Vector2 = icon.position + icon.size * icon.scale * 0.5
+		var shading := 1.0 - 0.75 * _cloud_alpha_at(local_pos)
+		icon.modulate.a = clampf(base_alpha * shading, 0.0, 1.0)
 
 
 func _exit_tree() -> void:
@@ -282,11 +370,21 @@ func _update_calibration_panel() -> void:
 		calibration_pct_label.add_theme_color_override("font_color", GREEN)
 		calibration_hint_label.text = GameManager.text("Finder now matches the telescope.", "寻星镜现在与主镜一致了。")
 	else:
-		calibration_pct_label.text = GameManager.text(
-			"Finder Alignment: %d%%" % int(pct), "寻星镜校准度：%d%%" % int(pct)
-		)
+		# Single-line inline bilingual (GameManager.text stacks EN+ZH and
+		# overflows this 46px panel) + a live signed readout so the player
+		# always knows WHICH key moves toward zero.
+		var offset: Dictionary = GameManager.finder_offset()
+		var az := float(offset.get("az", 0.0))
+		var alt := float(offset.get("alt", 0.0))
+		calibration_pct_label.text = "Finder校准 %d%%   Δaz %+.1f°  Δalt %+.1f°" % [int(pct), az, alt]
 		calibration_pct_label.add_theme_color_override("font_color", WARNING)
-		calibration_hint_label.text = GameManager.text("IJKL to adjust", "IJKL 微调")
+		var keys: Array[String] = []
+		if absf(az) > 0.05:
+			keys.append("L→" if az > 0.0 else "J←")
+		if absf(alt) > 0.05:
+			keys.append("I↑" if alt > 0.0 else "K↓")
+		var key_hint := " ".join(keys) if not keys.is_empty() else "IJKL"
+		calibration_hint_label.text = "Press按 %s 调向 0" % key_hint
 
 
 func _mode_available(mode: String) -> Dictionary:
@@ -331,6 +429,12 @@ func _set_view_mode(mode: String) -> void:
 	visited_modes[view_mode] = true
 	_apply_view_mode()
 	_update_mode_buttons()
+	if cloud_layer != null:
+		# Cloud screen-size/speed scale with FOV, so switching views rebuilds
+		# them; the underlying cloud_cover amount is unchanged.
+		for cloud in cloud_nodes:
+			cloud.queue_free()
+		_build_cloud_layer()
 	_rebuild_view()
 
 
@@ -407,6 +511,169 @@ func _target_altitude_bias() -> String:
 	return str(environment.get("target_altitude_bias", ""))
 
 
+# ------------------------------------------------------ E3 sky conditions
+
+
+func _sky_brightness_key() -> String:
+	# No environment on the level at all = every legacy/no-environment level
+	# (L1-L9, most of L10-24) behaves exactly as before: full star field, no
+	# lift, no filtering.
+	var environment := GameManager.current_environment()
+	if environment.is_empty():
+		return ""
+	return str(environment.get("sky_brightness", "")).to_lower()
+
+
+func _cloud_cover_amount() -> float:
+	var environment := GameManager.current_environment()
+	if environment.is_empty():
+		return 0.0
+	return clampf(float(environment.get("cloud_cover", 0.0)), 0.0, 1.0)
+
+
+func _seeing_severity() -> float:
+	var environment := GameManager.current_environment()
+	if environment.is_empty():
+		return 0.06
+	match str(environment.get("seeing", "")).capitalize():
+		"Poor":
+			return 0.8
+		"Average":
+			return 0.35
+	return 0.06
+
+
+func _magnitude_limit() -> float:
+	# Star-catalog visibility ceiling by sky brightness. No environment
+	# (empty key) keeps every star, matching pre-E3 behavior exactly.
+	match _sky_brightness_key():
+		"city":
+			return 3.6
+		"suburban":
+			return 4.5
+	return 99.0
+
+
+func _deep_sky_city_dim() -> float:
+	# Deep-sky (faint, low-contrast) targets take the biggest hit under
+	# city glow - matches the telescope-view E1 rule.
+	if _sky_brightness_key() == "city":
+		return 0.6
+	return 1.0
+
+
+func _sky_lift_color() -> Color:
+	match _sky_brightness_key():
+		"city":
+			return Color(0.030, 0.034, 0.050, 1.0)
+		"suburban":
+			return Color(0.015, 0.017, 0.025, 1.0)
+	return Color(0.0, 0.0, 0.0, 0.0)
+
+
+func _build_cloud_layer() -> void:
+	cloud_nodes.clear()
+	cloud_velocities.clear()
+	cloud_sky_anchors.clear()
+	twinkle_seed = fmod(float(absi(target_id.hash())), 1000.0)
+	var cover := _cloud_cover_amount()
+	if cover <= 0.0:
+		return
+	var tier := 1
+	if cover >= 0.67:
+		tier = 3
+	elif cover >= 0.34:
+		tier = 2
+	var alpha_for_tier := 0.28
+	match tier:
+		2:
+			alpha_for_tier = 0.5
+		3:
+			alpha_for_tier = 0.75
+	var count: int = clampi(1 + tier, 2, 5)
+	for i in range(count):
+		var tex_path: String = SKY_CLOUD_TEXTURES[i % SKY_CLOUD_TEXTURES.size()]
+		if not ResourceLoader.exists(tex_path):
+			continue
+		var texture: Texture2D = load(tex_path)
+		var cloud := TextureRect.new()
+		cloud.texture = texture
+		cloud.stretch_mode = TextureRect.STRETCH_KEEP
+		# Soft wisp art, not pixel art - linear filtering keeps it a smooth
+		# haze instead of blocky mush when scaled up for narrow FOVs.
+		cloud.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		# Narrower FOV = the same physical cloud fills more of the frame, but
+		# capped gently so it never balloons past a soft haze over the view.
+		var fov_scale := clampf(sqrt(60.0 / fov_x), 1.0, 2.2)
+		cloud.scale = Vector2.ONE * SKY_CLOUD_SCALE * fov_scale
+		cloud.size = texture.get_size()
+		cloud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cloud.modulate = Color(1, 1, 1, alpha_for_tier)
+		# Sky-anchored spawn: scatter around the current aim in DEGREES.
+		var seed_angle: float = fmod(float(i) * 137.5 + twinkle_seed, 360.0) * PI / 180.0
+		var offset_az: float = cos(seed_angle) * fov_x * (0.20 + 0.12 * float(i))
+		var offset_alt: float = sin(seed_angle) * 0.4 * fov_y * (0.20 + 0.12 * float(i))
+		var anchor := Vector2(
+			wrapf(telescope_azimuth + offset_az, 0.0, 360.0),
+			clampf(telescope_altitude + offset_alt, 4.0, 86.0)
+		)
+		cloud_sky_anchors.append(anchor)
+		# Angular wind (deg/s): same real speed in every mode - narrow FOV
+		# crossings automatically look faster on screen, which is physical.
+		var wind_az: float = (1.2 + fmod(float(i) * 0.7, 1.4)) * (1.0 if i % 2 == 0 else -1.0)
+		var wind_alt: float = 0.05 + fmod(float(i), 3.0) * 0.03
+		cloud_velocities.append(Vector2(wind_az, wind_alt))
+		cloud_layer.add_child(cloud)
+		cloud_nodes.append(cloud)
+		_position_cloud(i)
+
+
+func _advance_clouds(delta: float) -> void:
+	if cloud_nodes.is_empty():
+		return
+	for i in range(cloud_nodes.size()):
+		# Wind moves the anchor through the SKY; the screen position below
+		# also re-reads the current aim, so panning slides clouds together
+		# with the stars (they are part of the sky, not the UI).
+		var anchor := cloud_sky_anchors[i]
+		anchor.x = wrapf(anchor.x + cloud_velocities[i].x * delta, 0.0, 360.0)
+		anchor.y = clampf(anchor.y + cloud_velocities[i].y * delta, 4.0, 86.0)
+		# Recycle once the cloud has fully left the field: re-enter from the
+		# opposite side of the CURRENT aim, slightly upwind.
+		var d_az := shortest_angle_degrees(telescope_azimuth, anchor.x)
+		var d_alt := anchor.y - telescope_altitude
+		if absf(d_az) > fov_x * 0.95:
+			anchor.x = wrapf(telescope_azimuth - signf(d_az) * fov_x * 0.9, 0.0, 360.0)
+		if absf(d_alt) > fov_y * 0.95:
+			anchor.y = clampf(telescope_altitude - signf(d_alt) * fov_y * 0.9, 4.0, 86.0)
+		cloud_sky_anchors[i] = anchor
+		_position_cloud(i)
+
+
+func _position_cloud(index: int) -> void:
+	var cloud := cloud_nodes[index]
+	var anchor := cloud_sky_anchors[index]
+	var d_az := shortest_angle_degrees(telescope_azimuth, anchor.x)
+	var d_alt := anchor.y - telescope_altitude
+	cloud.position = _fov_to_local(d_az, d_alt) - cloud.size * cloud.scale * 0.5
+
+
+func _cloud_alpha_at(local_pos: Vector2) -> float:
+	# How much a cloud dims a given point in the view (0 = clear, 1 = fully
+	# obscured). Purely visual - never touches identification/aim logic.
+	if cloud_nodes.is_empty():
+		return 0.0
+	var total := 0.0
+	for cloud in cloud_nodes:
+		var effective_size: Vector2 = cloud.size * cloud.scale
+		var cloud_center: Vector2 = cloud.position + effective_size * 0.5
+		var radius: float = maxf(effective_size.x, effective_size.y) * 0.5
+		var d := cloud_center.distance_to(local_pos)
+		var falloff := clampf(1.0 - d / maxf(radius, 1.0), 0.0, 1.0)
+		total += falloff * cloud.modulate.a
+	return clampf(total, 0.0, 1.0)
+
+
 func _load_real_star_points() -> void:
 	# Real night sky: HYG bright-star catalog converted to tonight's alt/az.
 	star_points.clear()
@@ -436,6 +703,8 @@ func _load_real_star_points() -> void:
 		if altitude <= 0.0:
 			continue
 		var magnitude: float = float(star[2])
+		if magnitude > _magnitude_limit():
+			continue
 		var size := 1.0
 		if magnitude <= 1.0:
 			size = 3.0
@@ -590,6 +859,12 @@ func _build_view_layer() -> void:
 	view_layer.clip_contents = true
 	add_child(view_layer)
 
+	# Sky brightness lift: a flat tint under everything else, strictly
+	# clipped to the view rect by the parent's clip_contents (city/suburban
+	# only; empty environment = fully transparent = zero visual change).
+	sky_lift_layer = _rect(view_layer, Vector2.ZERO, VIEW_RECT.size, _sky_lift_color())
+	sky_lift_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 	for index in range(STAR_POOL_SIZE):
 		var star := ColorRect.new()
 		star.visible = false
@@ -602,6 +877,13 @@ func _build_view_layer() -> void:
 	ground_rect.visible = false
 	horizon_line = _rect(view_layer, Vector2.ZERO, Vector2.ZERO, HORIZON_COLOR)
 	horizon_line.visible = false
+
+	# Cloud layer: above the star field, below the object icons/crosshair/UI.
+	cloud_layer = Control.new()
+	cloud_layer.size = VIEW_RECT.size
+	cloud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	view_layer.add_child(cloud_layer)
+	_build_cloud_layer()
 
 	for id_value in sky_data.keys():
 		var object_id: String = str(id_value)
@@ -717,8 +999,10 @@ func _build_panel_text() -> void:
 
 	var hint_label := _label(self, _mission_hint(target), Vector2(778, 108), Vector2(210, 62), 11, TEXT)
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	mission_tonight_label = _label(self, "", Vector2(778, 196), Vector2(212, 18), 10, MUTED)
+	mission_tonight_label = _label(self, "", Vector2(778, 194), Vector2(212, 14), 10, MUTED)
 	_update_mission_tonight_text()
+	sky_condition_label = _label(self, "", Vector2(778, 210), Vector2(212, 14), 9, MUTED)
+	_update_sky_condition_text()
 
 	# SELECTED panel interior: (775..995, 292..470); baked divider at y 432.
 	selected_title = _label(self, "", Vector2(778, 292), Vector2(214, 18), 12, Color(0.84, 0.62, 1.0))
@@ -822,6 +1106,8 @@ func _object_visual_for_mode(obj: Dictionary) -> Dictionary:
 			alpha = 0.9
 			if category == "deep_sky":
 				alpha = 0.6
+	if category == "deep_sky":
+		alpha *= _deep_sky_city_dim()
 	return {"shown": shown, "alpha": alpha, "size_px": size_px}
 
 
@@ -852,7 +1138,9 @@ func _rebuild_view() -> void:
 		var star_pos := _fov_to_local(star_delta_az, star_delta_alt)
 		star.position = star_pos - Vector2(point.z, point.z) * 0.5
 		star.size = Vector2(point.z, point.z)
-		star.color = Color(point.w, point.w, minf(point.w + 0.08, 1.0), 0.85)
+		var base_color := Color(point.w, point.w, minf(point.w + 0.08, 1.0), 0.85)
+		star.set_meta("base_color", base_color)
+		star.color = base_color
 		star.visible = true
 	for index in range(pool_index, star_pool.size()):
 		star_pool[index].visible = false
@@ -884,6 +1172,7 @@ func _rebuild_view() -> void:
 		var alpha: float = float(visual.get("alpha", 1.0))
 		if str(item.get("visibility_text", "")) == "Low on horizon":
 			alpha *= 0.7
+		icon.set_meta("base_alpha", alpha)
 		icon.modulate = Color(1, 1, 1, alpha)
 		var hit_rect := rect.grow(8.0)
 		button.position = hit_rect.position
@@ -1102,6 +1391,28 @@ func _update_mission_tonight_text() -> void:
 	var direction := str(target_sky.get("direction_text", "Estimate"))
 	mission_tonight_label.text = "Tonight: %s (%s)" % [str(target_sky.get("visibility_text", "Offline estimate")), direction]
 	mission_tonight_label.add_theme_color_override("font_color", _visibility_color(target_sky))
+
+
+func _update_sky_condition_text() -> void:
+	# Single inline bilingual line, only shown when the level actually sets
+	# an environment - legacy/no-environment levels show nothing here.
+	if sky_condition_label == null:
+		return
+	var sky_key := _sky_brightness_key()
+	var cover := _cloud_cover_amount()
+	var parts: Array[String] = []
+	if sky_key != "":
+		var sky_names := {"city": "City城市", "suburban": "Suburban郊区", "dark": "Dark暗夜"}
+		parts.append("Sky天空: %s" % str(sky_names.get(sky_key, sky_key.capitalize())))
+	if cover > 0.0:
+		var tier := "Thin薄云"
+		if cover >= 0.67:
+			tier = "Heavy厚云"
+		elif cover >= 0.34:
+			tier = "Moderate中云"
+		parts.append("Cloud云: %s" % tier)
+	sky_condition_label.text = "  ·  ".join(parts)
+	sky_condition_label.visible = not parts.is_empty()
 
 
 # --------------------------------------------------------------- interaction

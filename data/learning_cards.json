@@ -78,5 +78,61 @@
     "image": "res://assets/learning_diagrams/collimation_alignment_diagram.png",
     "text_en": "A reflector only works when its mirrors line up. Collimation tilts the mirrors until light converges exactly at the eyepiece.",
     "text_zh": "反射望远镜的镜子必须对齐才能成像。准直就是微调镜子的角度，让光线恰好汇聚到目镜位置。"
+  },
+  {
+    "id": "seeing_turbulence",
+    "title_en": "Seeing: Why Stars Shimmer",
+    "title_zh": "视宁度：星星为什么会晃",
+    "image": "res://assets/learning_diagrams/seeing_turbulence.png",
+    "text_en": "Warm, moving air bends starlight randomly, like looking through the shimmer above a campfire. Calm air keeps a star's light steady; turbulent air makes it blur and dance. Low targets near the horizon suffer most, since their light passes through much more of that thick, unsteady air.",
+    "text_zh": "温暖流动的空气会随机弯折星光，就像隔着篝火上方的热浪看东西。平静的大气让星光保持稳定；湍流大气则让它模糊、跳动。贴近地平线的低空目标受影响最大，因为它们的光要穿过厚得多的不稳定空气。"
+  },
+  {
+    "id": "light_pollution_compare",
+    "title_en": "Light Pollution: The Sky's Background Light",
+    "title_zh": "光污染：天空的背景光",
+    "image": "res://assets/learning_diagrams/light_pollution_compare.png",
+    "text_en": "City lights brighten the whole sky, like leaving every lamp on while hunting fireflies in a room. Faint objects like Andromeda are still there, but the bright background hides most of their light. A darker sky reveals far more stars and lets faint galaxies stand out clearly.",
+    "text_zh": "城市的灯光会照亮整片天空，就像在开着所有灯的房间里找萤火虫一样。仙女座这样的暗弱天体依然存在，只是明亮的背景遮住了它们大部分的光。更暗的夜空能显现出多得多的星星，也能让暗弱的星系清晰地显现出来。"
+  },
+  {
+    "id": "cloud_waiting",
+    "title_en": "Cloud Gaps: A Real Observing Skill",
+    "title_zh": "云隙观测：真正的观测技能",
+    "image": "res://assets/learning_diagrams/cloud_waiting.png",
+    "text_en": "Thin clouds drift across the sky and dim your target as they pass. Waiting for a gap between clouds is not a failure - it's a real skill every observer uses. Half of observing is watching the sky, and the other half is watching the clouds.",
+    "text_zh": "薄云会飘过天空，经过时让你的目标变暗。等待云与云之间的空隙不是失败——这是每个观测者都要用到的真正技能。观测的一半时间在看天空，另一半时间在等云散开。"
+  },
+  {
+    "id": "dark_adaptation_averted_vision",
+    "title_en": "Dark Adaptation and Averted Vision",
+    "title_zh": "暗适应与侧视法",
+    "image": "res://assets/learning_diagrams/dark_adaptation_curve.png",
+    "text_en": "Your eyes slowly become more sensitive in the dark - full dark adaptation takes about 20-30 minutes, as color-sensing cone cells hand off to more light-sensitive rod cells. Once adapted, try averted vision: look slightly to the side of a faint object instead of straight at it. This lets its light land on the rod-rich periphery of your retina, where faint glows are easier to detect.",
+    "text_zh": "眼睛在黑暗中会慢慢变得更敏感——完全暗适应大约需要 20-30 分钟，负责看颜色的锥细胞会把工作交给对弱光更敏感的杆细胞。适应之后，可以试试侧视法：看暗弱天体时视线略微偏向一侧，而不是直视它。这样光线会落在视网膜周边杆细胞更密集的区域，更容易察觉微弱的光。"
+  },
+  {
+    "id": "earth_rotation_tracking",
+    "title_en": "Earth's Spin and Tracking Mounts",
+    "title_zh": "地球自转与跟踪支架",
+    "image": "res://assets/learning_diagrams/earth_rotation_drift.png",
+    "text_en": "The sky isn't moving - you're standing on the part that is. Earth spins once every 24 hours, so every star appears to drift about 15 degrees per hour, sliding slowly out of a telescope's narrow view. A tracking mount points its axis at the North Celestial Pole and turns a motor the opposite way, exactly canceling that drift so a target holds still.",
+    "text_zh": "天空并没有在动——是你脚下的地球在转。地球每 24 小时自转一圈，所以每颗星星看起来每小时都会漂移大约 15 度，慢慢滑出望远镜狭窄的视野。跟踪支架把转轴对准北天极，用马达反向旋转，恰好抵消这种漂移，让目标保持静止。"
+  },
+  {
+    "id": "magnification_tradeoff",
+    "title_en": "The Real Cost of Higher Magnification",
+    "title_zh": "更高倍率的真实代价",
+    "image": "res://assets/learning_diagrams/magnification_tradeoff.png",
+    "text_en": "The same telescope, the same Jupiter: at 35x the image is small but bright and steady; at 80x it's larger but noticeably dimmer and shakier. Higher magnification spreads the same collected light over a bigger area and amplifies every bit of air turbulence and hand shake. More power is only better up to the point where the air and your gear can still support it.",
+    "text_zh": "同一台望远镜，同一个木星：35 倍下图像小但明亮稳定；80 倍下图像更大，却明显更暗、更抖。更高的倍率把同样收集到的光摊开在更大的面积上，也放大了每一丝大气抖动和手部晃动。倍率并非越高越好，只有在大气和设备都能撑得住的范围内，更高倍率才真正有用。"
+  },
+  {
+    "id": "life_of_celestial_objects",
+    "title_en": "The Life of Celestial Objects",
+    "title_zh": "天体的一生",
+    "image": "res://assets/learning_diagrams/nebula_nursery.png",
+    "text_en": "Moons scar quietly: with no atmosphere to burn up incoming rocks, even small impactors punch straight through to the surface, splash debris outward, and leave a ring-shaped crater behind. Planets like Jupiter roil with weather on a giant scale - its cloud bands are layers of ammonia clouds, and its Great Red Spot is a storm bigger than Earth that has raged for centuries. Nebulae like Orion's are stellar nurseries: gravity slowly pulls a gas cloud inward until it collapses and ignites a brand-new star. And some stars end up enormous - Betelgeuse is so large that if it replaced the Sun, its surface would reach past Mars's orbit.",
+    "text_zh": "月球默默留下伤痕：没有大气层烧毁来袭的岩石，哪怕很小的撞击体也能直接砸到地表，把喷溅物甩向四周，留下一个环形的坑。像木星这样的行星有着巨大尺度的天气：它的条纹带是层层氨云，大红斑则是一场比地球还大、已经持续了几个世纪的风暴。像猎户座星云这样的星云是恒星的育婴房：引力慢慢把气体云拉拢，最终坍缩并点燃一颗全新的恒星。还有一些恒星大得惊人——参宿四如果取代太阳，它的表面会一直延伸到超过火星轨道的地方。"
   }
 ]

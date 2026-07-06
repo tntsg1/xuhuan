@@ -8,7 +8,14 @@ extends SceneTree
 
 const CASES := [
 	{"id": "jupiter", "level": 10},
-	{"id": "mars", "level": 11}
+	{"id": "mars", "level": 11},
+	{"id": "moon", "level": 4},
+	{"id": "andromeda", "level": 21},
+	{"id": "sirius", "level": 22},
+	{"id": "betelgeuse", "level": 12},
+	{"id": "arcturus", "level": 17},
+	{"id": "proxima", "level": 21},
+	{"id": "orion_nebula", "level": 18}
 ]
 
 var frames := 0

@@ -592,7 +592,11 @@ func finder_offset_length() -> float:
 
 
 func finder_alignment_percent() -> float:
-	return clampf(1.0 - finder_offset_length() / 3.0, 0.0, 1.0) * 100.0
+	# Normalize by the INITIAL seeded misalignment, not a fixed 3.0 - the
+	# seed can exceed 3 deg, which pinned the readout at 0% and gave the
+	# player no feedback gradient while adjusting.
+	var initial := maxf(float(progress.get("finder_offset_initial_len", 3.0)), 0.5)
+	return clampf(1.0 - finder_offset_length() / initial, 0.0, 1.0) * 100.0
 
 
 func is_finder_aligned() -> bool:
@@ -614,6 +618,7 @@ func seed_finder_offset_if_needed() -> void:
 		az *= 1.6
 		alt *= 1.6
 	progress["finder_offset"] = {"az": az, "alt": alt}
+	progress["finder_offset_initial_len"] = Vector2(az, alt).length()
 	progress["finder_offset_seeded"] = true
 	save()
 
@@ -863,6 +868,11 @@ func _migrate_progress_schema() -> void:
 		progress["finder_offset"] = {"az": 0.0, "alt": 0.0}
 	if not progress.has("finder_offset_seeded"):
 		progress["finder_offset_seeded"] = false
+	if not progress.has("finder_offset_initial_len"):
+		# Saves seeded before the field existed: use whichever is larger of
+		# the legacy 3.0 baseline and the live offset, so the alignment
+		# readout starts responsive instead of pinned at 0%.
+		progress["finder_offset_initial_len"] = maxf(3.0, finder_offset_length())
 	if not (progress.get("tracking_rate") is float or progress.get("tracking_rate") is int):
 		progress["tracking_rate"] = 0.0
 
