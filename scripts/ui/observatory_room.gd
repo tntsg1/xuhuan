@@ -670,7 +670,7 @@ func _toggle_stats_terminal() -> void:
 	panel.add_theme_stylebox_override("panel", _style(Color(0.030, 0.055, 0.060, 0.98), Color(0.35, 0.85, 0.55), 3, 5))
 	stats_terminal_popup.add_child(panel)
 
-	_terminal_label("STATS TERMINAL / 统计终端", Vector2(292, 184), Vector2(440, 22), 13, Color(0.45, 0.95, 0.60), HORIZONTAL_ALIGNMENT_CENTER)
+	_terminal_label(GameManager.text("STATS TERMINAL", "统计终端"), Vector2(292, 184), Vector2(440, 22), 13, Color(0.45, 0.95, 0.60), HORIZONTAL_ALIGNMENT_CENTER)
 
 	var rows: Array = [
 		[GameManager.text("Assembly", "组装"), float(stats.get("assembly_score", 0.0))],
@@ -703,9 +703,9 @@ func _toggle_stats_terminal() -> void:
 	divider.color = Color(0.35, 0.85, 0.55, 0.4)
 	stats_terminal_popup.add_child(divider)
 
-	_terminal_label("CLUB CREDITS: %d" % int(GameManager.progress.get("credits", 0)), Vector2(292, y + 20), Vector2(440, 24), 16, Color(0.98, 0.85, 0.45), HORIZONTAL_ALIGNMENT_CENTER)
+	_terminal_label(GameManager.text("CLUB CREDITS: %d", "社团积分: %d") % int(GameManager.progress.get("credits", 0)), Vector2(292, y + 20), Vector2(440, 24), 16, Color(0.98, 0.85, 0.45), HORIZONTAL_ALIGNMENT_CENTER)
 	var note := _terminal_label(
-		"Club Credits are saved for future equipment upgrades.\n社团积分将用于后续设备升级。",
+		GameManager.text("Club Credits are saved for future equipment upgrades.", "社团积分将用于后续设备升级。"),
 		Vector2(300, y + 50), Vector2(424, 40), 11, Color(0.78, 0.88, 0.82), HORIZONTAL_ALIGNMENT_CENTER
 	)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

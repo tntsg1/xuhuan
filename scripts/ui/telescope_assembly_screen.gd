@@ -125,7 +125,7 @@ func _draw_title_bar() -> void:
 func _build_parts_panel() -> void:
 	_panel(Vector2(20, 74), Vector2(300, 636), Color(0.050, 0.070, 0.120, 0.96), Color(0.78, 0.56, 0.28))
 	_rect(Vector2(24, 78), Vector2(292, 34), Color(0.30, 0.20, 0.10, 0.92))
-	var heading := _label("Parts Tray / 零件托盘", 17, Color(0.96, 0.93, 0.84))
+	var heading := _label(GameManager.text("Parts Tray", "零件托盘"), 17, Color(0.96, 0.93, 0.84))
 	heading.position = Vector2(40, 91)
 	heading.size = Vector2(250, 26)
 	heading.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -148,7 +148,7 @@ func _build_parts_panel() -> void:
 func _build_blueprint_panel() -> void:
 	_panel(Vector2(336, 74), Vector2(420, 636), Color(0.030, 0.060, 0.115, 0.96), Color(0.78, 0.56, 0.28))
 	_rect(Vector2(340, 78), Vector2(412, 34), Color(0.035, 0.070, 0.135, 0.96))
-	var heading := _label("Assembly Blueprint / 组装蓝图", 17, Color(0.96, 0.93, 0.84))
+	var heading := _label(GameManager.text("Assembly Blueprint", "组装蓝图"), 17, Color(0.96, 0.93, 0.84))
 	heading.position = Vector2(356, 91)
 	heading.size = Vector2(310, 26)
 	heading.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -175,7 +175,7 @@ func _build_blueprint_panel() -> void:
 func _build_inspector_panel() -> void:
 	_panel(Vector2(772, 74), Vector2(232, 636), Color(0.050, 0.070, 0.120, 0.96), Color(0.78, 0.56, 0.28))
 	_rect(Vector2(776, 78), Vector2(224, 34), Color(0.30, 0.20, 0.10, 0.92))
-	var heading := _label("Inspector / 检查器", 17, Color(0.96, 0.93, 0.84))
+	var heading := _label(GameManager.text("Inspector", "检查器"), 17, Color(0.96, 0.93, 0.84))
 	heading.position = Vector2(790, 91)
 	heading.size = Vector2(194, 24)
 	heading.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -192,7 +192,7 @@ func _build_inspector_panel() -> void:
 	add_child(inspector_body)
 
 	_rect(Vector2(790, 276), Vector2(194, 1), Color(0.32, 0.42, 0.48))
-	var feedback_heading := _label("Assembly Hint / 组装提示", 13, Color(0.96, 0.89, 0.66))
+	var feedback_heading := _label(GameManager.text("Assembly Hint", "组装提示"), 13, Color(0.96, 0.89, 0.66))
 	feedback_heading.position = Vector2(790, 288)
 	feedback_heading.size = Vector2(194, 22)
 	feedback_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -203,7 +203,7 @@ func _build_inspector_panel() -> void:
 	feedback_label.size = Vector2(194, 78)
 	add_child(feedback_label)
 
-	var stats_heading := _label("Telescope Stats / 性能", 13, Color(0.96, 0.89, 0.66))
+	var stats_heading := _label(GameManager.text("Telescope Stats", "性能"), 13, Color(0.96, 0.89, 0.66))
 	stats_heading.position = Vector2(790, 410)
 	stats_heading.size = Vector2(194, 22)
 	stats_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -286,7 +286,7 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 	icon_box.clip_contents = true
 	_draw_part_icon(parts_list, part, pos + Vector2(10, 11), installed, Vector2(56, 56))
 
-	var name_en := _label(str(part.get("name_en", _part_label(part_type, "short"))), 12, Color(0.94, 0.95, 0.92))
+	var name_en := _label(GameManager.dict_text(part, "name"), 12, Color(0.94, 0.95, 0.92))
 	name_en.position = pos + Vector2(76, 10)
 	name_en.size = Vector2(160, 18)
 	name_en.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -614,12 +614,12 @@ func _refresh_stats() -> void:
 	_clear(stats_list)
 	var stats: Dictionary = GameManager.calculate_stats()
 	var values := [
-		{"name": "Magnification", "value": float(stats.get("magnification", 0.0)), "max": 120.0, "suffix": "x"},
-		{"name": "Light", "value": float(stats.get("light_score", 0.0)), "max": 100.0, "suffix": ""},
-		{"name": "Stability", "value": float(stats.get("stability_score", 0.0)), "max": 100.0, "suffix": ""},
-		{"name": "Clarity", "value": float(stats.get("clarity_score", 0.0)), "max": 100.0, "suffix": ""},
-		{"name": "Field", "value": float(stats.get("field_of_view", 0.0)), "max": 70.0, "suffix": ""},
-		{"name": "Assembly", "value": float(stats.get("assembly_score", 0.0)), "max": 100.0, "suffix": ""}
+		{"name": GameManager.text("Magnification", "倍率"), "value": float(stats.get("magnification", 0.0)), "max": 120.0, "suffix": "x"},
+		{"name": GameManager.text("Light", "集光"), "value": float(stats.get("light_score", 0.0)), "max": 100.0, "suffix": ""},
+		{"name": GameManager.text("Stability", "稳定"), "value": float(stats.get("stability_score", 0.0)), "max": 100.0, "suffix": ""},
+		{"name": GameManager.text("Clarity", "清晰"), "value": float(stats.get("clarity_score", 0.0)), "max": 100.0, "suffix": ""},
+		{"name": GameManager.text("Field", "视野"), "value": float(stats.get("field_of_view", 0.0)), "max": 70.0, "suffix": ""},
+		{"name": GameManager.text("Assembly", "组装"), "value": float(stats.get("assembly_score", 0.0)), "max": 100.0, "suffix": ""}
 	]
 	var y := 0.0
 	for row in values:

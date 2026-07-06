@@ -1234,9 +1234,9 @@ func _current_feedback() -> String:
 func _add_stat_bars() -> void:
 	var stats := GameManager.calculate_stats()
 	var rows: Array = [
-		{"name": "Light", "value": float(stats.get("light_score", 0.0))},
-		{"name": "Clarity", "value": float(stats.get("clarity_score", 0.0))},
-		{"name": "Stability", "value": float(stats.get("stability_score", 0.0))}
+		{"name": GameManager.text("Light", "集光"), "value": float(stats.get("light_score", 0.0))},
+		{"name": GameManager.text("Clarity", "清晰"), "value": float(stats.get("clarity_score", 0.0))},
+		{"name": GameManager.text("Stability", "稳定"), "value": float(stats.get("stability_score", 0.0))}
 	]
 	for index in range(rows.size()):
 		var row: Dictionary = rows[index]
