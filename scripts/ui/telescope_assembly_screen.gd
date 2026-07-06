@@ -707,7 +707,7 @@ func _reset() -> void:
 	for part_type in PART_ORDER:
 		wrong_attempts[part_type] = 0
 	selected_part_type = ""
-		feedback_label.text = GameManager.text("Assembly reset. Start with Tripod.", "已重新组装，请从三脚架开始。")
+	feedback_label.text = GameManager.text("Assembly reset. Start with Tripod.", "已重新组装，请从三脚架开始。")
 	_refresh_all()
 
 
