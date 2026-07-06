@@ -160,12 +160,12 @@ func _build_blueprint_panel() -> void:
 	add_child(blueprint_layer)
 
 	_rect(Vector2(354, 516), Vector2(382, 118), Color(0.028, 0.048, 0.082))
-	var helper := _label("[1] Pick a part card.  [2] Click the matching slot.\n先选左侧零件卡，再点击中间对应安装位。", 13, Color(0.80, 0.86, 0.86))
+	var helper := _label(GameManager.text("[1] Pick a part card. [2] Click the matching slot.", "先选左侧零件卡，再点击中间对应安装位。"), 13, Color(0.80, 0.86, 0.86))
 	helper.position = Vector2(372, 532)
 	helper.size = Vector2(346, 58)
 	add_child(helper)
 
-	var order := _label("Order / 顺序: Tripod → Mount → Tube → Lens → Eye → Focus", 12, Color(0.66, 0.76, 0.82))
+	var order := _label(GameManager.text("Order: Tripod → Mount → Tube → Lens → Eye → Focus", "顺序: 三脚架 → 支架 → 镜筒 → 物镜 → 目镜 → 调焦"), 12, Color(0.66, 0.76, 0.82))
 	order.position = Vector2(372, 604)
 	order.size = Vector2(346, 22)
 	order.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -214,15 +214,15 @@ func _build_inspector_panel() -> void:
 	stats_list.size = Vector2(194, 146)
 	add_child(stats_list)
 
-	var finish := _button("Finish Assembly\n完成组装", Vector2(790, 600), Vector2(194, 42))
+	var finish := _button(GameManager.text("Finish Assembly", "完成组装"), Vector2(790, 600), Vector2(194, 42))
 	finish.pressed.connect(_finish)
 	add_child(finish)
 
-	var reset := _button("Reassemble\n重新组装", Vector2(790, 650), Vector2(92, 38))
+	var reset := _button(GameManager.text("Reassemble", "重新组装"), Vector2(790, 650), Vector2(92, 38))
 	reset.pressed.connect(_reset)
 	add_child(reset)
 
-	var back := _button("Back\n返回", Vector2(892, 650), Vector2(92, 38))
+	var back := _button(GameManager.text("Back", "返回"), Vector2(892, 650), Vector2(92, 38))
 	back.pressed.connect(func() -> void:
 		GameManager.set_observatory_spawn("assembly")
 		GameManager.go("observatory")
@@ -300,7 +300,7 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 	name_zh.clip_text = true
 	parts_list.add_child(name_zh)
 
-	var status_text := "Installed / 已安装" if installed else "Not Installed / 未安装"
+	var status_text := GameManager.text("Installed", "已安装") if installed else GameManager.text("Not Installed", "未安装")
 	var status_color := Color(0.58, 0.86, 0.62) if installed else Color(0.86, 0.78, 0.48)
 	var status := _label(status_text, 11, status_color)
 	status.position = pos + Vector2(76, 52)
@@ -414,7 +414,7 @@ func _draw_blueprint_grid() -> void:
 		_rect_local(blueprint_layer, Vector2(x, 12), Vector2(1, 334), Color(0.16, 0.25, 0.31, 0.34))
 	for y in range(24, 350, 48):
 		_rect_local(blueprint_layer, Vector2(18, y), Vector2(344, 1), Color(0.16, 0.25, 0.31, 0.34))
-	var label := _label("blueprint view", 11, Color(0.34, 0.50, 0.58))
+	var label := _label(GameManager.text("blueprint view", "蓝图视图"), 11, Color(0.34, 0.50, 0.58))
 	label.position = Vector2(246, 8)
 	label.size = Vector2(112, 16)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -598,9 +598,9 @@ func _refresh_inspector() -> void:
 			inspector_body.text = GameManager.text("All required core parts are installed.", "核心部件已经装齐。")
 			feedback_label.text = GameManager.text("Click Finish Assembly to return to the observatory.", "点击完成组装返回观测室。")
 		else:
-			inspector_title.text = "Next step: " + str(_part_label(next_part, "short")) + "\n下一步：" + str(_part_label(next_part, "short"))
+			inspector_title.text = GameManager.text("Next step: ", "下一步：") + str(_part_label(next_part, "short"))
 			inspector_body.text = _next_step_description(next_part)
-			feedback_label.text = "Select " + str(_part_label(next_part, "short")) + " on the left, then click its slot.\n先选择 " + str(_part_label(next_part, "short")) + "，再点击对应安装位。"
+			feedback_label.text = GameManager.text("Select " + str(_part_label(next_part, "short")) + " on the left, then click its slot.", "先选择 " + str(_part_label(next_part, "short")) + "，再点击对应安装位。")
 		return
 	var unlocked: Array = GameManager.unlocked_parts_by_type(selected_part_type)
 	if unlocked.is_empty():
@@ -652,16 +652,19 @@ func _draw_stat_row(name: String, value: float, max_value: float, suffix: String
 func _select_part(part_type: String) -> void:
 	if _is_installed(part_type):
 		selected_part_type = part_type
-		feedback_label.text = str(_part_label(part_type, "short")) + " is already installed.\n" + str(_part_label(part_type, "short")) + " 已安装。"
+		feedback_label.text = str(_part_label(part_type, "short")) + " " + GameManager.text("is already installed.", "已安装。")
 	else:
 		selected_part_type = part_type
-		feedback_label.text = "Click the " + str(_part_label(part_type, "short")) + " slot on the blueprint.\n点击蓝图上的 " + str(_part_label(part_type, "short")) + " 安装位。"
+		feedback_label.text = GameManager.text(
+			"Click the " + str(_part_label(part_type, "short")) + " slot on the blueprint.",
+			"点击蓝图上的 " + str(_part_label(part_type, "short")) + " 安装位。"
+		)
 	_refresh_all()
 
 
 func _try_install(slot_type: String) -> void:
 	if selected_part_type == "":
-		feedback_label.text = "Select a part card from the left first.\n请先从左侧选择零件卡。"
+		feedback_label.text = GameManager.text("Select a part card from the left first.", "请先从左侧选择零件卡。")
 		return
 	if _is_installed(slot_type):
 		feedback_label.text = str(_part_label(slot_type, "short")) + " is already installed.\n这个安装位已经完成。"
@@ -680,7 +683,7 @@ func _try_install(slot_type: String) -> void:
 		return
 
 	var score: int = GameManager.install_part(slot_type, int(wrong_attempts.get(slot_type, 0)))
-	feedback_label.text = "Installed " + str(_part_label(slot_type, "short")) + ". Alignment " + str(score) + ".\n已安装 " + str(_part_label(slot_type, "short")) + "，对齐 " + str(score) + "。"
+	feedback_label.text = GameManager.text("Installed " + str(_part_label(slot_type, "short")) + ". Alignment " + str(score) + ".", "已安装 " + str(_part_label(slot_type, "short")) + "，对齐 " + str(score) + "。")
 	selected_part_type = ""
 	_refresh_all()
 
@@ -704,7 +707,7 @@ func _reset() -> void:
 	for part_type in PART_ORDER:
 		wrong_attempts[part_type] = 0
 	selected_part_type = ""
-	feedback_label.text = "Assembly reset. Start with Tripod.\n已重新组装，请从三脚架开始。"
+		feedback_label.text = GameManager.text("Assembly reset. Start with Tripod.", "已重新组装，请从三脚架开始。")
 	_refresh_all()
 
 

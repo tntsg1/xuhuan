@@ -84,6 +84,19 @@ func _build_feedback() -> void:
 	feedback_label.add_theme_color_override("font_color", Color(0.95, 0.78, 0.48))
 	feedback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(feedback_label)
+	
+	# Language indicator
+	var lang_indicator := Label.new()
+	lang_indicator.position = Vector2(440, 660)
+	lang_indicator.size = Vector2(144, 20)
+	lang_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lang_indicator.add_theme_font_size_override("font_size", 11)
+	var mode := GameManager.language_mode
+	var mode_text := "EN+中文" if mode == "both" else ("English" if mode == "en" else "中文")
+	lang_indicator.text = "🌐 " + mode_text
+	lang_indicator.add_theme_color_override("font_color", Color(0.65, 0.70, 0.75))
+	lang_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(lang_indicator)
 
 
 func _on_new_game() -> void:
@@ -106,7 +119,7 @@ func _on_settings() -> void:
 
 func _on_language() -> void:
 	GameManager.cycle_language()
-	_show_feedback(GameManager.text("Language changed.", "语言已切换。"))
+	_build()
 
 
 func _has_meaningful_save() -> bool:
