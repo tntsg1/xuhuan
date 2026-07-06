@@ -135,7 +135,7 @@ func _build_entry_card(num: int, name_en: String, name_zh: String, quality: Stri
 	card.add_child(name_label)
 
 	# Quality badge — localized
-	var quality_display := QUALITY_ZH.get(quality, quality) if GameManager.language_mode == "zh" else quality
+	var quality_display: String = QUALITY_ZH.get(quality, quality) if GameManager.language_mode == "zh" else quality
 	var badge_bg := ColorRect.new()
 	var qc := Color(0.5, 0.5, 0.5)
 	if QUALITY_COLORS.has(quality):
