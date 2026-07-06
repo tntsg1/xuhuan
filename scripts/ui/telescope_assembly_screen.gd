@@ -606,8 +606,8 @@ func _refresh_inspector() -> void:
 	if unlocked.is_empty():
 		return
 	var part: Dictionary = _part_for_type(selected_part_type)
-	inspector_title.text = str(part.get("name_en", _part_label(selected_part_type, "short"))) + "\n" + str(_part_label(selected_part_type, "short"))
-	inspector_body.text = str(part.get("description_en", "")) + "\n" + str(_part_label(selected_part_type, "role"))
+	inspector_title.text = GameManager.dict_text(part, "name")
+	inspector_body.text = GameManager.dict_text(part, "description")
 
 
 func _refresh_stats() -> void:
