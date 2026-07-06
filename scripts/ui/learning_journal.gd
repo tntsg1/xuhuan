@@ -105,9 +105,9 @@ func _populate() -> void:
 		var concept_en: String = str(entry.get("concept_title_en", ""))
 		var concept_zh: String = str(entry.get("concept_title_zh", ""))
 		if concept_en != "":
-			learn_en = "Concept: " + concept_en + "\n" + learn_en
+			learn_en = GameManager.text("Concept: ", "概念：") + concept_en + "\n" + learn_en
 		if concept_zh != "":
-			learn_zh = "学到的原理：" + concept_zh + "\n" + learn_zh
+			learn_zh = GameManager.text("Concept: ", "概念：") + concept_zh + "\n" + learn_zh
 
 		_entry_list.add_child(_build_entry_card(i + 1, name_en, name_zh, quality, assembly, learn_en, learn_zh))
 
