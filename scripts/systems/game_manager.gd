@@ -80,7 +80,12 @@ func default_progress() -> Dictionary:
 		"seen_story_events": [],
 		"pending_unlock_notice": [],
 		"unlocked_equipment_stages": ["eye"],
-		"language_mode": "both"
+		"language_mode": "both",
+		"mission_step_state": {},
+		"level_target_overrides": {},
+		"finder_offset": {"az": 0.0, "alt": 0.0},
+		"finder_offset_seeded": false,
+		"tracking_rate": 0.0
 	}
 
 
@@ -167,7 +172,30 @@ func current_level() -> Dictionary:
 
 
 func current_target() -> Dictionary:
-	return get_object(str(current_level().get("target_object_id", "moon")))
+	return get_object(current_target_object_id())
+
+
+# Resolves the level's actual target for this playthrough: levels with a
+# target_pool get a random pick on first visit (stable afterward via
+# progress["level_target_overrides"]); levels without one just use their
+# fixed target_object_id, unaffected.
+func current_target_object_id() -> String:
+	var level := current_level()
+	var default_id := str(level.get("target_object_id", "moon"))
+	var pool: Array = level.get("target_pool", [])
+	if pool.is_empty():
+		return default_id
+	var level_id := str(level.get("id", ""))
+	if level_id == "":
+		return default_id
+	var overrides: Dictionary = progress.get("level_target_overrides", {})
+	if overrides.has(level_id):
+		return str(overrides[level_id])
+	var pick := str(pool[randi() % pool.size()])
+	overrides[level_id] = pick
+	progress["level_target_overrides"] = overrides
+	save()
+	return pick
 
 
 func current_observation_mode() -> String:
@@ -468,6 +496,172 @@ func missing_parts() -> Array:
 	return AssemblyManagerScript.missing_parts(progress["assembly_state"], current_level().get("required_parts", []))
 
 
+# Hard gate: specific part IDs (not just part types) the current level
+# requires, e.g. ["eyepiece_10mm"]. Empty when the level has no such field
+# (older levels are unaffected).
+func missing_required_parts() -> Array[String]:
+	var required: Array = current_level().get("required_part_ids", [])
+	var missing: Array[String] = []
+	var selected: Dictionary = progress.get("selected_parts", {})
+	for required_value in required:
+		var required_id := str(required_value)
+		var part := get_part(required_id)
+		var part_type := str(part.get("type", ""))
+		var equipped_id := str(selected.get(part_type, ""))
+		if equipped_id != required_id:
+			missing.append(required_id)
+	return missing
+
+
+# ------------------------------------------------------------ mission steps
+
+
+# The current level's ordered checklist (e.g. L10's "observe with 20mm, then
+# switch to 10mm"). Empty array when the level has none.
+func mission_steps() -> Array:
+	return current_level().get("mission_steps", [])
+
+
+func completed_mission_steps() -> Array:
+	var level_id := str(current_level().get("id", ""))
+	if level_id == "":
+		return []
+	var state: Dictionary = progress.get("mission_step_state", {})
+	var done: Variant = state.get(level_id, [])
+	if done is Array:
+		return done
+	return []
+
+
+# First step (in declared order) not yet marked done; empty dict when the
+# level has no steps or all steps are complete.
+func next_pending_mission_step() -> Dictionary:
+	var steps := mission_steps()
+	if steps.is_empty():
+		return {}
+	var done := completed_mission_steps()
+	for step_value in steps:
+		if not step_value is Dictionary:
+			continue
+		var step: Dictionary = step_value
+		var step_id := str(step.get("id", ""))
+		if step_id != "" and not done.has(step_id):
+			return step
+	return {}
+
+
+# Only ever appends (steps do not un-complete once reached).
+func mark_mission_step_done(step_id: String) -> void:
+	if step_id == "":
+		return
+	var level_id := str(current_level().get("id", ""))
+	if level_id == "":
+		return
+	if not progress.get("mission_step_state") is Dictionary:
+		progress["mission_step_state"] = {}
+	var state: Dictionary = progress["mission_step_state"]
+	var done: Variant = state.get(level_id, [])
+	if not done is Array:
+		done = []
+	if not done.has(step_id):
+		done.append(step_id)
+	state[level_id] = done
+	progress["mission_step_state"] = state
+	save()
+
+
+# ------------------------------------------------------------ finder offset
+
+
+const FINDER_ALIGNED_THRESHOLD := 0.5
+
+
+# A persistent (across sessions) misalignment between the finder scope and
+# the main telescope. Only L15's variation surfaces a calibration UI for it,
+# but the offset itself applies whenever it is non-zero, everywhere.
+func finder_offset() -> Dictionary:
+	var offset: Variant = progress.get("finder_offset", {"az": 0.0, "alt": 0.0})
+	if offset is Dictionary:
+		return offset
+	return {"az": 0.0, "alt": 0.0}
+
+
+func finder_offset_length() -> float:
+	var offset := finder_offset()
+	return Vector2(float(offset.get("az", 0.0)), float(offset.get("alt", 0.0))).length()
+
+
+func finder_alignment_percent() -> float:
+	return clampf(1.0 - finder_offset_length() / 3.0, 0.0, 1.0) * 100.0
+
+
+func is_finder_aligned() -> bool:
+	return finder_offset_length() < FINDER_ALIGNED_THRESHOLD
+
+
+# L15 seeds a real, persistent misalignment the first time the player enters
+# the sky on that level; every level after inherits whatever offset is left
+# (zero once L15 is calibrated, per the design).
+func seed_finder_offset_if_needed() -> void:
+	if bool(progress.get("finder_offset_seeded", false)):
+		return
+	var sign_az := 1.0 if (randi() % 2 == 0) else -1.0
+	var sign_alt := 1.0 if (randi() % 2 == 0) else -1.0
+	var az := sign_az * (1.5 + randf() * 1.5)
+	var alt := sign_alt * (1.5 + randf() * 1.5)
+	# Guarantee a real, noticeable misalignment (>= 2 deg total).
+	if Vector2(az, alt).length() < 2.0:
+		az *= 1.6
+		alt *= 1.6
+	progress["finder_offset"] = {"az": az, "alt": alt}
+	progress["finder_offset_seeded"] = true
+	save()
+
+
+func adjust_finder_offset(delta_az: float, delta_alt: float) -> void:
+	var offset := finder_offset()
+	var az := float(offset.get("az", 0.0)) + delta_az
+	var alt := float(offset.get("alt", 0.0)) + delta_alt
+	progress["finder_offset"] = {"az": az, "alt": alt}
+	if finder_offset_length() < FINDER_ALIGNED_THRESHOLD:
+		# Calibrated: snap to true zero and persist so the finder stays
+		# trustworthy in every later level.
+		progress["finder_offset"] = {"az": 0.0, "alt": 0.0}
+	save()
+
+
+# ------------------------------------------------------------ tracking rate
+
+
+# Tracking-mount rate (0-2x), persisted across sessions (E2 drift/tracking).
+# Only meaningful when a tracking-capable mount is equipped on a drift level,
+# but the value itself is harmless to keep around otherwise.
+func tracking_rate() -> float:
+	return float(progress.get("tracking_rate", 0.0))
+
+
+func set_tracking_rate(value: float) -> void:
+	progress["tracking_rate"] = clampf(value, 0.0, 2.0)
+	save()
+
+
+func has_tracking_mount_equipped() -> bool:
+	var mount := get_part(equipped_part_id("mount"))
+	return bool(mount.get("tracking_capable", false))
+
+
+func current_environment() -> Dictionary:
+	var level := current_level()
+	var environment: Dictionary = level.get("environment", {})
+	if not environment.is_empty():
+		return environment
+	# Backward-compatible fallback: L20/21-style top-level fields, folded
+	# into an environment dict so ObservationSystem only has one shape to read.
+	if level.has("sky_brightness"):
+		return {"sky_brightness": str(level.get("sky_brightness", ""))}
+	return {}
+
+
 func calculate_stats() -> Dictionary:
 	return TelescopeMathScript.calculate(get_selected_parts(), progress.get("assembly_state", {}))
 
@@ -478,13 +672,27 @@ func evaluate_selected_object(extra_context: Dictionary = {}) -> Dictionary:
 		extra_context["observation_mode"] = current_observation_mode()
 	if not extra_context.has("minimum_success_quality"):
 		extra_context["minimum_success_quality"] = str(current_level().get("minimum_success_quality", "Good"))
-	last_observation = ObservationSystemScript.evaluate(calculate_stats(), obj, extra_context)
+	var stats := calculate_stats()
+	if str(extra_context["observation_mode"]) == "telescope":
+		if not extra_context.has("environment"):
+			extra_context["environment"] = current_environment()
+		if not extra_context.has("altitude"):
+			var aim: Dictionary = last_sky_aim
+			var altitude := 45.0
+			if bool(aim.get("valid", false)):
+				altitude = float(aim.get("altitude", 45.0))
+			extra_context["altitude"] = altitude
+		if not extra_context.has("magnification"):
+			extra_context["magnification"] = float(stats.get("magnification", 0.0))
+	last_observation = ObservationSystemScript.evaluate(stats, obj, extra_context)
 	return last_observation
 
 
 func complete_current_mission(object_id: String, observation: Dictionary) -> bool:
 	var level := current_level()
-	if object_id != str(level.get("target_object_id", "")):
+	if object_id != current_target_object_id():
+		return false
+	if not next_pending_mission_step().is_empty():
 		return false
 	if not bool(observation.get("success", false)):
 		return false
@@ -647,6 +855,16 @@ func _migrate_progress_schema() -> void:
 	for part_type in default_selected.keys():
 		if not progress["selected_parts"].has(part_type):
 			progress["selected_parts"][part_type] = default_selected[part_type]
+	if not progress.get("mission_step_state") is Dictionary:
+		progress["mission_step_state"] = {}
+	if not progress.get("level_target_overrides") is Dictionary:
+		progress["level_target_overrides"] = {}
+	if not progress.get("finder_offset") is Dictionary:
+		progress["finder_offset"] = {"az": 0.0, "alt": 0.0}
+	if not progress.has("finder_offset_seeded"):
+		progress["finder_offset_seeded"] = false
+	if not (progress.get("tracking_rate") is float or progress.get("tracking_rate") is int):
+		progress["tracking_rate"] = 0.0
 
 
 func _ensure_progress_array(key: String) -> void:

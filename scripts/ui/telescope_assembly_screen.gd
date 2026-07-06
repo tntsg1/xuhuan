@@ -6,15 +6,27 @@ const SCREEN_SIZE := Vector2(1024, 768)
 const PART_ORDER: Array[String] = ["tripod", "mount", "tube", "objective", "eyepiece", "focus_knob", "finder_scope"]
 const OPTIONAL_PARTS: Array[String] = ["focus_knob", "finder_scope"]
 const CORE_PARTS: Array[String] = ["tripod", "mount", "tube", "objective", "eyepiece"]
-const ASSET_DIR := "res://assets/pixel_observatory/"
-
 const PART_TEXTURES := {
-	"tripod": "res://assets/pixel_observatory/tripod.png",
-	"mount": "res://assets/pixel_observatory/mount.png",
-	"tube": "res://assets/pixel_observatory/tube.png",
-	"objective": "res://assets/pixel_observatory/objective.png",
-	"eyepiece": "res://assets/pixel_observatory/eyepiece.png",
-	"finder_scope": "res://assets/pixel_observatory/finder_scope.png"
+	"basic_tripod": "res://assets/telescope_parts/basic_tripod.png",
+	"basic_mount": "res://assets/telescope_parts/basic_mount.png",
+	"starter_tube": "res://assets/telescope_parts/starter_tube.png",
+	"objective_60mm": "res://assets/telescope_parts/objective_60mm.png",
+	"eyepiece_20mm": "res://assets/telescope_parts/eyepiece_20mm.png",
+	"basic_finder_scope": "res://assets/telescope_parts/basic_finder_scope.png",
+	"eyepiece_10mm": "res://assets/telescope_parts/eyepiece_10mm.png",
+	"objective_100mm": "res://assets/telescope_parts/objective_100mm.png",
+	"stable_mount": "res://assets/telescope_parts/stable_mount.png",
+	"tracking_mount": "res://assets/telescope_parts/tracking_mount.png",
+	"basic_focus_knob": "res://assets/telescope_parts/basic_focus_knob.png"
+}
+const DEFAULT_PART_IDS := {
+	"tripod": "basic_tripod",
+	"mount": "basic_mount",
+	"tube": "starter_tube",
+	"objective": "objective_60mm",
+	"eyepiece": "eyepiece_20mm",
+	"focus_knob": "basic_focus_knob",
+	"finder_scope": "basic_finder_scope"
 }
 
 const PART_LABELS := {
@@ -28,13 +40,13 @@ const PART_LABELS := {
 }
 
 const SLOT_RECTS := {
-	"finder_scope": Rect2(163, 40, 116, 46),
-	"eyepiece": Rect2(69, 147, 74, 54),
-	"focus_knob": Rect2(48, 216, 66, 44),
-	"tube": Rect2(144, 128, 158, 72),
-	"objective": Rect2(299, 133, 72, 62),
-	"mount": Rect2(165, 213, 72, 56),
-	"tripod": Rect2(144, 281, 112, 74)
+	"finder_scope": Rect2(132, 86, 154, 48),
+	"eyepiece": Rect2(42, 154, 88, 46),
+	"focus_knob": Rect2(54, 196, 98, 62),
+	"tube": Rect2(88, 132, 238, 78),
+	"objective": Rect2(300, 126, 78, 86),
+	"mount": Rect2(142, 198, 132, 116),
+	"tripod": Rect2(132, 272, 150, 92)
 }
 
 const PART_COLORS := {
@@ -230,7 +242,7 @@ func _refresh_parts() -> void:
 		var unlocked: Array = GameManager.unlocked_parts_by_type(part_type)
 		if unlocked.is_empty():
 			continue
-		var part: Dictionary = _dict_value(unlocked[0])
+		var part: Dictionary = _part_for_type(part_type)
 		var installed := _is_installed(part_type)
 		var selected := selected_part_type == part_type or (selected_part_type == "" and next_part == part_type)
 		if selected:
@@ -268,7 +280,7 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 	var icon_box := _panel_local(parts_list, pos + Vector2(10, 11), Vector2(56, 56), Color(0.070, 0.085, 0.095), Color(0.22, 0.30, 0.34))
 	icon_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon_box.clip_contents = true
-	_draw_part_icon(parts_list, part_type, pos + Vector2(10, 11), installed)
+	_draw_part_icon(parts_list, part, pos + Vector2(10, 11), installed, Vector2(56, 56))
 
 	var name_en := _label(str(part.get("name_en", PART_LABELS[part_type]["short"])), 12, Color(0.94, 0.95, 0.92))
 	name_en.position = pos + Vector2(76, 10)
@@ -311,7 +323,33 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 	parts_list.add_child(click)
 
 
-func _draw_part_icon(parent: Control, part_type: String, box_pos: Vector2, installed: bool) -> void:
+func _draw_part_texture(parent: Control, part: Dictionary, pos: Vector2, texture_size: Vector2, alpha: float = 1.0) -> bool:
+	var part_id := str(part.get("id", ""))
+	var texture_path := str(PART_TEXTURES.get(part_id, ""))
+	if texture_path == "" or not ResourceLoader.exists(texture_path):
+		return false
+	var texture: Texture2D = load(texture_path)
+	var native_size := texture.get_size()
+	var scale := minf(texture_size.x / native_size.x, texture_size.y / native_size.y)
+	var draw_size := native_size * scale
+	var icon := TextureRect.new()
+	icon.texture = texture
+	icon.position = pos + (texture_size - draw_size) * 0.5
+	icon.size = native_size
+	icon.scale = Vector2.ONE * scale
+	icon.stretch_mode = TextureRect.STRETCH_KEEP
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.modulate = Color(1, 1, 1, alpha)
+	parent.add_child(icon)
+	return true
+
+
+func _draw_part_icon(parent: Control, part: Dictionary, box_pos: Vector2, installed: bool, box_size: Vector2 = Vector2(56, 56)) -> void:
+	if _draw_part_texture(parent, part, box_pos + Vector2(3, 3), box_size - Vector2(6, 6), 0.72 if installed else 1.0):
+		return
+
+	var part_type := str(part.get("type", ""))
 	var color: Color = PART_COLORS[part_type]
 	if installed:
 		color = color.darkened(0.22)
@@ -359,7 +397,6 @@ func _refresh_blueprint() -> void:
 	_clear(blueprint_layer)
 	_rect_local(blueprint_layer, Vector2.ZERO, blueprint_layer.size, Color(0.060, 0.075, 0.090))
 	_draw_blueprint_grid()
-	_draw_scope_guide()
 
 	var next_part := _next_installable_part()
 	for part_type in PART_ORDER:
@@ -382,13 +419,47 @@ func _draw_blueprint_grid() -> void:
 
 
 func _draw_scope_guide() -> void:
-	_rect_local(blueprint_layer, Vector2(91, 159), Vector2(226, 18), Color(0.26, 0.52, 0.72, 0.22))
-	_rect_local(blueprint_layer, Vector2(306, 149), Vector2(30, 38), Color(0.62, 0.83, 0.91, 0.18))
-	_rect_local(blueprint_layer, Vector2(72, 149), Vector2(24, 38), Color(0.58, 0.66, 0.74, 0.18))
-	_rect_local(blueprint_layer, Vector2(192, 193), Vector2(18, 76), Color(0.55, 0.61, 0.66, 0.18))
-	_rect_local(blueprint_layer, Vector2(165, 310), Vector2(96, 9), Color(0.55, 0.61, 0.66, 0.18))
-	_draw_line(Vector2(201, 268), Vector2(150, 334), Color(0.55, 0.61, 0.66, 0.18))
-	_draw_line(Vector2(201, 268), Vector2(244, 334), Color(0.55, 0.61, 0.66, 0.18))
+	var ghost := Color(0.58, 0.70, 0.76, 0.12)
+	var brass := Color(0.86, 0.63, 0.28, 0.16)
+	_rect_local(blueprint_layer, Vector2(83, 158), Vector2(252, 30), Color(0.26, 0.52, 0.72, 0.16))
+	_rect_local(blueprint_layer, Vector2(310, 143), Vector2(42, 60), Color(0.62, 0.83, 0.91, 0.13))
+	_rect_local(blueprint_layer, Vector2(56, 162), Vector2(66, 22), Color(0.58, 0.66, 0.74, 0.13))
+	_rect_local(blueprint_layer, Vector2(146, 119), Vector2(126, 9), Color(0.38, 0.68, 0.92, 0.12))
+	_rect_local(blueprint_layer, Vector2(190, 202), Vector2(28, 88), ghost)
+	_rect_local(blueprint_layer, Vector2(156, 324), Vector2(116, 9), ghost)
+	_draw_line(Vector2(204, 284), Vector2(144, 350), ghost)
+	_draw_line(Vector2(204, 284), Vector2(266, 350), ghost)
+	_rect_local(blueprint_layer, Vector2(122, 147), Vector2(8, 54), brass)
+	_rect_local(blueprint_layer, Vector2(268, 147), Vector2(8, 54), brass)
+
+
+func _draw_connection_hardware() -> void:
+	var metal := Color(0.42, 0.50, 0.54, 0.82)
+	var dark := Color(0.08, 0.10, 0.11, 0.88)
+	var brass := Color(0.86, 0.62, 0.30, 0.82)
+
+	# Finder rail and two little feet that clamp it to the main tube.
+	_rect_local(blueprint_layer, Vector2(151, 128), Vector2(128, 5), dark)
+	_rect_local(blueprint_layer, Vector2(169, 126), Vector2(8, 21), metal)
+	_rect_local(blueprint_layer, Vector2(247, 126), Vector2(8, 21), metal)
+	_rect_local(blueprint_layer, Vector2(164, 143), Vector2(18, 5), brass)
+	_rect_local(blueprint_layer, Vector2(242, 143), Vector2(18, 5), brass)
+
+	# Eyepiece/focuser drawtube and the focus housing connection.
+	_rect_local(blueprint_layer, Vector2(92, 165), Vector2(46, 18), dark)
+	_rect_local(blueprint_layer, Vector2(86, 185), Vector2(42, 8), metal)
+	_rect_local(blueprint_layer, Vector2(104, 190), Vector2(10, 18), metal)
+
+	# Tube rings, objective collar, and saddle into the mount.
+	_rect_local(blueprint_layer, Vector2(122, 145), Vector2(7, 58), brass)
+	_rect_local(blueprint_layer, Vector2(267, 145), Vector2(7, 58), brass)
+	_rect_local(blueprint_layer, Vector2(304, 149), Vector2(12, 48), brass)
+	_rect_local(blueprint_layer, Vector2(176, 204), Vector2(58, 9), metal)
+	_rect_local(blueprint_layer, Vector2(192, 208), Vector2(24, 48), dark)
+
+	# Mount-to-tripod neck and top plate.
+	_rect_local(blueprint_layer, Vector2(190, 292), Vector2(30, 18), metal)
+	_rect_local(blueprint_layer, Vector2(160, 310), Vector2(90, 8), brass)
 
 
 func _draw_slot(part_type: String, next_part: String) -> void:
@@ -401,8 +472,8 @@ func _draw_slot(part_type: String, next_part: String) -> void:
 	var border := Color(0.43, 0.58, 0.66, 0.74)
 	var fill := Color(0.11, 0.16, 0.18, 0.38)
 	if installed:
-		border = Color(0.52, 0.83, 0.64, 0.90)
-		fill = Color(0.20, 0.30, 0.26, 0.54)
+		border = Color(0.52, 0.83, 0.64, 0.42)
+		fill = Color(0.20, 0.30, 0.26, 0.12)
 	elif can_show_selected:
 		border = Color(0.96, 0.78, 0.30, 1.0)
 		fill = Color(0.34, 0.26, 0.10, 0.46)
@@ -410,23 +481,22 @@ func _draw_slot(part_type: String, next_part: String) -> void:
 		border = Color(0.56, 0.78, 0.92, 0.90)
 		fill = Color(0.12, 0.22, 0.28, 0.48)
 
-	_panel_local(blueprint_layer, rect.position, rect.size, fill, border)
-	_draw_corner_ticks(rect, border)
-
 	if installed:
 		_draw_installed_part(part_type, rect)
 	else:
+		_panel_local(blueprint_layer, rect.position, rect.size, fill, border)
+		_draw_corner_ticks(rect, border)
 		var dot := _rect_local(blueprint_layer, rect.position + rect.size * 0.5 - Vector2(4, 4), Vector2(8, 8), border)
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var slot_name := str(PART_LABELS[part_type]["short"])
-	var label := _label(slot_name, 11, Color(0.88, 0.94, 0.92))
-	label.position = rect.position + Vector2(5, 4)
-	label.size = Vector2(rect.size.x - 10, 16)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	label.clip_text = true
-	blueprint_layer.add_child(label)
+		var slot_name := str(PART_LABELS[part_type]["short"])
+		var label := _label(slot_name, 11, Color(0.88, 0.94, 0.92))
+		label.position = rect.position + Vector2(5, 4)
+		label.size = Vector2(rect.size.x - 10, 16)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		label.clip_text = true
+		blueprint_layer.add_child(label)
 
 	var hot := Button.new()
 	hot.position = rect.position
@@ -440,7 +510,11 @@ func _draw_slot(part_type: String, next_part: String) -> void:
 
 func _draw_installed_part(part_type: String, rect: Rect2) -> void:
 	var color: Color = PART_COLORS[part_type]
-	var inner := rect.grow(-9.0)
+	var part := _part_for_type(part_type)
+	var inner := _installed_part_rect(part_type, part, rect)
+	if _draw_part_texture(blueprint_layer, part, inner.position, inner.size, 0.92):
+		return
+
 	if part_type == "tripod":
 		_rect_local(blueprint_layer, inner.position + Vector2(26, 0), Vector2(10, 34), color)
 		_rect_local(blueprint_layer, inner.position + Vector2(8, 38), Vector2(72, 8), color.darkened(0.08))
@@ -465,6 +539,37 @@ func _draw_installed_part(part_type: String, rect: Rect2) -> void:
 	else:
 		_rect_local(blueprint_layer, inner.position + Vector2(10, 15), Vector2(72, 15), color)
 		_rect_local(blueprint_layer, inner.position + Vector2(64, 9), Vector2(20, 28), color.lightened(0.12))
+
+
+func _installed_part_rect(part_type: String, part: Dictionary, slot_rect: Rect2) -> Rect2:
+	var part_id := str(part.get("id", ""))
+	match part_type:
+		"tube":
+			return Rect2(88, 136, 238, 82)
+		"finder_scope":
+			# Finder should read as a small scope mounted directly on top
+			# of the main tube, not as a separate object floating above it.
+			return Rect2(146, 92, 132, 42)
+		"objective":
+			if part_id == "objective_60mm":
+				return Rect2(312, 136, 58, 64)
+			return Rect2(300, 128, 76, 84)
+		"eyepiece":
+			return Rect2(45, 160, 84, 30)
+		"focus_knob":
+			return Rect2(52, 194, 96, 68)
+		"mount":
+			match part_id:
+				"basic_mount":
+					return Rect2(176, 190, 70, 92)
+				"stable_mount":
+					return Rect2(154, 190, 98, 108)
+				"tracking_mount":
+					return Rect2(156, 190, 96, 108)
+			return Rect2(166, 206, 86, 96)
+		"tripod":
+			return Rect2(128, 246, 168, 120)
+	return slot_rect.grow(-9.0)
 
 
 func _draw_corner_ticks(rect: Rect2, color: Color) -> void:
@@ -496,7 +601,7 @@ func _refresh_inspector() -> void:
 	var unlocked: Array = GameManager.unlocked_parts_by_type(selected_part_type)
 	if unlocked.is_empty():
 		return
-	var part: Dictionary = _dict_value(unlocked[0])
+	var part: Dictionary = _part_for_type(selected_part_type)
 	inspector_title.text = str(part.get("name_en", PART_LABELS[selected_part_type]["short"])) + "\n" + str(PART_LABELS[selected_part_type]["zh"])
 	inspector_body.text = str(part.get("description_en", "")) + "\n" + str(PART_LABELS[selected_part_type]["role"])
 
@@ -659,6 +764,25 @@ func _is_installed(part_type: String) -> bool:
 	return bool(_dict_value(_assembly_state().get(part_type, {})).get("installed", false))
 
 
+func _part_for_type(part_type: String) -> Dictionary:
+	var unlocked: Array = GameManager.unlocked_parts_by_type(part_type)
+	var fallback := {
+		"id": str(DEFAULT_PART_IDS.get(part_type, "")),
+		"type": part_type,
+		"name_en": str(PART_LABELS.get(part_type, {"short": part_type})["short"])
+	}
+	if unlocked.is_empty():
+		return fallback
+	var part: Dictionary = _dict_value(unlocked[0])
+	var equipped_id := GameManager.equipped_part_id(part_type)
+	if equipped_id != "":
+		for candidate in unlocked:
+			var candidate_part := _dict_value(candidate)
+			if str(candidate_part.get("id", "")) == equipped_id:
+				return candidate_part
+	return part
+
+
 func _assembly_state() -> Dictionary:
 	return _dict_value(GameManager.progress.get("assembly_state", {}))
 
@@ -754,7 +878,6 @@ func _texture(path: String, rect_size: Vector2) -> TextureRect:
 	texture_rect.texture = load(path)
 	texture_rect.size = rect_size
 	texture_rect.custom_minimum_size = rect_size
-	texture_rect.ignore_texture_size = true
 	texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	return texture_rect

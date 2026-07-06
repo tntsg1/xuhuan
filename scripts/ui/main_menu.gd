@@ -1,5 +1,21 @@
 extends Control
-## Pixel Observatory — Main Menu
+## Main Menu: full image background + transparent interaction layer.
+
+const BG_TEXTURE := "res://assets/main_menu/main_menu_bg_1024.png"
+const SCREEN_SIZE := Vector2(1024, 768)
+
+# Button rects are transparent hotspots over the baked full-screen menu art.
+const BUTTON_RECTS := {
+	"new": Rect2(337, 336, 350, 54),
+	"continue": Rect2(337, 403, 350, 54),
+	"settings": Rect2(337, 470, 350, 54),
+	"language": Rect2(337, 537, 350, 54),
+	"quit": Rect2(337, 601, 350, 54)
+}
+
+var feedback_label: Label
+var button_visuals: Dictionary = {}
+
 
 func _ready() -> void:
 	_build()
@@ -8,132 +24,177 @@ func _ready() -> void:
 func _build() -> void:
 	for child in get_children():
 		child.queue_free()
+	button_visuals.clear()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	custom_minimum_size = SCREEN_SIZE
 
-	# Deep night sky background
-	var bg := ColorRect.new()
-	bg.color = Color(0.02, 0.03, 0.10)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_draw_background()
+	_build_hotspots()
+	_build_feedback()
+
+
+func _draw_background() -> void:
+	var bg := TextureRect.new()
+	bg.texture = load(BG_TEXTURE)
+	bg.position = Vector2.ZERO
+	bg.size = SCREEN_SIZE
+	bg.ignore_texture_size = true
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.stretch_mode = TextureRect.STRETCH_SCALE
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
-	# Stars
-	for i in range(90):
-		var star := ColorRect.new()
-		var bright := 0.5 + fmod(float(i), 5.0) * 0.1
-		star.color = Color(bright, bright + 0.03, 0.92 + fmod(float(i), 3.0) * 0.04, 0.7 + fmod(float(i * 7), 3.0) * 0.1)
-		star.size = Vector2(2 + fmod(float(i), 2.0), 2 + fmod(float(i), 2.0))
-		star.position = Vector2(fmod(float(i * 131), 1020.0) + 4, fmod(float(i * 67), 740.0) + 8)
-		add_child(star)
 
-	# Floating island silhouette at bottom
-	var island := ColorRect.new()
-	island.color = Color(0.04, 0.06, 0.03)
-	island.position = Vector2(162, 580)
-	island.size = Vector2(700, 120)
-	add_child(island)
-	var island_top := ColorRect.new()
-	island_top.color = Color(0.06, 0.10, 0.04)
-	island_top.position = Vector2(182, 560)
-	island_top.size = Vector2(660, 24)
-	add_child(island_top)
-
-	# Small telescope silhouette on island
-	var tele := ColorRect.new()
-	tele.color = Color(0.12, 0.15, 0.20)
-	tele.position = Vector2(448, 470)
-	tele.size = Vector2(160, 80)
-	add_child(tele)
-	var tele_tube := ColorRect.new()
-	tele_tube.color = Color(0.18, 0.22, 0.30)
-	tele_tube.position = Vector2(468, 462)
-	tele_tube.size = Vector2(120, 12)
-	add_child(tele_tube)
-
-	# Menu panel
-	var panel_bg := ColorRect.new()
-	panel_bg.color = Color(0.04, 0.05, 0.08, 0.88)
-	panel_bg.position = Vector2(272, 92)
-	panel_bg.size = Vector2(480, 440)
-	add_child(panel_bg)
-
-	var panel_border := ColorRect.new()
-	panel_border.color = Color(0.22, 0.35, 0.50, 0.4)
-	panel_border.position = Vector2(270, 90)
-	panel_border.size = Vector2(484, 444)
-	add_child(panel_border)
-
-	var box := VBoxContainer.new()
-	box.size = Vector2(440, 380)
-	box.position = Vector2(292, 122)
-	box.add_theme_constant_override("separation", 16)
-	add_child(box)
-
-	var title := _label("Pixel Observatory\n像素观测站", 38)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(title)
-
-	var subtitle := _label(GameManager.text(
-		"Build your telescope, observe the night sky, and learn how astronomers explore the universe.",
-		"组装望远镜，观察夜空，学习天文学家如何探索宇宙。"
-	), 16)
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(subtitle)
-
-	var new_button := _button(GameManager.text("New Game", "新游戏"))
+func _build_hotspots() -> void:
+	_add_button_feedback("new", BUTTON_RECTS["new"])
+	var new_button := _transparent_button("new", BUTTON_RECTS["new"])
 	new_button.pressed.connect(_on_new_game)
-	box.add_child(new_button)
+	add_child(new_button)
 
-	var continue_button := _button(GameManager.text("Continue", "继续"))
-	continue_button.disabled = not GameManager.has_save()
+	_add_button_feedback("continue", BUTTON_RECTS["continue"])
+	var continue_button := _transparent_button("continue", BUTTON_RECTS["continue"])
 	continue_button.pressed.connect(_on_continue)
-	box.add_child(continue_button)
+	add_child(continue_button)
 
-	var language_button := _button(GameManager.text("Language: EN + 中文", "语言：EN + 中文"))
+	_add_button_feedback("settings", BUTTON_RECTS["settings"])
+	var settings_button := _transparent_button("settings", BUTTON_RECTS["settings"])
+	settings_button.pressed.connect(_on_settings)
+	add_child(settings_button)
+
+	_add_button_feedback("language", BUTTON_RECTS["language"])
+	var language_button := _transparent_button("language", BUTTON_RECTS["language"])
 	language_button.pressed.connect(_on_language)
-	box.add_child(language_button)
+	add_child(language_button)
 
-	var quit_button := _button(GameManager.text("Quit", "退出"))
-	quit_button.pressed.connect(func(): get_tree().quit())
-	box.add_child(quit_button)
+	_add_button_feedback("quit", BUTTON_RECTS["quit"])
+	var quit_button := _transparent_button("quit", BUTTON_RECTS["quit"])
+	quit_button.pressed.connect(func() -> void: get_tree().quit())
+	add_child(quit_button)
 
-	# Version text
-	var version := _label("v0.2 — Made with Godot 4 + Sprout Lands + Tiny Swords", 11)
-	version.position = Vector2(292, 542)
-	version.size = Vector2(440, 20)
-	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	version.add_theme_color_override("font_color", Color(0.45, 0.48, 0.52))
-	add_child(version)
+
+func _build_feedback() -> void:
+	feedback_label = Label.new()
+	feedback_label.position = Vector2(300, 694)
+	feedback_label.size = Vector2(424, 28)
+	feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	feedback_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	feedback_label.clip_text = true
+	feedback_label.add_theme_font_size_override("font_size", 14)
+	feedback_label.add_theme_color_override("font_color", Color(0.95, 0.78, 0.48))
+	feedback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(feedback_label)
 
 
 func _on_new_game() -> void:
 	GameManager.new_game()
-	# Astronomy Club opening scene: Maya welcomes the new member.
 	if GameManager.try_story_event("intro", "observatory"):
 		return
 	GameManager.go("observatory")
 
 
 func _on_continue() -> void:
+	if not _has_meaningful_save():
+		_show_feedback("No save found yet.")
+		return
 	GameManager.go("observatory")
+
+
+func _on_settings() -> void:
+	_show_feedback("Settings coming soon.")
 
 
 func _on_language() -> void:
 	GameManager.cycle_language()
-	_build()
+	_show_feedback("Language changed.")
 
 
-func _label(text: String, font_size: int) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", Color(0.94, 0.93, 0.86))
-	return label
+func _has_meaningful_save() -> bool:
+	if not GameManager.has_save():
+		return false
+	var progress: Dictionary = GameManager.progress
+	if int(progress.get("current_level", 1)) > 1:
+		return true
+	if bool(progress.get("telescope_ready", false)):
+		return true
+	for key in ["completed_levels", "journal_entries", "seen_story_events", "seen_concept_briefs", "observed_objects", "badges"]:
+		var values: Array = progress.get(key, [])
+		if not values.is_empty():
+			return true
+	return false
 
 
-func _button(text: String) -> Button:
+func _show_feedback(text: String) -> void:
+	if feedback_label != null:
+		feedback_label.text = text
+
+
+func _transparent_button(id: String, rect: Rect2) -> Button:
 	var button := Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(400, 50)
-	button.add_theme_font_size_override("font_size", 17)
+	button.position = rect.position
+	button.size = rect.size
+	button.text = ""
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.mouse_entered.connect(func() -> void: _set_button_feedback(id, "hover"))
+	button.mouse_exited.connect(func() -> void: _set_button_feedback(id, "normal"))
+	button.button_down.connect(func() -> void: _set_button_feedback(id, "pressed"))
+	button.button_up.connect(func() -> void: _set_button_feedback(id, "hover"))
+	var empty := StyleBoxEmpty.new()
+	button.add_theme_stylebox_override("normal", empty)
+	button.add_theme_stylebox_override("hover", empty)
+	button.add_theme_stylebox_override("pressed", empty)
+	button.add_theme_stylebox_override("disabled", empty)
+	button.add_theme_stylebox_override("focus", empty)
 	return button
+
+
+func _add_button_feedback(id: String, rect: Rect2) -> void:
+	var overlay := ColorRect.new()
+	overlay.position = rect.position
+	overlay.size = rect.size
+	overlay.color = Color.TRANSPARENT
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(overlay)
+
+	var frame := Control.new()
+	frame.position = rect.position - Vector2(2, 2)
+	frame.size = rect.size + Vector2(4, 4)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(frame)
+	_rect(frame, Vector2.ZERO, Vector2(frame.size.x, 2), Color.TRANSPARENT)
+	_rect(frame, Vector2(0, frame.size.y - 2), Vector2(frame.size.x, 2), Color.TRANSPARENT)
+	_rect(frame, Vector2.ZERO, Vector2(2, frame.size.y), Color.TRANSPARENT)
+	_rect(frame, Vector2(frame.size.x - 2, 0), Vector2(2, frame.size.y), Color.TRANSPARENT)
+
+	button_visuals[id] = {"overlay": overlay, "frame": frame}
+
+
+func _set_button_feedback(id: String, state: String) -> void:
+	if not button_visuals.has(id):
+		return
+	var parts: Dictionary = button_visuals[id]
+	var overlay: ColorRect = parts.get("overlay")
+	var frame: Control = parts.get("frame")
+	var border_color := Color.TRANSPARENT
+	match state:
+		"hover":
+			overlay.color = Color(1.0, 0.76, 0.28, 0.12)
+			border_color = Color(1.0, 0.76, 0.28, 0.92)
+		"pressed":
+			overlay.color = Color(0.0, 0.0, 0.0, 0.24)
+			border_color = Color(1.0, 0.88, 0.50, 1.0)
+		_:
+			overlay.color = Color.TRANSPARENT
+	for child in frame.get_children():
+		if child is ColorRect:
+			child.color = border_color
+
+
+func _rect(parent: Control, pos: Vector2, size: Vector2, color: Color) -> ColorRect:
+	var rect := ColorRect.new()
+	rect.position = pos
+	rect.size = size
+	rect.color = color
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(rect)
+	return rect

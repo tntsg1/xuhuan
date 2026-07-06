@@ -112,6 +112,19 @@
     "description_zh": "让望远镜在高倍率下也能保持稳定的重型支架。"
   },
   {
+    "id": "tracking_mount",
+    "type": "mount",
+    "name_en": "Tracking Mount",
+    "name_zh": "追踪支架",
+    "stability": 82,
+    "tracking": 20,
+    "tracking_capable": true,
+    "cost": 260,
+    "unlock_level": 23,
+    "description_en": "A motorized mount that can turn at the same rate as the sky, canceling Earth's drift.",
+    "description_zh": "带电机的支架，能以与天空相同的速度转动，抵消地球自转带来的漂移。"
+  },
+  {
     "id": "basic_focus_knob",
     "type": "focus_knob",
     "name_en": "Basic Focus Knob",

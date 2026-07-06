@@ -186,18 +186,28 @@ cp "$SAVE_DIR/savegame.backup.json" "$SAVE_DIR/savegame.json"
 
 ## 6. 待办 / 下一步
 
-### 已设计未实现：L10-L24（见 `docs/levels_10_24_design.md`）
+### L10-L24：第一批（数据层）已完成 2026-07-04，机制待做（见 `docs/levels_10_24_design.md`）
 **螺旋式重复练习结构**：不再一关一新概念，而是每 3-5 关一个主题反复变形。
 - Ch3 (L10-13) 调焦与倍率掌握
 - Ch4 (L14-17) 寻星镜与星空导航
 - Ch5 (L18-21) 集光与暗弱天体
 - Ch6 (L22-24) 追踪与耐心
 
-实现分三批：🟢 纯数据文案(L12/14/16/18/19) → 🟡 轻量扩展(倍率切换/seeing/随机/光污染) →
-🔴 新机制(校准玩法 L15、漂移+追踪+驻留 L22-24 一套系统三关复用)。
-新字段建议：`chapter_id`/`lesson_thread`/`practice_step`/`variation`/
-`repeat_target_reason_en/zh`/`next_action`/`next_guidance_en/zh`。
-**防重复感核心**：每个重复目标关卡的 `repeat_target_reason` 必须在任务板和剧情第一句展示。
+**第一批已落地**（改为一次铺全 15 关数据层，避免 get_level 兜底导致跳关）：
+levels.json 扩到 24 关（含 chapter_id/lesson_thread/practice_step/variation/repeat_target_reason
+新字段；L13/17 的 target_pool、L20/21 的 sky_brightness、L22-24 的 drift_enabled/hold_seconds
+为**惰性占位**，暂无代码读取）；story_dialogues.json 补全 before/after + board_notes 10-24
+（repeat_target_reason 在 before 第一句）；StoryManager.TRIGGER_EVENTS 扩到 24；
+sky_observation.gd 新增 hide_target_hint（L14/L17 关提示圈）、visited_modes 足迹 +
+L16 workflow_discipline 引导条替换。flow_test 端到端 24 关 + 4 套回归全 PASS。
+
+**剩余两批**：🟡 轻量扩展(L10/13 目镜三档切换UI、L11 seeing、L17 随机目标、L20/21 sky_brightness
+接入 evaluate) → 🔴 新机制(校准玩法 L15、漂移+追踪+驻留 L22-24 一套系统三关复用)。
+还缺：新零件 eyepiece_6mm / tracking_mount（telescope_parts.json 确认无同名）、可选 saturn 天体、
+4 张新学习卡图解、Journal 章节分组（chapter_id 尚无代码消费）。
+注意：is_final_level 现改在 L24 触发，game_manager.gd 硬编码的 "Young Observer" 结业徽章
+会与 L24 自身的 "Senior Observer" 同时追加，待定夺是否调整。
+**防重复感核心**：每个重复目标关卡的 `repeat_target_reason` 必须在任务板和剧情第一句展示（已执行）。
 
 ### 其它未做
 - Newtonian 反射镜零件仍是数据预留，L7-9 暂用折射镜零件顶替

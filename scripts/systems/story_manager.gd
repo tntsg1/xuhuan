@@ -22,7 +22,22 @@ const TRIGGER_EVENTS := {
 		5: "level_5_before",
 		6: "level_6_before",
 		8: "level_8_before",
-		9: "level_9_before"
+		9: "level_9_before",
+		10: "level_10_before",
+		11: "level_11_before",
+		12: "level_12_before",
+		13: "level_13_before",
+		14: "level_14_before",
+		15: "level_15_before",
+		16: "level_16_before",
+		17: "level_17_before",
+		18: "level_18_before",
+		19: "level_19_before",
+		20: "level_20_before",
+		21: "level_21_before",
+		22: "level_22_before",
+		23: "level_23_before",
+		24: "level_24_before"
 	},
 	"before_assembly": {
 		3: "level_3_before_assembly",

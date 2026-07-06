@@ -57,6 +57,26 @@ static func _evaluate_telescope(stats: Dictionary, celestial_object: Dictionary,
 	var requires_focus := bool(extra_context.get("requires_focus", false))
 	var focus_tolerance := float(extra_context.get("focus_tolerance", 0.06))
 	var minimum_success_quality := str(extra_context.get("minimum_success_quality", "Good"))
+	var environment: Dictionary = extra_context.get("environment", {})
+	# E2 drift: the target has wandered out of the eyepiece entirely. This is
+	# a hard Failed regardless of everything else - telescope_view is the
+	# only caller that ever sets this key (flow_test's direct evaluate()
+	# calls never do, so the 24-level regression path is untouched).
+	if bool(extra_context.get("target_off_center", false)):
+		return {
+			"quality": "Failed",
+			"success": false,
+			"visual_effect": "dim",
+			"feedback_en": "The target has drifted out of view. Re-center it.",
+			"feedback_zh": "目标已漂出视野，重新居中。",
+			"observation_mode": "telescope",
+			"focus_error": focus_error,
+			"out_of_focus": requires_focus and focus_error > focus_tolerance,
+			"effective_clarity": 0.0,
+			"seeing_eff": 1.0,
+			"seeing_label": "Good",
+			"ratios": {"light": 0.0, "clarity": 0.0, "stability": 0.0}
+		}
 
 	# Out-of-focus optics lose clarity before anything else.
 	var effective_clarity := float(stats.get("clarity_score", 0.0)) - focus_error * 120.0
@@ -65,6 +85,74 @@ static func _evaluate_telescope(stats: Dictionary, celestial_object: Dictionary,
 	var light_ratio := _ratio(float(stats.get("light_score", 0.0)), float(celestial_object.get("required_light_score", 1.0)))
 	var clarity_ratio := _ratio(effective_clarity, float(celestial_object.get("required_clarity", 1.0)))
 	var stability_ratio := _ratio(float(stats.get("stability_score", 0.0)), float(celestial_object.get("required_stability", 1.0)))
+
+	# --- Seeing: atmospheric steadiness limits how much magnification is
+	# actually usable. No environment field = good seeing, high altitude,
+	# no penalty -> identical behavior to pre-environment levels (L1-L9 etc).
+	var seeing_label := "Good"
+	var seeing_eff := 1.0
+	if not environment.is_empty():
+		var seeing_key := str(environment.get("seeing", "good")).to_lower()
+		var seeing_base := 1.0
+		# The atmosphere also imposes an ABSOLUTE magnification ceiling that
+		# no aperture can buy its way past - otherwise a 100mm objective
+		# raises useful_magnification_limit enough to dodge the poor-seeing
+		# penalty entirely (bypassing the L11 lesson).
+		var seeing_cap := 9999.0
+		match seeing_key:
+			"poor":
+				seeing_base = 0.72
+				seeing_cap = 55.0
+				seeing_label = "Poor"
+			"average":
+				seeing_base = 0.88
+				seeing_cap = 110.0
+				seeing_label = "Average"
+			_:
+				seeing_base = 1.0
+				seeing_label = "Good"
+		var altitude := float(extra_context.get("altitude", 45.0))
+		var altitude_factor := clampf(altitude / 30.0, 0.62, 1.0)
+		seeing_eff = seeing_base * altitude_factor
+		var magnification := float(extra_context.get("magnification", 0.0))
+		var useful_limit := float(stats.get("useful_magnification_limit", 0.0))
+		# Altitude already discounts the relative term via seeing_eff - do
+		# NOT scale the absolute cap by it too, or low-power (the intended
+		# correct answer) gets punished as well.
+		var useful_limit_eff := minf(useful_limit * seeing_eff, seeing_cap)
+		if magnification > 0.0 and useful_limit_eff > 0.0 and magnification > useful_limit_eff:
+			var penalty_ratio: float = useful_limit_eff / magnification
+			clarity_ratio *= penalty_ratio
+			stability_ratio *= penalty_ratio
+
+		# --- Sky brightness / cloud cover: reduce effective light ratio.
+		# NOTE: 0.7 (not the initially-specced 0.62) - with the current best
+		# unlocked objective (100mm, light_score 83.3) and Andromeda's
+		# required_light_score 75, 0.62 pushes L20's ratio to 0.69 (Poor),
+		# making its Fair minimum_success_quality mathematically unreachable
+		# even with perfect gear. 0.7 keeps a real, visible penalty (city
+		# sky clearly worse than dark) while leaving L20 completable.
+		var sky_brightness := str(environment.get("sky_brightness", "")).to_lower()
+		match sky_brightness:
+			"city":
+				light_ratio *= 0.7
+			"suburban":
+				light_ratio *= 0.85
+			"dark":
+				light_ratio *= 1.08
+		var cloud_cover := float(environment.get("cloud_cover", 0.0))
+		if extra_context.has("cloud_attenuation"):
+			# Real-time attenuation from telescope_view's drifting cloud
+			# layer: waiting for a gap between clouds is an actual strategy.
+			# GameManager only sets this key from telescope_view's live loop;
+			# callers that never pass it (e.g. flow_test's direct evaluate()
+			# calls) keep the static formula below untouched.
+			var atten := clampf(float(extra_context.get("cloud_attenuation", 0.0)), 0.0, 1.0)
+			light_ratio *= (1.0 - 0.75 * atten)
+		elif cloud_cover > 0.0:
+			light_ratio *= (1.0 - 0.5 * clampf(cloud_cover, 0.0, 1.0))
+		light_ratio = clampf(light_ratio, 0.0, 4.0)
+
 	var min_ratio: float = min(light_ratio, min(clarity_ratio, stability_ratio))
 	var quality := "Failed"
 	if min_ratio >= 1.3:
@@ -125,6 +213,8 @@ static func _evaluate_telescope(stats: Dictionary, celestial_object: Dictionary,
 		"focus_error": focus_error,
 		"out_of_focus": out_of_focus,
 		"effective_clarity": effective_clarity,
+		"seeing_eff": seeing_eff,
+		"seeing_label": seeing_label,
 		"ratios": {
 			"light": light_ratio,
 			"clarity": clarity_ratio,

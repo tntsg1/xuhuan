@@ -133,7 +133,7 @@ func _story_visual_id() -> String:
 	var event_id := StoryManager.active_event_id
 	if event_id.contains("assembly") or event_id.contains("focus") or event_id == "intro":
 		return ""
-	return str(GameManager.current_level().get("target_object_id", ""))
+	return GameManager.current_target_object_id()
 
 
 func _show_line() -> void:

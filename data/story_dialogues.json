@@ -247,6 +247,356 @@
       "text_zh": "欢迎你，年轻的观测者。"
     }
   ],
+  "level_10_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Same Jupiter, new question: how much power is too much?",
+      "text_zh": "还是木星，但问题变了：多高的倍率算太高？"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You can see Jupiter now. Push the power higher - and watch what it costs.",
+      "text_zh": "你已经能看到木星了。把倍率推高试试——看看代价是什么。"
+    }
+  ],
+  "level_10_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Bigger is not clearer. You proved it yourself tonight.",
+      "text_zh": "更大不等于更清楚。今晚你亲手证明了。"
+    }
+  ],
+  "level_11_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Mars again - but tonight it hugs the horizon.",
+      "text_zh": "又是火星——但今晚它贴着地平线。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Mars is low tonight. If it looks mushy, that's the air - not your telescope.",
+      "text_zh": "今晚火星很低。如果看起来糊糊的，那是大气的问题——不是你的望远镜坏了。"
+    }
+  ],
+  "level_11_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Low targets swim in thick air. Less power, steadier view.",
+      "text_zh": "低空目标泡在厚厚的大气里。倍率低一点，画面稳一点。"
+    }
+  ],
+  "level_12_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Back to the Moon - the one target that rewards high power.",
+      "text_zh": "回到月亮——唯一奖励高倍率的目标。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The Moon is bright enough to take the power. But every new eyepiece needs a new focus.",
+      "text_zh": "月亮够亮，扛得住高倍率。但每换一个目镜，都要重新调焦。"
+    }
+  ],
+  "level_12_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Same rule, different target: brightness pays for power.",
+      "text_zh": "同一条规则，不同的目标：亮度为倍率买单。"
+    }
+  ],
+  "level_13_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Your call tonight. Pick a target, pick the power. I'm just watching.",
+      "text_zh": "今晚你说了算。选目标，选倍率。我只旁观。"
+    }
+  ],
+  "level_13_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You chose like an observer, not a beginner. Chapter logged.",
+      "text_zh": "你的选择像个观测者，而不是新手了。本章记入日志。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Magnification Mastery is yours. Next up: finding things in the first place.",
+      "text_zh": "「倍率掌握」徽章归你了。接下来：学会怎么先找到目标。"
+    }
+  ],
+  "level_14_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Mars a third time - but tonight you navigate by numbers, not by luck.",
+      "text_zh": "第三次找火星——但今晚靠数字导航，不靠运气。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "No guessing tonight. Two numbers will take you to Mars: azimuth and altitude.",
+      "text_zh": "今晚不用猜。两个数字就能带你找到火星：方位角和俯仰角。"
+    }
+  ],
+  "level_14_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Coordinates turned the whole sky into an address book.",
+      "text_zh": "坐标把整个天空变成了一本地址簿。"
+    }
+  ],
+  "level_15_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A finder fresh out of the box lies a little. Let's teach it to point true.",
+      "text_zh": "刚装上的寻星镜会撒点小谎。我们来教它指准。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Center a bright star in the main scope, then nudge the finder until it agrees.",
+      "text_zh": "先在主镜里把一颗亮星居中，再微调寻星镜直到它也对准。"
+    }
+  ],
+  "level_15_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Now your wide eye and your narrow eye agree.",
+      "text_zh": "现在你的'宽眼睛'和'窄眼睛'终于一致了。"
+    }
+  ],
+  "level_16_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Feeling confident? Try finding it with the main scope alone.",
+      "text_zh": "自信满满？那就试试只用主望远镜找它。"
+    }
+  ],
+  "level_16_mid": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Lost? Everyone gets lost in six degrees. Wide first, narrow last.",
+      "text_zh": "迷路了吧？在 6 度的视野里谁都会迷路。先宽后窄。"
+    }
+  ],
+  "level_16_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The narrow field shows detail. The wide field shows the way.",
+      "text_zh": "窄视野看细节，宽视野认路。"
+    }
+  ],
+  "level_17_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Tonight I stay by the door. The sky is yours.",
+      "text_zh": "今晚我就站在门口。天空交给你了。"
+    }
+  ],
+  "level_17_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You navigated alone. That's the real badge.",
+      "text_zh": "你独立完成了导航。这才是真正的徽章。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Sky Navigator, logged. Next, we chase the faint stuff.",
+      "text_zh": "「星空导航」记入日志。接下来，我们要去追暗弱的天体了。"
+    }
+  ],
+  "level_18_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Same nebula as L7 - but tonight we change what 'success' means.",
+      "text_zh": "还是那片星云——但今晚我们改变'成功'的定义。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A nebula never gives you sharp edges. Tonight, a faint smudge IS the victory.",
+      "text_zh": "星云永远不会给你清晰的边缘。今晚，看到淡淡的一团就是胜利。"
+    }
+  ],
+  "level_18_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You saw light that traveled 1,300 years. Blurry, and still beautiful.",
+      "text_zh": "你看到了跋涉 1300 年的光。虽然模糊，依然动人。"
+    }
+  ],
+  "level_19_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Third visit to Orion - this time as a controlled experiment.",
+      "text_zh": "第三次看猎户座星云——这次是一场对照实验。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Same sky, same nebula. Only one thing changes tonight: how much light you collect.",
+      "text_zh": "同样的天空，同样的星云。今晚只改变一件事：你收集多少光。"
+    }
+  ],
+  "level_19_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Last night a smudge, tonight a shape. That difference is aperture.",
+      "text_zh": "昨晚是一团斑，今晚有了形状。这个差别，就叫口径。"
+    }
+  ],
+  "level_20_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Andromeda again - but the enemy tonight is streetlights, not distance.",
+      "text_zh": "又是仙女座——但今晚的敌人是路灯，不是距离。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Andromeda is huge - and the city lights are eating it alive.",
+      "text_zh": "仙女座星系很大——但城市的灯光正在活活吞掉它。"
+    }
+  ],
+  "level_20_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Nothing was broken tonight. The sky itself was the problem. Log it honestly.",
+      "text_zh": "今晚没有任何设备坏掉。问题出在天空本身。如实记录下来。"
+    }
+  ],
+  "level_21_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The club drove out past the hills tonight. Same gear. Darker sky. Try again.",
+      "text_zh": "今晚俱乐部开车到了山那边。设备没变，天更暗了。再试一次。"
+    }
+  ],
+  "level_21_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Your telescope didn't improve overnight - your sky did.",
+      "text_zh": "你的望远镜一夜之间没有变好——变好的是你的天空。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Deep Sky Observer, logged. Now let's talk about why the sky keeps moving.",
+      "text_zh": "「深空观测者」记入日志。接下来，我们聊聊为什么天空一直在转。"
+    }
+  ],
+  "level_22_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Watch closely. The star is running away - no, the Earth is turning under you.",
+      "text_zh": "盯紧了。星星在慢慢逃——不，是地球在你脚下转。"
+    }
+  ],
+  "level_22_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You just fought the planet's spin by hand. Feel the workout?",
+      "text_zh": "你刚才在徒手对抗地球自转。感觉到工作量了吧？"
+    }
+  ],
+  "level_23_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Jupiter, fourth time - but tonight you don't touch the keys.",
+      "text_zh": "第四次看木星——但今晚你的手可以离开按键。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Tired arms? This mount turns at exactly the speed of the sky.",
+      "text_zh": "手酸了吧？这个支架会以和天空完全相同的速度转动。"
+    }
+  ],
+  "level_23_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Now the machine fights the spin, and you just watch.",
+      "text_zh": "现在由机器对抗自转，你只管看。"
+    }
+  ],
+  "level_24_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "One last lesson: deep sky rewards the patient. Stay with her.",
+      "text_zh": "最后一课：深空回报有耐心的人。陪着她，别走开。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Every trick you've learned - aperture, dark sky, tracking - comes together tonight.",
+      "text_zh": "口径、暗空、追踪——你学过的每一招，今晚都要用上。"
+    }
+  ],
+  "level_24_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "From naked eyes to a tracked deep-sky watch - you finished the whole path. Senior Observer.",
+      "text_zh": "从肉眼到追踪深空——整条路你走完了。高级观测员。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You started by looking at the Moon with just your eyes. Look at you now.",
+      "text_zh": "你当初只是用肉眼看了看月亮。看看你现在。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Every telescope you built, every focus you turned, every faint smudge you found - it all led here.",
+      "text_zh": "你组装的每一台望远镜，转过的每一次调焦，找到的每一团淡斑——都通向了这里。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The club is proud of you. Welcome to Senior Observer status.",
+      "text_zh": "俱乐部为你骄傲。欢迎成为高级观测员。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The sky doesn't end here. Keep looking up.",
+      "text_zh": "天空的故事不会到此为止。继续抬头看吧。"
+    }
+  ],
   "board_notes": {
     "1": {
       "en": "Start with your eyes. Every astronomer begins by learning how to see.",
@@ -283,6 +633,66 @@
     "9": {
       "en": "One last target. Make the logbook proud.",
       "zh": "最后一个目标。让观测日志为你骄傲。"
+    },
+    "10": {
+      "en": "Same Jupiter, new question: how much power is too much?",
+      "zh": "还是木星，但问题变了：多高的倍率算太高？"
+    },
+    "11": {
+      "en": "Mars again - but tonight it hugs the horizon. Low power, steadier view.",
+      "zh": "又是火星——但今晚它贴着地平线。倍率低一点，画面稳一点。"
+    },
+    "12": {
+      "en": "Back to the Moon - bright enough to take high power, if you refocus first.",
+      "zh": "回到月亮——够亮能扛高倍率，但要先重新调焦。"
+    },
+    "13": {
+      "en": "Your call tonight. Pick a target, pick the power. No hints.",
+      "zh": "今晚你说了算。选目标，选倍率。没有提示。"
+    },
+    "14": {
+      "en": "Mars a third time - but tonight you navigate by numbers, not by luck.",
+      "zh": "第三次找火星——但今晚靠数字导航，不靠运气。"
+    },
+    "15": {
+      "en": "Teach the finder scope to point true before you trust it.",
+      "zh": "先教会寻星镜指准，再信任它。"
+    },
+    "16": {
+      "en": "Tempted to skip the finder? Six degrees is a big place to get lost in.",
+      "zh": "想跳过寻星镜？6 度视野足够让人迷路。"
+    },
+    "17": {
+      "en": "No hints tonight. Navigate the whole workflow alone.",
+      "zh": "今晚没有提示。独立完成整套导航流程。"
+    },
+    "18": {
+      "en": "Same nebula as L7 - but tonight a faint smudge already counts as success.",
+      "zh": "还是那片星云——但今晚看到淡淡的一团就算成功。"
+    },
+    "19": {
+      "en": "Third visit to Orion - this time as a controlled experiment in aperture.",
+      "zh": "第三次看猎户座星云——这次是一场关于口径的对照实验。"
+    },
+    "20": {
+      "en": "Andromeda again - but the enemy tonight is streetlights, not distance.",
+      "zh": "又是仙女座——但今晚的敌人是路灯，不是距离。"
+    },
+    "21": {
+      "en": "Same gear, darker sky. See what a dark sky alone can do.",
+      "zh": "设备不变，天空更暗。看看纯靠暗天空能带来什么变化。"
+    },
+    "22": {
+      "en": "The Earth keeps turning under you. Keep the star centered as it drifts.",
+      "zh": "地球一直在你脚下转动。星星漂移时持续把它保持居中。"
+    },
+    "23": {
+      "en": "Jupiter, fourth time - but tonight the tracking mount does the work.",
+      "zh": "第四次看木星——但今晚由追踪支架代劳。"
+    },
+    "24": {
+      "en": "The final watch. Hold Andromeda steady and finish the whole path.",
+      "zh": "最后一次观测。稳住仙女座，走完整条路。"
     }
   }
 }

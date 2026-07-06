@@ -18,7 +18,7 @@ func _initialize() -> void:
 	for i in range(max_level):
 		var level: Dictionary = gm.current_level()
 		var level_number: int = int(level.get("level_number", -1))
-		var target_id: String = str(level.get("target_object_id", ""))
+		var target_id: String = gm.current_target_object_id()
 		if target_id == "":
 			print("FAIL L", level_number, ": no target")
 			failures += 1
@@ -38,6 +38,24 @@ func _initialize() -> void:
 				print("FAIL L", level_number, ": telescope not ready, missing=", gm.missing_parts())
 				failures += 1
 				break
+		# L15's finder calibration gate is a Sky Observation concern (blocks
+		# entering telescope mode), not something evaluate/complete touch -
+		# but the real flow requires it done, so simulate it here.
+		if str(level.get("variation", "")) == "finder_calibration":
+			gm.progress["finder_offset"] = {"az": 0.0, "alt": 0.0}
+		# L10-style checklist: simulate the player walking through every
+		# step (equipping the required part first) before the final identify.
+		for step_value in gm.mission_steps():
+			var step: Dictionary = step_value
+			var require_part_id := str(step.get("require_part_id", ""))
+			if require_part_id != "":
+				gm.equip_part(require_part_id)
+				gm.reset_assembly()
+				for part_type in level.get("required_parts", []):
+					gm.install_part(str(part_type), 0)
+			gm.selected_object_id = target_id
+			gm.evaluate_selected_object()
+			gm.mark_mission_step_done(str(step.get("id", "")))
 		var stats: Dictionary = gm.calculate_stats()
 		gm.selected_object_id = target_id
 		var observation: Dictionary = gm.evaluate_selected_object()
@@ -66,7 +84,7 @@ func _initialize() -> void:
 	var completed: Array = gm.progress.get("completed_levels", [])
 	var badges: Array = gm.progress.get("badges", [])
 	var final_level: Dictionary = gm.current_level()
-	var final_target_id: String = str(final_level.get("target_object_id", ""))
+	var final_target_id: String = gm.current_target_object_id()
 	gm.selected_object_id = final_target_id
 	var repeat_observation: Dictionary = gm.evaluate_selected_object()
 	var journal_count_before: int = gm.progress.get("journal_entries", []).size()

@@ -529,7 +529,11 @@ func _toggle_mission_board() -> void:
 	)
 	note_label.max_lines_visible = 3
 
-	_popup_label("Objective / 目标", Vector2(292, 334), Vector2(440, 18), 11, Color(0.66, 0.76, 0.86))
+	var objective_heading := "Objective / 目标"
+	if not level.get("target_pool", []).is_empty():
+		var picked := GameManager.current_target()
+		objective_heading = "Objective / 目标 -> " + GameManager.dict_text(picked, "name").replace("\n", " · ")
+	_popup_label(objective_heading, Vector2(292, 334), Vector2(440, 18), 11, Color(0.66, 0.76, 0.86))
 	var objective_label := _popup_label(GameManager.dict_text(level, "description"), Vector2(292, 354), Vector2(440, 56), 12, WARM_TEXT)
 	objective_label.max_lines_visible = 4
 

@@ -1,24 +1,65 @@
-extends Control
+﻿extends Control
 
 const SCREEN_SIZE := Vector2(1024, 768)
 const PANEL := Color(0.045, 0.065, 0.115, 0.96)
+const PANEL_DARK := Color(0.020, 0.030, 0.055, 0.98)
+const CARD_BG := Color(0.040, 0.058, 0.100, 0.96)
+const CARD_EQUIPPED := Color(0.050, 0.075, 0.070, 0.98)
+const CARD_LOCKED := Color(0.035, 0.040, 0.052, 0.92)
 const BRASS := Color(0.78, 0.56, 0.28)
+const GOLD := Color(0.96, 0.76, 0.38)
 const BLUE_EDGE := Color(0.18, 0.28, 0.44)
 const WARM_TEXT := Color(0.95, 0.93, 0.86)
+const MUTED := Color(0.68, 0.76, 0.80)
+const GREEN := Color(0.45, 0.95, 0.56)
+const WARNING := Color(1.0, 0.70, 0.34)
+
+const HEADER_RECT := Rect2(18, 14, 988, 56)
+const SUMMARY_RECT := Rect2(36, 86, 952, 86)
+const LIST_RECT := Rect2(36, 188, 952, 510)
+const CARD_SIZE := Vector2(916, 170)
+const PART_ICON_TEXTURES := {
+	"basic_tripod": "res://assets/telescope_parts/basic_tripod.png",
+	"basic_mount": "res://assets/telescope_parts/basic_mount.png",
+	"starter_tube": "res://assets/telescope_parts/starter_tube.png",
+	"objective_60mm": "res://assets/telescope_parts/objective_60mm.png",
+	"eyepiece_20mm": "res://assets/telescope_parts/eyepiece_20mm.png",
+	"basic_finder_scope": "res://assets/telescope_parts/basic_finder_scope.png",
+	"eyepiece_10mm": "res://assets/telescope_parts/eyepiece_10mm.png",
+	"objective_100mm": "res://assets/telescope_parts/objective_100mm.png",
+	"stable_mount": "res://assets/telescope_parts/stable_mount.png",
+	"tracking_mount": "res://assets/telescope_parts/tracking_mount.png",
+	"basic_focus_knob": "res://assets/telescope_parts/basic_focus_knob.png"
+}
+
+const CATEGORY_ORDER := ["Support", "Optics", "Aiming", "Control"]
+const CATEGORY_LABELS := {
+	"Support": "Support / 支撑",
+	"Optics": "Optics / 光学",
+	"Aiming": "Aiming / 瞄准",
+	"Control": "Control / 控制"
+}
 
 const TYPE_LABELS := {
-	"tripod": {"en": "Tripod", "zh": "三脚架", "role": "Bottom support / 底部支撑"},
-	"mount": {"en": "Mount", "zh": "支架", "role": "Holds and turns the tube / 支撑并转动镜筒"},
-	"tube": {"en": "Tube", "zh": "镜筒", "role": "Keeps optics aligned / 保持光路对齐"},
-	"objective": {"en": "Objective Lens", "zh": "物镜", "role": "Collects light / 收集光线"},
-	"eyepiece": {"en": "Eyepiece", "zh": "目镜", "role": "Magnifies the image / 放大图像"},
-	"focus_knob": {"en": "Focus Knob", "zh": "调焦旋钮", "role": "Sharpens focus / 调整清晰度"},
-	"finder_scope": {"en": "Finder Scope", "zh": "寻星镜", "role": "Helps aiming / 帮助瞄准"}
+	"tripod": {"en": "Tripod", "zh": "三脚架", "role": "Support / 支撑", "category": "Support"},
+	"mount": {"en": "Mount", "zh": "支架", "role": "Turns and steadies the telescope / 转动与稳定", "category": "Support"},
+	"tube": {"en": "Tube", "zh": "镜筒", "role": "Keeps optics aligned / 保持光路对齐", "category": "Support"},
+	"objective": {"en": "Objective Lens", "zh": "物镜", "role": "Collects light / 集光", "category": "Optics"},
+	"eyepiece": {"en": "Eyepiece", "zh": "目镜", "role": "Magnifies the image / 放大", "category": "Optics"},
+	"finder_scope": {"en": "Finder Scope", "zh": "寻星镜", "role": "Aims before high power / 寻星", "category": "Aiming"},
+	"focus_knob": {"en": "Focus Knob", "zh": "调焦旋钮", "role": "Sharpens the image / 调清图像", "category": "Control"}
 }
+
+var feedback_text := ""
+var feedback_color := GOLD
+var parts_box: VBoxContainer
+var parts_scroll: ScrollContainer
+var next_step_part_type := ""
 
 
 func _ready() -> void:
 	_build()
+	call_deferred("_scroll_to_next_step")
 
 
 func _build() -> void:
@@ -26,28 +67,21 @@ func _build() -> void:
 		child.queue_free()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	custom_minimum_size = SCREEN_SIZE
+	next_step_part_type = _next_step_part_type()
 
 	_rect(Vector2.ZERO, SCREEN_SIZE, Color(0.010, 0.016, 0.032))
+	_draw_star_grid()
 	_draw_title_bar()
 	if GameManager.current_equipment_stage() == "eye":
-		# Naked-eye stage: the cabinet is still empty.
-		_panel(Vector2(212, 280), Vector2(600, 190), Color(0.040, 0.060, 0.105, 0.96), BRASS)
-		_label(
-			"No telescope parts yet.\nFinish the naked eye observations first - then you will build your first refractor!\n还没有望远镜零件。\n先完成肉眼观测任务，之后你将组装第一台折射望远镜！",
-			Vector2(240, 306),
-			Vector2(544, 140),
-			15,
-			WARM_TEXT,
-			HORIZONTAL_ALIGNMENT_CENTER
-		)
+		_draw_empty_eye_stage()
 		return
 	_draw_summary_panel()
-	_draw_parts_grid()
+	_draw_parts_list()
 
 
 func _draw_title_bar() -> void:
-	_panel(Vector2(18, 14), Vector2(988, 56), Color(0.030, 0.045, 0.085, 0.98), BLUE_EDGE)
-	var title := _label("Parts Cabinet / 零件柜", Vector2(252, 24), Vector2(520, 32), 24, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	_panel(HEADER_RECT.position, HEADER_RECT.size, Color(0.030, 0.045, 0.085, 0.98), BLUE_EDGE)
+	var title := _label_to(self, "Parts Cabinet / 零件柜", Vector2(252, 24), Vector2(520, 32), 24, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 
 	var back := _button("Back to Base\n返回基地", Vector2(842, 22), Vector2(144, 40))
@@ -58,142 +92,461 @@ func _draw_title_bar() -> void:
 	add_child(back)
 
 
+func _draw_empty_eye_stage() -> void:
+	_panel(Vector2(202, 282), Vector2(620, 194), PANEL, BRASS)
+	_label_to(
+		self,
+		"No telescope parts yet.\nFinish the naked-eye observations first. Maya will unlock the first refractor kit soon.\n还没有望远镜零件。先完成肉眼观测，Maya 很快会解锁第一套折射镜组件。",
+		Vector2(244, 312),
+		Vector2(536, 122),
+		16,
+		WARM_TEXT,
+		HORIZONTAL_ALIGNMENT_CENTER
+	)
+
+
 func _draw_summary_panel() -> void:
-	_panel(Vector2(36, 92), Vector2(952, 92), Color(0.040, 0.060, 0.105, 0.96), BRASS)
-	_label(
-		"Inventory view only. Choose the Assembly Table when you are ready to build.\n这里只查看零件库存和说明。准备安装时请去组装台。",
-		Vector2(60, 112),
-		Vector2(700, 48),
-		15,
-		Color(0.84, 0.90, 0.90)
-	)
-	var ready_text := "Ready / 已就绪" if GameManager.telescope_is_ready() else "Not Ready / 未就绪"
-	_label(
-		"Telescope: " + ready_text + "\nUnlocked parts: " + str(GameManager.progress.get("unlocked_parts", []).size()),
-		Vector2(780, 108),
-		Vector2(180, 56),
-		14,
-		Color(0.95, 0.84, 0.52),
-		HORIZONTAL_ALIGNMENT_RIGHT
-	)
+	_panel(SUMMARY_RECT.position, SUMMARY_RECT.size, Color(0.040, 0.060, 0.105, 0.96), BRASS)
+	var mission := GameManager.current_level()
+	var mission_title := str(mission.get("title_en", "Current Mission"))
+	var stage := _stage_label(GameManager.current_equipment_stage())
+	var summary := "Mission: %s\nEquipment: %s · Choose parts here, then reassemble at the Assembly Table." % [mission_title, stage]
+	_label_to(self, summary, Vector2(58, 102), Vector2(558, 44), 13, Color(0.84, 0.90, 0.90))
+	_label_to(self, "当前任务零件建议会以金色标记。更换零件后需要回组装台重新安装。", Vector2(58, 145), Vector2(560, 18), 12, Color(0.72, 0.82, 0.86))
+
+	var ready_text := "READY / 已就绪" if GameManager.telescope_is_ready() else "NEEDS ASSEMBLY / 需要组装"
+	var ready_color := GREEN if GameManager.telescope_is_ready() else WARNING
+	_label_to(self, ready_text, Vector2(738, 100), Vector2(224, 20), 14, ready_color, HORIZONTAL_ALIGNMENT_RIGHT)
+	_label_to(self, "Club Credits: %d\nUnlocked: %d / %d" % [int(GameManager.progress.get("credits", 0)), _unlocked_count(), GameManager.parts_data.size()], Vector2(748, 124), Vector2(214, 42), 12, GOLD, HORIZONTAL_ALIGNMENT_RIGHT)
+
+	if feedback_text != "":
+		var chip := _badge_to(self, feedback_text, Vector2(624, 140), Vector2(342, 24), feedback_color, HORIZONTAL_ALIGNMENT_RIGHT)
+		chip.add_theme_font_size_override("font_size", 11)
 
 
-func _draw_parts_grid() -> void:
-	var unlocked: Array = GameManager.progress.get("unlocked_parts", [])
-	var visible_parts: Array[Dictionary] = []
-	for part in GameManager.parts_data:
-		var part_id := str(part.get("id", ""))
-		if unlocked.has(part_id):
-			visible_parts.append(part)
+func _draw_parts_list() -> void:
+	_panel(LIST_RECT.position, LIST_RECT.size, PANEL_DARK, BLUE_EDGE)
+	parts_scroll = ScrollContainer.new()
+	parts_scroll.position = LIST_RECT.position + Vector2(14, 16)
+	parts_scroll.size = LIST_RECT.size - Vector2(28, 30)
+	parts_scroll.clip_contents = true
+	parts_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	parts_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	add_child(parts_scroll)
 
-	if visible_parts.is_empty():
-		_label("No unlocked parts yet.\n还没有已解锁零件。", Vector2(80, 240), Vector2(864, 48), 18, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
-		return
+	parts_box = VBoxContainer.new()
+	parts_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parts_box.add_theme_constant_override("separation", 10)
+	parts_scroll.add_child(parts_box)
 
-	for i in range(visible_parts.size()):
-		var row := i / 2
-		var col := i % 2
-		var pos := Vector2(48 + col * 474, 214 + row * 150)
-		_draw_part_card(visible_parts[i], pos)
+	var grouped := _grouped_parts()
+	for category in CATEGORY_ORDER:
+		var group: Array = grouped.get(category, [])
+		if group.is_empty():
+			continue
+		parts_box.add_child(_category_header(str(CATEGORY_LABELS.get(category, category))))
+		for part_value in group:
+			var part: Dictionary = part_value
+			parts_box.add_child(_part_card(part))
 
 
-func _draw_part_card(part: Dictionary, pos: Vector2) -> void:
-	_panel(pos, Vector2(444, 124), PANEL, BRASS)
+func _category_header(text: String) -> Control:
+	var root := Control.new()
+	root.custom_minimum_size = Vector2(CARD_SIZE.x, 28)
+	var line := _rect_to(root, Vector2(0, 20), Vector2(CARD_SIZE.x, 1), Color(BRASS.r, BRASS.g, BRASS.b, 0.45))
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_label_to(root, text, Vector2(8, 1), Vector2(280, 22), 15, GOLD)
+	return root
+
+
+func _part_card(part: Dictionary) -> Control:
 	var part_type := str(part.get("type", ""))
 	var part_id := str(part.get("id", ""))
-	var type_info: Dictionary = TYPE_LABELS.get(part_type, {"en": part_type.capitalize(), "zh": "零件", "role": ""})
-	var equipped: bool = GameManager.equipped_part_id(part_type) == part_id
+	var type_info: Dictionary = TYPE_LABELS.get(part_type, {"en": part_type.capitalize(), "zh": "零件", "role": "Equipment / 设备", "category": "Control"})
+	var unlocked := _is_unlocked(part_id)
+	var equipped := GameManager.equipped_part_id(part_type) == part_id
+	var recommended := _is_recommended(part)
+	var is_next_step := part_type == next_step_part_type
 
-	_rect(pos + Vector2(18, 22), Vector2(70, 70), Color(0.070, 0.090, 0.120))
-	_draw_icon(part_type, pos + Vector2(18, 22))
+	var root := Control.new()
+	root.custom_minimum_size = CARD_SIZE
+	root.name = "part_card_%s" % part_type
 
-	_label(str(part.get("name_en", type_info["en"])), pos + Vector2(104, 16), Vector2(210, 20), 15, WARM_TEXT)
-	_label(str(type_info["zh"]), pos + Vector2(104, 38), Vector2(210, 18), 13, Color(0.78, 0.88, 0.88))
+	var bg := CARD_BG
+	var border := BLUE_EDGE
 	if equipped:
-		_label("Equipped / 已装备", pos + Vector2(310, 18), Vector2(110, 18), 12, Color(0.98, 0.82, 0.36), HORIZONTAL_ALIGNMENT_RIGHT)
+		bg = CARD_EQUIPPED
+		border = GREEN
+	elif recommended or is_next_step:
+		border = GOLD
+	elif not unlocked:
+		bg = CARD_LOCKED
+		border = Color(0.18, 0.20, 0.24)
+
+	var panel := Panel.new()
+	panel.position = Vector2.ZERO
+	panel.size = CARD_SIZE
+	panel.add_theme_stylebox_override("panel", _style(bg, border, 2 if not recommended else 3, 5))
+	root.add_child(panel)
+	_panel_corners_to(root, Vector2.ZERO, CARD_SIZE, border)
+
+	if recommended:
+		_badge_to(root, "Recommended for current mission / 当前任务推荐", Vector2(122, 10), Vector2(322, 22), GOLD)
+	elif is_next_step:
+		_badge_to(root, "Next assembly step / 下一步安装", Vector2(122, 10), Vector2(220, 22), WARNING)
+
+	var icon_box := _rect_to(root, Vector2(18, 34), Vector2(70, 70), Color(0.070, 0.090, 0.120))
+	icon_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_draw_icon(root, part, Vector2(18, 34), Vector2(70, 70), unlocked)
+
+	var text_x := 106.0
+	var title_y := 36.0 if not recommended and not is_next_step else 34.0
+	var name_color := WARM_TEXT if unlocked else Color(0.52, 0.58, 0.62)
+	_label_to(root, str(part.get("name_en", type_info["en"])), Vector2(text_x, title_y), Vector2(370, 20), 15, name_color)
+	_label_to(root, _safe_zh_name(part, str(type_info.get("zh", "零件"))), Vector2(text_x, title_y + 22), Vector2(370, 18), 13, Color(0.78, 0.88, 0.88) if unlocked else Color(0.46, 0.52, 0.54))
+	_badge_to(root, str(type_info.get("role", "Equipment / 设备")), Vector2(text_x, title_y + 45), Vector2(250, 20), Color(0.46, 0.66, 0.86))
+
+	var desc := _short_description(part)
+	var desc_label := _label_to(root, desc, Vector2(text_x, title_y + 72), Vector2(500, 34), 12, Color(0.78, 0.84, 0.84) if unlocked else Color(0.46, 0.50, 0.54))
+	desc_label.max_lines_visible = 2
+
+	_draw_stat_chips(root, part, Vector2(18, 132), unlocked)
+	_draw_action_column(root, part, unlocked, equipped)
+	return root
+
+
+func _draw_action_column(root: Control, part: Dictionary, unlocked: bool, equipped: bool) -> void:
+	var part_id := str(part.get("id", ""))
+	var part_type := str(part.get("type", ""))
+	var column_x := CARD_SIZE.x - 174.0
+	var badge_text := "Locked / 未解锁"
+	var badge_color := Color(0.42, 0.46, 0.50)
+	if equipped:
+		badge_text = "Equipped / 已装备"
+		badge_color = GREEN
+	elif unlocked:
+		badge_text = "Available / 可装备"
+		badge_color = GOLD
+	_badge_to(root, badge_text, Vector2(column_x, 24), Vector2(146, 24), badge_color, HORIZONTAL_ALIGNMENT_CENTER)
+
+	var button := Button.new()
+	button.position = Vector2(column_x + 18, 62)
+	button.size = Vector2(110, 38)
+	button.add_theme_font_size_override("font_size", 12)
+	button.focus_mode = Control.FOCUS_NONE
+	if equipped:
+		button.text = "Check\n已选"
+		button.disabled = true
+		button.add_theme_stylebox_override("disabled", _style(Color(0.07, 0.14, 0.10), GREEN, 2, 3))
+		button.add_theme_color_override("font_disabled_color", Color(0.72, 1.0, 0.76))
+	elif not unlocked:
+		button.text = "Locked\n未解锁"
+		button.disabled = true
+		button.add_theme_stylebox_override("disabled", _style(Color(0.05, 0.055, 0.065), Color(0.16, 0.17, 0.19), 2, 3))
+		button.add_theme_color_override("font_disabled_color", Color(0.42, 0.44, 0.48))
 	else:
-		var equip := _button("Equip\n装备", pos + Vector2(352, 12), Vector2(76, 40))
-		equip.pressed.connect(func() -> void:
+		button.text = "Equip\n装备"
+		button.add_theme_stylebox_override("normal", _style(Color(0.08, 0.13, 0.22), BLUE_EDGE, 2, 3))
+		button.add_theme_stylebox_override("hover", _style(Color(0.13, 0.22, 0.34), BRASS, 2, 3))
+		button.add_theme_stylebox_override("pressed", _style(Color(0.20, 0.14, 0.08), BRASS, 2, 3))
+		button.pressed.connect(func() -> void:
 			if GameManager.equip_part(part_id):
+				feedback_color = GREEN
+				feedback_text = "Equipped %s. Reassembly required at Assembly Table. / 已装备%s，需要回组装台重新安装。" % [str(part.get("name_en", part_id)), _safe_zh_name(part, str(part_type))]
+				GameManager.set_room_guidance("assembly", "Maya: Assembly Table", "Reassemble the telescope with the new part. / 使用新零件重新组装望远镜。")
 				_build()
+				call_deferred("_scroll_to_part_type", part_type)
 		)
-		add_child(equip)
-	_label(str(type_info["role"]), pos + Vector2(104, 60), Vector2(240, 18), 12, Color(0.92, 0.78, 0.48))
+	root.add_child(button)
 
-	var desc := str(part.get("description_en", ""))
-	_label(desc, pos + Vector2(104, 82), Vector2(292, 30), 11, Color(0.78, 0.84, 0.84))
-
-	var stats := _part_stats(part)
-	_label(stats, pos + Vector2(18, 96), Vector2(390, 18), 11, Color(0.62, 0.76, 0.86))
+	var lock_note := _unlock_note(part, unlocked)
+	_label_to(root, lock_note, Vector2(column_x - 2, 110), Vector2(154, 28), 10, MUTED if unlocked else Color(0.45, 0.47, 0.50), HORIZONTAL_ALIGNMENT_CENTER)
 
 
-func _part_stats(part: Dictionary) -> String:
-	var keys := [
-		"aperture_mm",
-		"focal_length_mm",
-		"stability_bonus",
-		"stability",
-		"quality",
-		"field_of_view",
-		"aim_assist",
-		"focus_sensitivity",
-		"focus_stability"
-	]
-	var result: Array[String] = []
-	for key in keys:
-		if part.has(key):
-			result.append(key.replace("_", " ") + ": " + str(part.get(key)))
-	if result.is_empty():
-		return "No special stats / 暂无特殊属性"
-	return "  |  ".join(result)
+func _draw_stat_chips(parent: Control, part: Dictionary, pos: Vector2, unlocked: bool) -> void:
+	var chips := _part_stat_chips(part)
+	if chips.is_empty():
+		chips.append("No special stats / 暂无特殊属性")
+	var x := pos.x
+	var y := pos.y
+	for chip in chips:
+		var width := clampf(46.0 + float(str(chip).length()) * 5.6, 72.0, 150.0)
+		if x + width > CARD_SIZE.x - 190.0:
+			x = pos.x
+			y += 24.0
+			if y > pos.y + 25.0:
+				break
+		_badge_to(parent, str(chip), Vector2(x, y), Vector2(width, 19), Color(0.38, 0.58, 0.72) if unlocked else Color(0.28, 0.32, 0.38), HORIZONTAL_ALIGNMENT_CENTER)
+		x += width + 8.0
 
 
-func _draw_icon(part_type: String, box_pos: Vector2) -> void:
-	var color := Color(0.52, 0.70, 0.86)
+func _draw_icon(parent: Control, part: Dictionary, box_pos: Vector2, box_size: Vector2, unlocked: bool = true) -> void:
+	var part_id := str(part.get("id", ""))
+	var texture_path := str(PART_ICON_TEXTURES.get(part_id, ""))
+	if texture_path != "" and ResourceLoader.exists(texture_path):
+		var texture: Texture2D = load(texture_path)
+		var native_size := texture.get_size()
+		var scale := minf((box_size.x - 8.0) / native_size.x, (box_size.y - 8.0) / native_size.y)
+		var draw_size := native_size * scale
+		var icon := TextureRect.new()
+		icon.texture = texture
+		icon.position = box_pos + (box_size - draw_size) * 0.5
+		icon.size = native_size
+		icon.scale = Vector2.ONE * scale
+		icon.stretch_mode = TextureRect.STRETCH_KEEP
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.modulate = Color(1, 1, 1, 1.0 if unlocked else 0.28)
+		parent.add_child(icon)
+		return
+
+	var part_type := str(part.get("type", ""))
+	var alpha := 1.0 if unlocked else 0.35
+	var color := Color(0.52, 0.70, 0.86, alpha)
 	match part_type:
 		"tripod":
-			color = Color(0.56, 0.62, 0.68)
-			_rect(box_pos + Vector2(32, 12), Vector2(8, 34), color)
-			_rect(box_pos + Vector2(18, 46), Vector2(36, 6), color.lightened(0.08))
-			_rect(box_pos + Vector2(16, 52), Vector2(6, 12), color.darkened(0.10))
-			_rect(box_pos + Vector2(50, 52), Vector2(6, 12), color.darkened(0.10))
+			color = Color(0.56, 0.62, 0.68, alpha)
+			_rect_to(parent, box_pos + Vector2(32, 12), Vector2(8, 34), color)
+			_rect_to(parent, box_pos + Vector2(18, 46), Vector2(36, 6), color.lightened(0.08))
+			_rect_to(parent, box_pos + Vector2(16, 52), Vector2(6, 12), color.darkened(0.10))
+			_rect_to(parent, box_pos + Vector2(50, 52), Vector2(6, 12), color.darkened(0.10))
 		"mount":
-			color = Color(0.62, 0.68, 0.74)
-			_rect(box_pos + Vector2(22, 20), Vector2(28, 28), color)
-			_rect(box_pos + Vector2(31, 10), Vector2(10, 48), color.lightened(0.08))
+			color = Color(0.62, 0.68, 0.74, alpha)
+			_rect_to(parent, box_pos + Vector2(22, 20), Vector2(28, 28), color)
+			_rect_to(parent, box_pos + Vector2(31, 10), Vector2(10, 48), color.lightened(0.08))
+			_rect_to(parent, box_pos + Vector2(17, 52), Vector2(42, 5), color.darkened(0.14))
 		"tube":
-			color = Color(0.30, 0.58, 0.86)
-			_rect(box_pos + Vector2(12, 31), Vector2(42, 14), color)
-			_rect(box_pos + Vector2(52, 24), Vector2(12, 28), color.lightened(0.12))
+			color = Color(0.30, 0.58, 0.86, alpha)
+			_rect_to(parent, box_pos + Vector2(12, 31), Vector2(42, 14), color)
+			_rect_to(parent, box_pos + Vector2(52, 24), Vector2(12, 28), color.lightened(0.12))
+			_rect_to(parent, box_pos + Vector2(9, 28), Vector2(6, 20), color.darkened(0.12))
 		"objective":
-			color = Color(0.66, 0.88, 0.94)
-			_rect(box_pos + Vector2(24, 14), Vector2(24, 42), color)
-			_rect(box_pos + Vector2(20, 25), Vector2(32, 8), color.darkened(0.12))
+			color = Color(0.66, 0.88, 0.94, alpha)
+			_rect_to(parent, box_pos + Vector2(24, 14), Vector2(24, 42), color)
+			_rect_to(parent, box_pos + Vector2(20, 25), Vector2(32, 8), color.darkened(0.12))
+			_rect_to(parent, box_pos + Vector2(30, 18), Vector2(8, 34), Color(0.90, 1.0, 1.0, alpha * 0.45))
 		"eyepiece":
-			color = Color(0.46, 0.54, 0.62)
-			_rect(box_pos + Vector2(22, 24), Vector2(30, 26), color)
-			_rect(box_pos + Vector2(12, 30), Vector2(14, 14), color.darkened(0.10))
+			color = Color(0.46, 0.54, 0.62, alpha)
+			_rect_to(parent, box_pos + Vector2(22, 24), Vector2(30, 26), color)
+			_rect_to(parent, box_pos + Vector2(12, 30), Vector2(14, 14), color.darkened(0.10))
+			_rect_to(parent, box_pos + Vector2(50, 28), Vector2(8, 18), color.lightened(0.10))
 		"focus_knob":
-			color = Color(0.88, 0.68, 0.32)
-			_rect(box_pos + Vector2(20, 18), Vector2(30, 30), color)
-			_rect(box_pos + Vector2(26, 24), Vector2(18, 18), color.darkened(0.18))
-			_rect(box_pos + Vector2(34, 10), Vector2(4, 10), color.lightened(0.12))
-			_rect(box_pos + Vector2(34, 48), Vector2(4, 10), color.darkened(0.12))
-			_rect(box_pos + Vector2(12, 31), Vector2(10, 4), color.darkened(0.12))
-			_rect(box_pos + Vector2(48, 31), Vector2(10, 4), color.lightened(0.12))
+			color = Color(0.88, 0.68, 0.32, alpha)
+			_rect_to(parent, box_pos + Vector2(20, 18), Vector2(30, 30), color)
+			_rect_to(parent, box_pos + Vector2(26, 24), Vector2(18, 18), color.darkened(0.18))
+			_rect_to(parent, box_pos + Vector2(34, 10), Vector2(4, 10), color.lightened(0.12))
+			_rect_to(parent, box_pos + Vector2(34, 48), Vector2(4, 10), color.darkened(0.12))
+			_rect_to(parent, box_pos + Vector2(12, 31), Vector2(10, 4), color.darkened(0.12))
+			_rect_to(parent, box_pos + Vector2(48, 31), Vector2(10, 4), color.lightened(0.12))
 		_:
-			color = Color(0.38, 0.68, 0.92)
-			_rect(box_pos + Vector2(12, 30), Vector2(42, 12), color)
-			_rect(box_pos + Vector2(52, 24), Vector2(10, 24), color.lightened(0.12))
+			color = Color(0.38, 0.68, 0.92, alpha)
+			_rect_to(parent, box_pos + Vector2(12, 30), Vector2(42, 12), color)
+			_rect_to(parent, box_pos + Vector2(52, 24), Vector2(10, 24), color.lightened(0.12))
+			_rect_to(parent, box_pos + Vector2(16, 22), Vector2(30, 4), color.darkened(0.10))
+
+
+func _grouped_parts() -> Dictionary:
+	var grouped := {}
+	for category in CATEGORY_ORDER:
+		grouped[category] = []
+	var parts := GameManager.parts_data.duplicate()
+	parts.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var ac := _category_index(_category_for_part(a))
+		var bc := _category_index(_category_for_part(b))
+		if ac != bc:
+			return ac < bc
+		var at := _type_rank(str(a.get("type", "")))
+		var bt := _type_rank(str(b.get("type", "")))
+		if at != bt:
+			return at < bt
+		return int(a.get("unlock_level", 999)) < int(b.get("unlock_level", 999))
+	)
+	for part_value in parts:
+		var part: Dictionary = part_value
+		var category := _category_for_part(part)
+		if not grouped.has(category):
+			grouped[category] = []
+		grouped[category].append(part)
+	return grouped
+
+
+func _category_for_part(part: Dictionary) -> String:
+	var part_type := str(part.get("type", ""))
+	var info: Dictionary = TYPE_LABELS.get(part_type, {"category": "Control"})
+	return str(info.get("category", "Control"))
+
+
+func _category_index(category: String) -> int:
+	var index := CATEGORY_ORDER.find(category)
+	return index if index >= 0 else 99
+
+
+func _type_rank(part_type: String) -> int:
+	var order := ["tripod", "mount", "tube", "objective", "eyepiece", "finder_scope", "focus_knob"]
+	var index := order.find(part_type)
+	return index if index >= 0 else 99
+
+
+func _is_unlocked(part_id: String) -> bool:
+	return GameManager.progress.get("unlocked_parts", []).has(part_id)
+
+
+func _unlocked_count() -> int:
+	var total := 0
+	for part in GameManager.parts_data:
+		if _is_unlocked(str(part.get("id", ""))):
+			total += 1
+	return total
+
+
+func _is_recommended(part: Dictionary) -> bool:
+	var part_id := str(part.get("id", ""))
+	var level := GameManager.current_level()
+	if _array_has_string(level.get("recommended_part_ids", []), part_id):
+		return true
+	if _array_has_string(level.get("required_part_ids", []), part_id):
+		return true
+	var target_id := str(level.get("target_object_id", ""))
+	if target_id in ["orion_nebula", "andromeda"] and part_id in ["objective_100mm", "stable_mount", "eyepiece_20mm", "tracking_mount"]:
+		return _is_unlocked(part_id)
+	if target_id in ["mars", "jupiter"] and part_id in ["stable_mount", "eyepiece_10mm"]:
+		return _is_unlocked(part_id)
+	if target_id == "moon" and part_id == "eyepiece_10mm":
+		return _is_unlocked(part_id)
+	return false
+
+
+func _array_has_string(values: Variant, needle: String) -> bool:
+	if not values is Array:
+		return false
+	for value in values:
+		if str(value) == needle:
+			return true
+	return false
+
+
+func _next_step_part_type() -> String:
+	var required: Array = GameManager.current_level().get("required_parts", [])
+	var state: Dictionary = GameManager.progress.get("assembly_state", {})
+	for value in required:
+		var part_type := str(value)
+		var entry: Dictionary = state.get(part_type, {})
+		if not bool(entry.get("installed", false)):
+			return part_type
+	return ""
+
+
+func _scroll_to_next_step() -> void:
+	if next_step_part_type != "":
+		_scroll_to_part_type(next_step_part_type)
+
+
+func _scroll_to_part_type(part_type: String) -> void:
+	if parts_scroll == null or parts_box == null:
+		return
+	await get_tree().process_frame
+	for child in parts_box.get_children():
+		if child.name == "part_card_%s" % part_type:
+			parts_scroll.scroll_vertical = max(0, int(child.position.y) - 36)
+			return
+
+
+func _short_description(part: Dictionary) -> String:
+	var part_id := str(part.get("id", ""))
+	match part_id:
+		"objective_100mm":
+			return "More light for faint targets. / 收集更多光，适合星云和星系。"
+		"eyepiece_10mm":
+			return "More magnification, narrower and dimmer view. / 倍率更高，但视野更窄更暗。"
+		"stable_mount":
+			return "Less shake at high magnification. / 高倍率下抖动更少。"
+		"tracking_mount":
+			return "Tracks sky drift for long observations. / 抵消星空漂移，适合长时间观测。"
+		"basic_focus_knob":
+			return "Moves the eyepiece to sharpen focus. / 移动目镜，让图像清晰。"
+	return str(part.get("description_en", ""))
+
+
+func _safe_zh_name(part: Dictionary, fallback: String) -> String:
+	var part_id := str(part.get("id", ""))
+	var names := {
+		"basic_tripod": "基础三脚架",
+		"basic_mount": "基础支架",
+		"starter_tube": "入门镜筒",
+		"objective_60mm": "60mm 入门物镜",
+		"eyepiece_20mm": "20mm 低倍率目镜",
+		"basic_finder_scope": "基础寻星镜",
+		"eyepiece_10mm": "10mm 高倍率目镜",
+		"objective_100mm": "100mm 大口径物镜",
+		"stable_mount": "重型稳定支架",
+		"tracking_mount": "追踪支架",
+		"basic_focus_knob": "基础调焦旋钮"
+	}
+	return str(names.get(part_id, part.get("name_zh", fallback)))
+
+
+func _part_stat_chips(part: Dictionary) -> Array[String]:
+	var chips: Array[String] = []
+	if part.has("aperture_mm"):
+		chips.append("Aperture: %smm" % part.get("aperture_mm"))
+	if part.has("focal_length_mm"):
+		chips.append("Focal: %smm" % part.get("focal_length_mm"))
+	if part.has("quality"):
+		chips.append("Quality: %s" % part.get("quality"))
+	if part.has("field_of_view"):
+		chips.append("FOV: %s" % part.get("field_of_view"))
+	if part.has("stability"):
+		chips.append("Stability: %s" % part.get("stability"))
+	if part.has("stability_bonus"):
+		chips.append("Stability: %s" % part.get("stability_bonus"))
+	if part.has("tracking"):
+		chips.append("Tracking: %s" % part.get("tracking"))
+	if part.has("aim_assist"):
+		chips.append("Aim: %s" % part.get("aim_assist"))
+	if part.has("focus_sensitivity"):
+		chips.append("Focus: %s" % part.get("focus_sensitivity"))
+	return chips
+
+
+func _unlock_note(part: Dictionary, unlocked: bool) -> String:
+	if unlocked:
+		return ""
+	var level := int(part.get("unlock_level", 999))
+	if level < 999:
+		return "Unlocks at L%d\n第 %d 关解锁" % [level, level]
+	return "Locked\n未解锁"
+
+
+func _stage_label(stage: String) -> String:
+	match stage:
+		"eye":
+			return "Naked Eye / 肉眼"
+		"refractor_basic":
+			return "Simple Refractor / 基础折射镜"
+		"refractor_with_finder":
+			return "Refractor + Finder / 折射镜 + 寻星镜"
+		"newtonian_basic":
+			return "Reflector Practice / 反射镜练习"
+		"advanced":
+			return "Advanced Kit / 高级设备"
+	return stage
+
+
+func _draw_star_grid() -> void:
+	for index in range(90):
+		var x := fmod(float(index * 89), SCREEN_SIZE.x)
+		var y := fmod(float(index * 53), SCREEN_SIZE.y)
+		var alpha := 0.08 + fmod(float(index), 5.0) * 0.025
+		_rect(Vector2(x, y), Vector2(1, 1), Color(0.6, 0.75, 0.95, alpha))
 
 
 func _panel(pos: Vector2, panel_size: Vector2, color: Color, border: Color) -> Panel:
 	var panel := Panel.new()
 	panel.position = pos
 	panel.size = panel_size
-	panel.add_theme_stylebox_override("panel", _style(color, border, 3, 4))
+	panel.add_theme_stylebox_override("panel", _style(color, border, 3, 5))
 	add_child(panel)
-	_panel_corners(pos, panel_size, border)
+	_panel_corners_to(self, pos, panel_size, border)
 	return panel
 
 
@@ -209,6 +562,15 @@ func _button(text: String, pos: Vector2, button_size: Vector2) -> Button:
 	return button
 
 
+func _badge_to(parent: Control, text: String, pos: Vector2, badge_size: Vector2, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_CENTER) -> Label:
+	var bg := _rect_to(parent, pos, badge_size, Color(color.r, color.g, color.b, 0.16))
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var label := _label_to(parent, text, pos + Vector2(5, 2), badge_size - Vector2(10, 3), 10, color, align)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.clip_text = true
+	return label
+
+
 func _style(color: Color, border: Color, border_width: int, radius: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
@@ -218,28 +580,32 @@ func _style(color: Color, border: Color, border_width: int, radius: int) -> Styl
 	return style
 
 
-func _panel_corners(pos: Vector2, panel_size: Vector2, color: Color) -> void:
-	_rect(pos + Vector2(4, 4), Vector2(12, 3), color)
-	_rect(pos + Vector2(4, 4), Vector2(3, 12), color)
-	_rect(pos + Vector2(panel_size.x - 16, 4), Vector2(12, 3), color)
-	_rect(pos + Vector2(panel_size.x - 7, 4), Vector2(3, 12), color)
-	_rect(pos + Vector2(4, panel_size.y - 7), Vector2(12, 3), color)
-	_rect(pos + Vector2(4, panel_size.y - 16), Vector2(3, 12), color)
-	_rect(pos + Vector2(panel_size.x - 16, panel_size.y - 7), Vector2(12, 3), color)
-	_rect(pos + Vector2(panel_size.x - 7, panel_size.y - 16), Vector2(3, 12), color)
+func _panel_corners_to(parent: Control, pos: Vector2, panel_size: Vector2, color: Color) -> void:
+	_rect_to(parent, pos + Vector2(4, 4), Vector2(12, 3), color)
+	_rect_to(parent, pos + Vector2(4, 4), Vector2(3, 12), color)
+	_rect_to(parent, pos + Vector2(panel_size.x - 16, 4), Vector2(12, 3), color)
+	_rect_to(parent, pos + Vector2(panel_size.x - 7, 4), Vector2(3, 12), color)
+	_rect_to(parent, pos + Vector2(4, panel_size.y - 7), Vector2(12, 3), color)
+	_rect_to(parent, pos + Vector2(4, panel_size.y - 16), Vector2(3, 12), color)
+	_rect_to(parent, pos + Vector2(panel_size.x - 16, panel_size.y - 7), Vector2(12, 3), color)
+	_rect_to(parent, pos + Vector2(panel_size.x - 7, panel_size.y - 16), Vector2(3, 12), color)
 
 
 func _rect(pos: Vector2, rect_size: Vector2, color: Color) -> ColorRect:
+	return _rect_to(self, pos, rect_size, color)
+
+
+func _rect_to(parent: Control, pos: Vector2, rect_size: Vector2, color: Color) -> ColorRect:
 	var rect := ColorRect.new()
 	rect.position = pos
 	rect.size = rect_size
 	rect.color = color
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(rect)
+	parent.add_child(rect)
 	return rect
 
 
-func _label(text: String, pos: Vector2, label_size: Vector2, font_size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+func _label_to(parent: Control, text: String, pos: Vector2, label_size: Vector2, font_size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.position = pos
@@ -253,5 +619,5 @@ func _label(text: String, pos: Vector2, label_size: Vector2, font_size: int, col
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(label)
+	parent.add_child(label)
 	return label

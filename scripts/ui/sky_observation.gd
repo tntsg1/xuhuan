@@ -14,6 +14,7 @@ extends Control
 const W := 1024.0
 const H := 768.0
 const BG_TEXTURE := "res://assets/reference/sky_observation_ui_bg_v2_1024.png"
+const MODE_BUTTONS_TEXTURE := "res://assets/reference/sky_view_mode_buttons_uniform_250x76.png"
 const BRIGHT_STARS_PATH := "res://data/bright_stars.json"
 const SkyPositionServiceScript := preload("res://scripts/systems/sky_position_service.gd")
 const ICON_DIR := "res://assets/celestial_icons/"
@@ -25,10 +26,11 @@ const AZ_BAND := Rect2(80, 55, 630, 44)
 const ALT_BAND := Rect2(38, 103, 46, 560)
 const OBSERVE_RECT := Rect2(760, 570, 238, 84)
 const BACK_RECT := Rect2(760, 668, 238, 72)
+const MODE_BUTTONS_OVERLAY_RECT := Rect2(754, 486, 250, 76)
 const MODE_RECTS := {
-	"naked_eye": Rect2(760, 492, 70, 60),
-	"finder": Rect2(845, 492, 70, 60),
-	"telescope": Rect2(928, 492, 70, 60)
+	"naked_eye": Rect2(756, 488, 72, 72),
+	"finder": Rect2(843, 488, 72, 72),
+	"telescope": Rect2(930, 488, 72, 72)
 }
 
 const PANEL_COVER := Color(0.026, 0.048, 0.080, 1.0)
@@ -55,6 +57,15 @@ const ALT_LABEL_POOL := 12
 
 const CENTER_TOLERANCE_FINDER := 2.0
 const CENTER_TOLERANCE_TELESCOPE := 0.5
+
+const CALIBRATE_STEP_DEGREES := 0.1
+const CALIBRATE_REPEAT_DELAY := 0.09
+const CALIBRATE_RECT := Rect2(148, 668, 460, 46)
+
+# L16 "Narrow Field Problem": how long / how much aimless movement in the
+# telescope before Maya's stronger reminder panel appears (once per visit).
+const WORKFLOW_LOST_SECONDS := 45.0
+const WORKFLOW_LOST_MOVES := 25
 
 # fov_x / fov_y per view mode.
 const VIEW_MODES := {
@@ -111,10 +122,23 @@ var aim_label: Label
 var selected_title: Label
 var selected_detail: Label
 var guidance_label: Label
+var visited_modes: Dictionary = {}
+
+var calibration_panel: Control
+var calibration_pct_label: Label
+var calibration_hint_label: Label
+var calibrate_repeat_timer := 0.0
+
+var workflow_elapsed := 0.0
+var workflow_move_count := 0
+var workflow_move_tick := 0
+var workflow_prompt_shown := false
 
 
 func _ready() -> void:
-	target_id = str(GameManager.current_level().get("target_object_id", "moon"))
+	if str(GameManager.current_level().get("variation", "")) == "finder_calibration":
+		GameManager.seed_finder_offset_if_needed()
+	target_id = GameManager.current_target_object_id()
 	observation_mode = GameManager.current_observation_mode()
 	selected_object_id = ""
 	GameManager.selected_object_id = ""
@@ -127,6 +151,7 @@ func _ready() -> void:
 		var saved_mode := str(saved_aim.get("view_mode", "naked_eye"))
 		if bool(_mode_available(saved_mode).get("ok", false)):
 			view_mode = saved_mode
+	visited_modes[view_mode] = true
 	_apply_view_mode()
 	sky_service = SkyPositionServiceScript.new()
 	sky_data = sky_service.get_sky_positions(VIEW_RECT)
@@ -138,6 +163,8 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_handle_aim_input(delta)
+	_handle_calibration_input(delta)
+	_update_workflow_discipline_timer(delta)
 	# Keep the big in-view banner mirroring whatever the side panel says
 	# (guidance, observe errors, mode hints).
 	if guidance_banner != null and guidance_label != null and guidance_banner.text != guidance_label.text:
@@ -190,10 +217,76 @@ func _handle_aim_input(delta: float) -> void:
 
 	telescope_azimuth = wrapf(telescope_azimuth + azimuth_dir * azimuth_speed * delta, 0.0, 360.0)
 	telescope_altitude = clampf(telescope_altitude + altitude_dir * altitude_speed * delta, 0.0, 90.0)
+	_count_workflow_move()
 	_rebuild_view()
 
 
+func _count_workflow_move() -> void:
+	# One "move" per ~0.15s of active steering, so holding a key doesn't
+	# spam thousands of counts per second - used by L16's lost-in-6-degrees
+	# detection (see _update_workflow_discipline_timer).
+	if str(GameManager.current_level().get("variation", "")) != "workflow_discipline":
+		return
+	if view_mode != "telescope":
+		return
+	workflow_move_tick += 1
+	if workflow_move_tick >= 9:
+		workflow_move_tick = 0
+		workflow_move_count += 1
+
+
 # ------------------------------------------------------------ view modes
+
+
+func _is_finder_calibration_level() -> bool:
+	return str(GameManager.current_level().get("variation", "")) == "finder_calibration"
+
+
+func _handle_calibration_input(delta: float) -> void:
+	if not _is_finder_calibration_level() or view_mode != "finder" or GameManager.is_finder_aligned():
+		if calibration_panel != null:
+			calibration_panel.visible = _is_finder_calibration_level() and view_mode == "finder"
+		return
+	if calibration_panel != null:
+		calibration_panel.visible = true
+	calibrate_repeat_timer -= delta
+	var delta_az := 0.0
+	var delta_alt := 0.0
+	if Input.is_key_pressed(KEY_J):
+		delta_az -= CALIBRATE_STEP_DEGREES
+	if Input.is_key_pressed(KEY_L):
+		delta_az += CALIBRATE_STEP_DEGREES
+	if Input.is_key_pressed(KEY_I):
+		delta_alt += CALIBRATE_STEP_DEGREES
+	if Input.is_key_pressed(KEY_K):
+		delta_alt -= CALIBRATE_STEP_DEGREES
+	if delta_az == 0.0 and delta_alt == 0.0:
+		return
+	if calibrate_repeat_timer > 0.0:
+		return
+	calibrate_repeat_timer = CALIBRATE_REPEAT_DELAY
+	# adjust_finder_offset REDUCES the misalignment: the offset represents
+	# how far off the finder is, so nudging "toward true" subtracts from it.
+	GameManager.adjust_finder_offset(-delta_az, -delta_alt)
+	_update_calibration_panel()
+	_rebuild_view()
+
+
+func _update_calibration_panel() -> void:
+	if calibration_pct_label == null:
+		return
+	var aligned := GameManager.is_finder_aligned()
+	var pct := GameManager.finder_alignment_percent()
+	if aligned:
+		calibration_pct_label.text = GameManager.text("Aligned!", "校准完成！")
+		calibration_pct_label.add_theme_color_override("font_color", GREEN)
+		calibration_hint_label.text = GameManager.text("Finder now matches the telescope.", "寻星镜现在与主镜一致了。")
+	else:
+		calibration_pct_label.text = GameManager.text(
+			"Finder Alignment: %d%%" % int(pct), "寻星镜校准度：%d%%" % int(pct)
+		)
+		calibration_pct_label.add_theme_color_override("font_color", WARNING)
+		calibration_hint_label.text = GameManager.text("IJKL to adjust", "IJKL 微调")
 
 
 func _mode_available(mode: String) -> Dictionary:
@@ -217,6 +310,12 @@ func _mode_available(mode: String) -> Dictionary:
 			"en": "The telescope is not assembled yet.",
 			"zh": "望远镜还没有组装完成。"
 		}
+	if mode == "telescope" and _is_finder_calibration_level() and not GameManager.is_finder_aligned():
+		return {
+			"ok": false,
+			"en": "Calibrate the finder scope first (switch to Finder, use IJKL).",
+			"zh": "请先校准寻星镜（切换到寻星镜视角，用 IJKL 微调）。"
+		}
 	return {"ok": true}
 
 
@@ -229,6 +328,7 @@ func _set_view_mode(mode: String) -> void:
 			guidance_label.text = GameManager.text(str(check.get("en", "")), str(check.get("zh", "")))
 		return
 	view_mode = mode
+	visited_modes[view_mode] = true
 	_apply_view_mode()
 	_update_mode_buttons()
 	_rebuild_view()
@@ -271,9 +371,24 @@ func _ensure_target_observable() -> void:
 	if not sky_data.has(target_id):
 		return
 	var item: Dictionary = sky_data[target_id]
+	var seed_value: int = absi(target_id.hash())
+	var altitude_bias := _target_altitude_bias()
+	if altitude_bias == "low":
+		# The mission deliberately wants a low-altitude target (seeing lesson):
+		# pin it into a 12-18 deg band regardless of tonight's real position.
+		var azimuth: float = float(item.get("azimuth", 0.0))
+		if azimuth <= 0.001:
+			azimuth = 120.0 + float(seed_value % 140)
+		item["altitude"] = 12.0 + float(seed_value % 7)
+		item["azimuth"] = azimuth
+		item["visible"] = true
+		item["visibility_text"] = "Offline estimate"
+		item["direction_text"] = _direction_text_for_azimuth(azimuth)
+		item["source"] = "fallback"
+		sky_data[target_id] = item
+		return
 	if float(item.get("altitude", 0.0)) >= MINIMUM_VISIBLE_ALTITUDE:
 		return
-	var seed_value: int = absi(target_id.hash())
 	var azimuth: float = float(item.get("azimuth", 0.0))
 	if azimuth <= 0.001:
 		azimuth = 120.0 + float(seed_value % 140)
@@ -284,6 +399,12 @@ func _ensure_target_observable() -> void:
 	item["direction_text"] = _direction_text_for_azimuth(azimuth)
 	item["source"] = "fallback"
 	sky_data[target_id] = item
+
+
+func _target_altitude_bias() -> String:
+	var level := GameManager.current_level()
+	var environment: Dictionary = level.get("environment", {})
+	return str(environment.get("target_altitude_bias", ""))
 
 
 func _load_real_star_points() -> void:
@@ -375,9 +496,25 @@ func _build() -> void:
 	_build_view_layer()
 	_build_panel_text()
 	_build_mode_buttons()
+	_build_calibration_panel()
 	_draw_action_hitboxes()
 	_update_mode_buttons()
 	_rebuild_view()
+
+
+func _build_calibration_panel() -> void:
+	if not _is_finder_calibration_level():
+		return
+	calibration_panel = Control.new()
+	calibration_panel.position = CALIBRATE_RECT.position
+	calibration_panel.size = CALIBRATE_RECT.size
+	calibration_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	calibration_panel.visible = false
+	add_child(calibration_panel)
+	_rect(calibration_panel, Vector2.ZERO, CALIBRATE_RECT.size, Color(0.02, 0.03, 0.05, 0.72))
+	calibration_pct_label = _label(calibration_panel, "", Vector2(10, 4), Vector2(CALIBRATE_RECT.size.x - 20, 20), 13, WARNING, HORIZONTAL_ALIGNMENT_CENTER)
+	calibration_hint_label = _label(calibration_panel, GameManager.text("IJKL to adjust", "IJKL 微调"), Vector2(10, 24), Vector2(CALIBRATE_RECT.size.x - 20, 18), 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	_update_calibration_panel()
 
 
 func _draw_background() -> void:
@@ -389,6 +526,14 @@ func _draw_background() -> void:
 	bg.stretch_mode = TextureRect.STRETCH_SCALE
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+
+
+func _load_png_texture(path: String) -> Texture2D:
+	var image := Image.load_from_file(path)
+	if image == null or image.is_empty():
+		push_warning("Could not load sky observation texture: " + path)
+		return null
+	return ImageTexture.create_from_image(image)
 
 
 func _build_scale_bands() -> void:
@@ -511,9 +656,20 @@ func _build_view_layer() -> void:
 
 
 func _build_mode_buttons() -> void:
-	# The EYE / FINDER / SCOPE buttons are baked into the background art;
-	# we lay transparent hotspots over them plus dynamic state overlays
-	# (dark shade when inactive, gold frame when active).
+	# Cover the baked EYE / FINDER / SCOPE art with one uniform source image
+	# so switching modes never gives the three buttons mismatched colors.
+	var button_art := TextureRect.new()
+	button_art.texture = _load_png_texture(MODE_BUTTONS_TEXTURE)
+	button_art.position = MODE_BUTTONS_OVERLAY_RECT.position
+	button_art.size = MODE_BUTTONS_OVERLAY_RECT.size
+	button_art.clip_contents = true
+	button_art.ignore_texture_size = true
+	button_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	button_art.stretch_mode = TextureRect.STRETCH_SCALE
+	button_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	button_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(button_art)
+
 	view_mode_caption = _label(self, "", Vector2(288, 708), Vector2(230, 20), 11, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	for mode_value in MODE_RECTS.keys():
 		var mode: String = str(mode_value)
@@ -535,14 +691,8 @@ func _update_mode_buttons() -> void:
 		var shade: ColorRect = parts.get("shade")
 		var frame: Control = parts.get("frame")
 		var active := mode == view_mode
-		var available := bool(_mode_available(mode).get("ok", false))
 		frame.visible = active
-		if active:
-			shade.color = Color(0.01, 0.03, 0.07, 0.0)
-		elif available:
-			shade.color = Color(0.01, 0.03, 0.07, 0.38)
-		else:
-			shade.color = Color(0.01, 0.02, 0.05, 0.66)
+		shade.color = Color(0.01, 0.03, 0.07, 0.0)
 	if view_mode_caption != null:
 		var captions := {"naked_eye": "EYE VIEW", "finder": "FINDER VIEW", "telescope": "SCOPE VIEW"}
 		view_mode_caption.text = "·  %s  ·" % str(captions.get(view_mode, "VIEW"))
@@ -679,11 +829,20 @@ func _rebuild_view() -> void:
 	in_view_targets.clear()
 	var half_x := fov_x * 0.5
 	var half_y := fov_y * 0.5
+	var offset_az := 0.0
+	var offset_alt := 0.0
+	if view_mode == "finder":
+		# The finder crosshair itself does not move, but everything it shows
+		# is displaced by the (uncalibrated) mechanical misalignment: what
+		# looks centered in the finder may not really be centered.
+		var offset: Dictionary = GameManager.finder_offset()
+		offset_az = float(offset.get("az", 0.0))
+		offset_alt = float(offset.get("alt", 0.0))
 
 	var pool_index := 0
 	for point in star_points:
-		var star_delta_az := shortest_angle_degrees(telescope_azimuth, point.x)
-		var star_delta_alt := point.y - telescope_altitude
+		var star_delta_az := shortest_angle_degrees(telescope_azimuth, point.x) + offset_az
+		var star_delta_alt := point.y - telescope_altitude + offset_alt
 		if absf(star_delta_az) > half_x or absf(star_delta_alt) > half_y:
 			continue
 		if pool_index >= star_pool.size():
@@ -707,8 +866,8 @@ func _rebuild_view() -> void:
 		var item: Dictionary = sky_data[object_id]
 		var obj: Dictionary = GameManager.get_object(object_id)
 		var altitude: float = float(item.get("altitude", 0.0))
-		var delta_az := shortest_angle_degrees(telescope_azimuth, float(item.get("azimuth", 0.0)))
-		var delta_alt := altitude - telescope_altitude
+		var delta_az := shortest_angle_degrees(telescope_azimuth, float(item.get("azimuth", 0.0))) + offset_az
+		var delta_alt := altitude - telescope_altitude + offset_alt
 		var visual := _object_visual_for_mode(obj)
 		var in_view: bool = altitude > 0.0 and absf(delta_az) <= half_x and absf(delta_alt) <= half_y and bool(visual.get("shown", true))
 		icon.visible = in_view
@@ -893,7 +1052,9 @@ func _update_marker_frames() -> void:
 
 	# Faint hint frame around the mission target (the target itself stays
 	# tiny; only the marker helps you find it).
-	if view_mode != "telescope" and in_view_targets.has(target_id) and target_id != selected_object_id:
+	var current_level_data: Dictionary = GameManager.current_level()
+	if view_mode != "telescope" and in_view_targets.has(target_id) and target_id != selected_object_id \
+			and not bool(current_level_data.get("hide_target_hint", false)):
 		var target_info: Dictionary = in_view_targets[target_id]
 		var target_rect: Rect2 = target_info.get("rect", Rect2())
 		var assist_color := FINDER_ASSIST
@@ -1054,6 +1215,8 @@ func _update_selected_text() -> void:
 
 func _update_guidance() -> void:
 	var text := _guidance_for_target()
+	text = _apply_workflow_discipline_hint(text)
+	text = _apply_mission_step_hint(text)
 	guidance_label.text = text
 	if guidance_banner != null:
 		guidance_banner.text = text
@@ -1112,6 +1275,98 @@ func _guidance_for_target() -> String:
 	if en_parts.is_empty():
 		return GameManager.text("Target just outside view. Nudge slightly.", "目标就在视野边缘，微调一下。")
 	return GameManager.text(" ".join(en_parts), "".join(zh_parts))
+
+
+func _apply_mission_step_hint(default_text: String) -> String:
+	# When the level has an unfinished checklist (e.g. L10's 20mm-then-10mm),
+	# lead with which step is still pending instead of the generic aim hint.
+	var step := GameManager.next_pending_mission_step()
+	if step.is_empty():
+		return default_text
+	var label := GameManager.dict_text(step, "label")
+	var steps := GameManager.mission_steps()
+	var done := GameManager.completed_mission_steps().size()
+	return GameManager.text(
+		"Step %d/%d: %s" % [done + 1, steps.size(), label],
+		"步骤 %d/%d：%s" % [done + 1, steps.size(), label]
+	)
+
+
+func _update_workflow_discipline_timer(delta: float) -> void:
+	# L16 "Narrow Field Problem": if the player is stuck in the telescope
+	# view without ever visiting the finder, and the target still isn't
+	# centered after a while, show Maya's stronger one-time reminder panel
+	# (the persistent bottom-bar hint from _apply_workflow_discipline_hint
+	# stays as-is; this is an additional, harder-to-miss layer).
+	var level_variation: String = str(GameManager.current_level().get("variation", ""))
+	if level_variation != "workflow_discipline" or workflow_prompt_shown:
+		return
+	if view_mode != "telescope" or visited_modes.has("finder"):
+		return
+	var target_centered := in_view_targets.has(target_id) and _center_offset(target_id) <= _center_tolerance()
+	if target_centered:
+		return
+	workflow_elapsed += delta
+	if workflow_elapsed >= WORKFLOW_LOST_SECONDS or workflow_move_count >= WORKFLOW_LOST_MOVES:
+		_show_workflow_lost_panel()
+
+
+func _show_workflow_lost_panel() -> void:
+	workflow_prompt_shown = true
+	var lines: Array = StoryManager.get_dialogue("level_16_mid")
+	var text_en := "Lost? Everyone gets lost in six degrees. Wide first, narrow last."
+	var text_zh := "迷路了吧？在 6 度的视野里谁都会迷路。先宽后窄。"
+	if not lines.is_empty() and lines[0] is Dictionary:
+		var line: Dictionary = lines[0]
+		text_en = str(line.get("text_en", text_en))
+		text_zh = str(line.get("text_zh", text_zh))
+
+	var overlay := Control.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+	_rect(overlay, Vector2.ZERO, Vector2(W, H), Color(0, 0, 0, 0.55))
+
+	var panel_size := Vector2(560, 220)
+	var panel_pos := Vector2((W - panel_size.x) * 0.5, (H - panel_size.y) * 0.5)
+	_rect(overlay, panel_pos, panel_size, Color(0.04, 0.05, 0.09, 0.97))
+	var frame := _make_frame(overlay, Rect2(panel_pos, panel_size), GOLD, 3)
+	frame.visible = true
+
+	var name_label := _label(overlay, "Maya", panel_pos + Vector2(24, 18), Vector2(panel_size.x - 48, 24), 15, GOLD, HORIZONTAL_ALIGNMENT_LEFT)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var body := _label(overlay, GameManager.text(text_en, text_zh), panel_pos + Vector2(24, 52), Vector2(panel_size.x - 48, 110), 14, TEXT, HORIZONTAL_ALIGNMENT_LEFT)
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.max_lines_visible = 5
+
+	var hint := _label(overlay, GameManager.text("Press SPACE to continue", "按 SPACE 继续"), panel_pos + Vector2(24, panel_size.y - 34), Vector2(panel_size.x - 48, 20), 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	overlay.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventKey and event.pressed and (event.keycode == KEY_SPACE or event.keycode == KEY_ENTER):
+			overlay.queue_free()
+		elif event is InputEventMouseButton and event.pressed:
+			overlay.queue_free()
+	)
+	# Also allow unhandled key input in case focus isn't on the overlay.
+	overlay.focus_mode = Control.FOCUS_ALL
+	overlay.grab_focus()
+
+
+func _apply_workflow_discipline_hint(default_text: String) -> String:
+	# L16 "Narrow Field Problem": if the player jumps straight to the
+	# telescope without ever visiting the finder, swap in Maya's reminder
+	# instead of the normal guidance line.
+	var level_variation: String = str(GameManager.current_level().get("variation", ""))
+	if level_variation != "workflow_discipline":
+		return default_text
+	if view_mode != "telescope" or visited_modes.has("finder"):
+		return default_text
+	return GameManager.text(
+		"Lost? Everyone gets lost in six degrees. Wide first, narrow last.",
+		"迷路了吧？在 6 度的视野里谁都会迷路。先宽后窄。"
+	)
 
 
 # --------------------------------------------------------------------- state

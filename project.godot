@@ -23,6 +23,7 @@ TeachingFlowManager="*res://scripts/systems/teaching_flow_manager.gd"
 StoryManager="*res://scripts/systems/story_manager.gd"
 GameManager="*res://scripts/systems/game_manager.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
+Spawning="*uid://gixop20d1d75"
 
 [display]
 
