@@ -29,15 +29,18 @@ const DEFAULT_PART_IDS := {
 	"finder_scope": "basic_finder_scope"
 }
 
-const PART_LABELS := {
-	"tripod": {"short": "Tripod", "zh": "三脚架", "role": "Base support / 底部支撑"},
-	"mount": {"short": "Mount", "zh": "支架", "role": "Holds and turns the tube / 支撑并转动镜筒"},
-	"tube": {"short": "Tube", "zh": "镜筒", "role": "Keeps optics aligned / 保持光路对齐"},
-	"objective": {"short": "Lens", "zh": "物镜", "role": "Collects light / 收集光线"},
-	"eyepiece": {"short": "Eye", "zh": "目镜", "role": "Magnifies the image / 放大图像"},
-	"focus_knob": {"short": "Focus", "zh": "调焦", "role": "Moves eyepiece for sharp focus / 移动目镜以清晰成像"},
-	"finder_scope": {"short": "Finder", "zh": "寻星镜", "role": "Helps aim the telescope / 帮助瞄准"}
-}
+func _part_label(part_type: String, field: String) -> String:
+	var labels := {
+		"tripod": {"short_en": "Tripod", "short_zh": "三脚架", "role_en": "Base support", "role_zh": "底部支撑"},
+		"mount": {"short_en": "Mount", "short_zh": "支架", "role_en": "Holds and turns the tube", "role_zh": "支撑并转动镜筒"},
+		"tube": {"short_en": "Tube", "short_zh": "镜筒", "role_en": "Keeps optics aligned", "role_zh": "保持光路对齐"},
+		"objective": {"short_en": "Lens", "short_zh": "物镜", "role_en": "Collects light", "role_zh": "收集光线"},
+		"eyepiece": {"short_en": "Eye", "short_zh": "目镜", "role_en": "Magnifies the image", "role_zh": "放大图像"},
+		"focus_knob": {"short_en": "Focus", "short_zh": "调焦", "role_en": "Moves eyepiece for sharp focus", "role_zh": "移动目镜以清晰成像"},
+		"finder_scope": {"short_en": "Finder", "short_zh": "寻星镜", "role_en": "Helps aim the telescope", "role_zh": "帮助瞄准"}
+	}
+	var entry: Dictionary = labels.get(part_type, {"short_en": part_type, "short_zh": part_type, "role_en": "", "role_zh": ""})
+	return GameManager.text(str(entry.get(field + "_en", "")), str(entry.get(field + "_zh", "")))
 
 const SLOT_RECTS := {
 	"finder_scope": Rect2(132, 86, 154, 48),
@@ -283,14 +286,14 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 	icon_box.clip_contents = true
 	_draw_part_icon(parts_list, part, pos + Vector2(10, 11), installed, Vector2(56, 56))
 
-	var name_en := _label(str(part.get("name_en", PART_LABELS[part_type]["short"])), 12, Color(0.94, 0.95, 0.92))
+	var name_en := _label(str(part.get("name_en", _part_label(part_type, "short"))), 12, Color(0.94, 0.95, 0.92))
 	name_en.position = pos + Vector2(76, 10)
 	name_en.size = Vector2(160, 18)
 	name_en.autowrap_mode = TextServer.AUTOWRAP_OFF
 	name_en.clip_text = true
 	parts_list.add_child(name_en)
 
-	var name_zh := _label(str(PART_LABELS[part_type]["zh"]), 12, Color(0.82, 0.88, 0.88))
+	var name_zh := _label(str(_part_label(part_type, "short")), 12, Color(0.82, 0.88, 0.88))
 	name_zh.position = pos + Vector2(76, 30)
 	name_zh.size = Vector2(160, 18)
 	name_zh.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -490,7 +493,7 @@ func _draw_slot(part_type: String, next_part: String) -> void:
 		var dot := _rect_local(blueprint_layer, rect.position + rect.size * 0.5 - Vector2(4, 4), Vector2(8, 8), border)
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-		var slot_name := str(PART_LABELS[part_type]["short"])
+		var slot_name := str(_part_label(part_type, "short"))
 		var label := _label(slot_name, 11, Color(0.88, 0.94, 0.92))
 		label.position = rect.position + Vector2(5, 4)
 		label.size = Vector2(rect.size.x - 10, 16)
@@ -591,20 +594,20 @@ func _refresh_inspector() -> void:
 	if selected_part_type == "":
 		var next_part := _next_installable_part()
 		if next_part == "":
-			inspector_title.text = "Ready to finish\n可以完成组装"
-			inspector_body.text = "All required core parts are installed.\n核心部件已经装齐。"
-			feedback_label.text = "Click Finish Assembly to return to the observatory.\n点击完成组装返回观测室。"
+			inspector_title.text = GameManager.text("Ready to finish", "可以完成组装")
+			inspector_body.text = GameManager.text("All required core parts are installed.", "核心部件已经装齐。")
+			feedback_label.text = GameManager.text("Click Finish Assembly to return to the observatory.", "点击完成组装返回观测室。")
 		else:
-			inspector_title.text = "Next step: " + str(PART_LABELS[next_part]["short"]) + "\n下一步：" + str(PART_LABELS[next_part]["zh"])
+			inspector_title.text = "Next step: " + str(_part_label(next_part, "short")) + "\n下一步：" + str(_part_label(next_part, "short"))
 			inspector_body.text = _next_step_description(next_part)
-			feedback_label.text = "Select " + str(PART_LABELS[next_part]["short"]) + " on the left, then click its slot.\n先选择 " + str(PART_LABELS[next_part]["zh"]) + "，再点击对应安装位。"
+			feedback_label.text = "Select " + str(_part_label(next_part, "short")) + " on the left, then click its slot.\n先选择 " + str(_part_label(next_part, "short")) + "，再点击对应安装位。"
 		return
 	var unlocked: Array = GameManager.unlocked_parts_by_type(selected_part_type)
 	if unlocked.is_empty():
 		return
 	var part: Dictionary = _part_for_type(selected_part_type)
-	inspector_title.text = str(part.get("name_en", PART_LABELS[selected_part_type]["short"])) + "\n" + str(PART_LABELS[selected_part_type]["zh"])
-	inspector_body.text = str(part.get("description_en", "")) + "\n" + str(PART_LABELS[selected_part_type]["role"])
+	inspector_title.text = str(part.get("name_en", _part_label(selected_part_type, "short"))) + "\n" + str(_part_label(selected_part_type, "short"))
+	inspector_body.text = str(part.get("description_en", "")) + "\n" + str(_part_label(selected_part_type, "role"))
 
 
 func _refresh_stats() -> void:
@@ -649,10 +652,10 @@ func _draw_stat_row(name: String, value: float, max_value: float, suffix: String
 func _select_part(part_type: String) -> void:
 	if _is_installed(part_type):
 		selected_part_type = part_type
-		feedback_label.text = str(PART_LABELS[part_type]["short"]) + " is already installed.\n" + str(PART_LABELS[part_type]["zh"]) + " 已安装。"
+		feedback_label.text = str(_part_label(part_type, "short")) + " is already installed.\n" + str(_part_label(part_type, "short")) + " 已安装。"
 	else:
 		selected_part_type = part_type
-		feedback_label.text = "Click the " + str(PART_LABELS[part_type]["short"]) + " slot on the blueprint.\n点击蓝图上的 " + str(PART_LABELS[part_type]["zh"]) + " 安装位。"
+		feedback_label.text = "Click the " + str(_part_label(part_type, "short")) + " slot on the blueprint.\n点击蓝图上的 " + str(_part_label(part_type, "short")) + " 安装位。"
 	_refresh_all()
 
 
@@ -661,7 +664,7 @@ func _try_install(slot_type: String) -> void:
 		feedback_label.text = "Select a part card from the left first.\n请先从左侧选择零件卡。"
 		return
 	if _is_installed(slot_type):
-		feedback_label.text = str(PART_LABELS[slot_type]["short"]) + " is already installed.\n这个安装位已经完成。"
+		feedback_label.text = str(_part_label(slot_type, "short")) + " is already installed.\n这个安装位已经完成。"
 		return
 	if selected_part_type != slot_type:
 		wrong_attempts[selected_part_type] = int(wrong_attempts.get(selected_part_type, 0)) + 1
@@ -677,7 +680,7 @@ func _try_install(slot_type: String) -> void:
 		return
 
 	var score: int = GameManager.install_part(slot_type, int(wrong_attempts.get(slot_type, 0)))
-	feedback_label.text = "Installed " + str(PART_LABELS[slot_type]["short"]) + ". Alignment " + str(score) + ".\n已安装 " + str(PART_LABELS[slot_type]["zh"]) + "，对齐 " + str(score) + "。"
+	feedback_label.text = "Installed " + str(_part_label(slot_type, "short")) + ". Alignment " + str(score) + ".\n已安装 " + str(_part_label(slot_type, "short")) + "，对齐 " + str(score) + "。"
 	selected_part_type = ""
 	_refresh_all()
 
@@ -708,16 +711,16 @@ func _reset() -> void:
 func _wrong_feedback(part_type: String, slot_type: String) -> String:
 	if part_type == "focus_knob":
 		return "The focus knob belongs near the eyepiece. It moves the eyepiece to sharpen the image.\n调焦旋钮安装在目镜附近，用来移动目镜位置，让图像变清楚。"
-	return "Wrong slot. " + str(PART_LABELS[part_type]["short"]) + " belongs in the " + str(PART_LABELS[part_type]["short"]) + " slot.\n" \
-		+ "位置不对。" + str(PART_LABELS[part_type]["zh"]) + " 应安装到对应安装位。\n" \
-		+ str(PART_LABELS[part_type]["role"])
+	return "Wrong slot. " + str(_part_label(part_type, "short")) + " belongs in the " + str(_part_label(part_type, "short")) + " slot.\n" \
+		+ "位置不对。" + str(_part_label(part_type, "short")) + " 应安装到对应安装位。\n" \
+		+ str(_part_label(part_type, "role"))
 
 
 func _order_feedback(part_type: String) -> String:
 	var previous := _previous_required(part_type)
 	if previous == "":
 		return "Install the lower support parts first.\n请先安装底部支撑结构。"
-	return "Install " + str(PART_LABELS[previous]["short"]) + " first.\n请先安装 " + str(PART_LABELS[previous]["zh"]) + "。"
+	return "Install " + str(_part_label(previous, "short")) + " first.\n请先安装 " + str(_part_label(previous, "short")) + "。"
 
 
 func _previous_required(part_type: String) -> String:
@@ -734,19 +737,19 @@ func _previous_required(part_type: String) -> String:
 func _next_step_description(part_type: String) -> String:
 	match part_type:
 		"tripod":
-			return "Start with the bottom support.\n先从底部支撑开始。"
+			return GameManager.text("Start with the bottom support.", "先从底部支撑开始。")
 		"mount":
-			return "Add the mount above the tripod.\n把支架安装到三脚架上方。"
+			return GameManager.text("Add the mount above the tripod.", "把支架安装到三脚架上方。")
 		"tube":
-			return "Place the tube on the mount.\n把镜筒安装到支架上。"
+			return GameManager.text("Place the tube on the mount.", "把镜筒安装到支架上。")
 		"objective":
-			return "Install the front lens to collect light.\n安装前端物镜来收集光线。"
+			return GameManager.text("Install the front lens to collect light.", "安装前端物镜来收集光线。")
 		"eyepiece":
-			return "Install the eyepiece at the viewing end.\n把目镜安装到观察端。"
+			return GameManager.text("Install the eyepiece at the viewing end.", "把目镜安装到观察端。")
 		"focus_knob":
-			return "Attach the focus knob near the eyepiece.\n把调焦旋钮安装到目镜附近。"
+			return GameManager.text("Attach the focus knob near the eyepiece.", "把调焦旋钮安装到目镜附近。")
 		_:
-			return "Add the finder scope for easier aiming.\n安装寻星镜帮助瞄准。"
+			return GameManager.text("Add the finder scope for easier aiming.", "安装寻星镜帮助瞄准。")
 
 
 func _next_installable_part() -> String:

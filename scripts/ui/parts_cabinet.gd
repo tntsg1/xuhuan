@@ -33,22 +33,26 @@ const PART_ICON_TEXTURES := {
 }
 
 const CATEGORY_ORDER := ["Support", "Optics", "Aiming", "Control"]
-const CATEGORY_LABELS := {
-	"Support": "Support / 支撑",
-	"Optics": "Optics / 光学",
-	"Aiming": "Aiming / 瞄准",
-	"Control": "Control / 控制"
-}
+func _category_label(cat: String) -> String:
+	var labels := {"Support": ["Support", "支撑"], "Optics": ["Optics", "光学"], "Aiming": ["Aiming", "瞄准"], "Control": ["Control", "控制"]}
+	var pair: Array = labels.get(cat, [cat, cat])
+	return GameManager.text(str(pair[0]), str(pair[1]))
 
-const TYPE_LABELS := {
-	"tripod": {"en": "Tripod", "zh": "三脚架", "role": "Support / 支撑", "category": "Support"},
-	"mount": {"en": "Mount", "zh": "支架", "role": "Turns and steadies the telescope / 转动与稳定", "category": "Support"},
-	"tube": {"en": "Tube", "zh": "镜筒", "role": "Keeps optics aligned / 保持光路对齐", "category": "Support"},
-	"objective": {"en": "Objective Lens", "zh": "物镜", "role": "Collects light / 集光", "category": "Optics"},
-	"eyepiece": {"en": "Eyepiece", "zh": "目镜", "role": "Magnifies the image / 放大", "category": "Optics"},
-	"finder_scope": {"en": "Finder Scope", "zh": "寻星镜", "role": "Aims before high power / 寻星", "category": "Aiming"},
-	"focus_knob": {"en": "Focus Knob", "zh": "调焦旋钮", "role": "Sharpens the image / 调清图像", "category": "Control"}
-}
+# TYPE_LABELS helper — returns localized label per field
+func _type_label(part_type: String, field: String) -> String:
+	var labels := {
+		"tripod": {"en": "Tripod", "zh": "三脚架", "role_en": "Support", "role_zh": "支撑", "category": "Support"},
+		"mount": {"en": "Mount", "zh": "支架", "role_en": "Turns and steadies the telescope", "role_zh": "转动与稳定", "category": "Support"},
+		"tube": {"en": "Tube", "zh": "镜筒", "role_en": "Keeps optics aligned", "role_zh": "保持光路对齐", "category": "Support"},
+		"objective": {"en": "Objective Lens", "zh": "物镜", "role_en": "Collects light", "role_zh": "集光", "category": "Optics"},
+		"eyepiece": {"en": "Eyepiece", "zh": "目镜", "role_en": "Magnifies the image", "role_zh": "放大", "category": "Optics"},
+		"finder_scope": {"en": "Finder Scope", "zh": "寻星镜", "role_en": "Aims before high power", "role_zh": "寻星", "category": "Aiming"},
+		"focus_knob": {"en": "Focus Knob", "zh": "调焦旋钮", "role_en": "Sharpens the image", "role_zh": "调清图像", "category": "Control"}
+	}
+	var entry: Dictionary = labels.get(part_type, {"en": part_type, "zh": part_type, "role_en": "", "role_zh": "", "category": "Control"})
+	if field == "category":
+		return str(entry.get("category", "Control"))
+	return GameManager.text(str(entry.get(field + "_en", entry.get(field, ""))), str(entry.get(field + "_zh", "")))
 
 var feedback_text := ""
 var feedback_color := GOLD
@@ -97,7 +101,7 @@ func _draw_empty_eye_stage() -> void:
 	_panel(Vector2(202, 282), Vector2(620, 194), PANEL, BRASS)
 	_label_to(
 		self,
-		"No telescope parts yet.\nFinish the naked-eye observations first. Maya will unlock the first refractor kit soon.\n还没有望远镜零件。先完成肉眼观测，Maya 很快会解锁第一套折射镜组件。",
+		GameManager.text("No telescope parts yet. Finish the naked-eye observations first.", "还没有望远镜零件。先完成肉眼观测，Maya 很快会解锁第一套折射镜组件。"),
 		Vector2(244, 312),
 		Vector2(536, 122),
 		16,
@@ -145,7 +149,7 @@ func _draw_parts_list() -> void:
 		var group: Array = grouped.get(category, [])
 		if group.is_empty():
 			continue
-		parts_box.add_child(_category_header(str(CATEGORY_LABELS.get(category, category))))
+		parts_box.add_child(_category_header(str(_category_label(category))))
 		for part_value in group:
 			var part: Dictionary = part_value
 			parts_box.add_child(_part_card(part))
@@ -163,7 +167,7 @@ func _category_header(text: String) -> Control:
 func _part_card(part: Dictionary) -> Control:
 	var part_type := str(part.get("type", ""))
 	var part_id := str(part.get("id", ""))
-	var type_info: Dictionary = TYPE_LABELS.get(part_type, {"en": part_type.capitalize(), "zh": "零件", "role": "Equipment / 设备", "category": "Control"})
+	var type_info: Dictionary = {"en": _type_label(part_type, "en"), "zh": _type_label(part_type, "zh"), "role": _type_label(part_type, "role")}
 	var unlocked := _is_unlocked(part_id)
 	var equipped := GameManager.equipped_part_id(part_type) == part_id
 	var recommended := _is_recommended(part)
@@ -192,9 +196,9 @@ func _part_card(part: Dictionary) -> Control:
 	_panel_corners_to(root, Vector2.ZERO, CARD_SIZE, border)
 
 	if recommended:
-		_badge_to(root, "Recommended for current mission / 当前任务推荐", Vector2(122, 10), Vector2(322, 22), GOLD)
+		_badge_to(root, GameManager.text("Recommended for current mission", "当前任务推荐"), Vector2(122, 10), Vector2(322, 22), GOLD)
 	elif is_next_step:
-		_badge_to(root, "Next assembly step / 下一步安装", Vector2(122, 10), Vector2(220, 22), WARNING)
+		_badge_to(root, GameManager.text("Next assembly step", "下一步安装"), Vector2(122, 10), Vector2(220, 22), WARNING)
 
 	var icon_box := _rect_to(root, Vector2(18, 34), Vector2(70, 70), Color(0.070, 0.090, 0.120))
 	icon_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -254,7 +258,7 @@ func _draw_action_column(root: Control, part: Dictionary, unlocked: bool, equipp
 			if GameManager.equip_part(part_id):
 				feedback_color = GREEN
 				feedback_text = GameManager.text("Equipped %s. Reassembly required." % str(part.get("name_en", part_id)), "已装备%s。请回组装台重新安装。" % _safe_zh_name(part, str(part_type)))
-				GameManager.set_room_guidance("assembly", "Maya: Assembly Table", "Reassemble the telescope with the new part. / 使用新零件重新组装望远镜。")
+				GameManager.set_room_guidance("assembly", "Maya: Assembly Table", GameManager.text("Reassemble the telescope with the new part.", "使用新零件重新组装望远镜。"))
 				_build()
 				call_deferred("_scroll_to_part_type", part_type)
 		)
@@ -373,7 +377,7 @@ func _grouped_parts() -> Dictionary:
 
 func _category_for_part(part: Dictionary) -> String:
 	var part_type := str(part.get("type", ""))
-	var info: Dictionary = TYPE_LABELS.get(part_type, {"category": "Control"})
+	var info: Dictionary = {"en": _type_label(part_type, "en"), "zh": _type_label(part_type, "zh"), "role": _type_label(part_type, "role")}
 	return str(info.get("category", "Control"))
 
 
@@ -456,15 +460,15 @@ func _short_description(part: Dictionary) -> String:
 	var part_id := str(part.get("id", ""))
 	match part_id:
 		"objective_100mm":
-			return "More light for faint targets. / 收集更多光，适合星云和星系。"
+			return GameManager.text("More light for faint targets.", "收集更多光，适合星云和星系。")
 		"eyepiece_10mm":
-			return "More magnification, narrower and dimmer view. / 倍率更高，但视野更窄更暗。"
+			return GameManager.text("More magnification, narrower and dimmer view.", "倍率更高，但视野更窄更暗。")
 		"stable_mount":
-			return "Less shake at high magnification. / 高倍率下抖动更少。"
+			return GameManager.text("Less shake at high magnification.", "高倍率下抖动更少。")
 		"tracking_mount":
-			return "Tracks sky drift for long observations. / 抵消星空漂移，适合长时间观测。"
+			return GameManager.text("Tracks sky drift for long observations.", "抵消星空漂移，适合长时间观测。")
 		"basic_focus_knob":
-			return "Moves the eyepiece to sharpen focus. / 移动目镜，让图像清晰。"
+			return GameManager.text("Moves the eyepiece to sharpen focus.", "移动目镜，让图像清晰。")
 	return str(part.get("description_en", ""))
 
 
@@ -514,22 +518,22 @@ func _unlock_note(part: Dictionary, unlocked: bool) -> String:
 		return ""
 	var level := int(part.get("unlock_level", 999))
 	if level < 999:
-		return "Unlocks at L%d\n第 %d 关解锁" % [level, level]
-	return "Locked\n未解锁"
+		return GameManager.text("Unlocks at L%d" % level, "第 %d 关解锁" % level)
+	return GameManager.text("Locked", "未解锁")
 
 
 func _stage_label(stage: String) -> String:
 	match stage:
 		"eye":
-			return "Naked Eye / 肉眼"
+			return GameManager.text("Naked Eye", "肉眼")
 		"refractor_basic":
-			return "Simple Refractor / 基础折射镜"
+			return GameManager.text("Simple Refractor", "基础折射镜")
 		"refractor_with_finder":
-			return "Refractor + Finder / 折射镜 + 寻星镜"
+			return GameManager.text("Refractor + Finder", "折射镜 + 寻星镜")
 		"newtonian_basic":
-			return "Reflector Practice / 反射镜练习"
+			return GameManager.text("Reflector Practice", "反射镜练习")
 		"advanced":
-			return "Advanced Kit / 高级设备"
+			return GameManager.text("Advanced Kit", "高级设备")
 	return stage
 
 

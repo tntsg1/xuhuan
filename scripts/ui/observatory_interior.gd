@@ -2,7 +2,6 @@ extends Control
 
 const W: float = 1024.0
 const H: float = 768.0
-const NOT_READY_TEXT := "The telescope is not ready yet. Assemble the core parts before entering observation mode."
 
 var status_label: Label
 var start_button: Button
@@ -20,10 +19,10 @@ func _build() -> void:
 
 	_rect(Vector2.ZERO, Vector2(W, H), Color(0.035, 0.045, 0.065))
 	_rect(Vector2(0, 0), Vector2(W, 62), Color(0.08, 0.11, 0.17))
-	_label("Observatory Interior / 天文台内部", Vector2(28, 16), Vector2(520, 30), 24)
+	_label(GameManager.text("Observatory Interior", "天文台内部"), Vector2(28, 16), Vector2(520, 30), 24)
 
 	var back := Button.new()
-	back.text = "Back to Base\n返回基地"
+	back.text = GameManager.text("Back to Base", "返回基地")
 	back.position = Vector2(842, 14)
 	back.size = Vector2(150, 42)
 	back.pressed.connect(func() -> void:
@@ -66,7 +65,7 @@ func _draw_console() -> void:
 	_rect(Vector2(574, 324), Vector2(26, 26), Color(0.90, 0.72, 0.30))
 
 	start_button = Button.new()
-	start_button.text = "Start Observation\n开始观测"
+	start_button.text = GameManager.text("Start Observation", "开始观测")
 	start_button.position = Vector2(386, 382)
 	start_button.size = Vector2(252, 52)
 	start_button.add_theme_font_size_override("font_size", 15)
@@ -93,16 +92,25 @@ func _draw_scope_station() -> void:
 
 func _update_state() -> void:
 	if GameManager.telescope_is_ready():
-		status_label.text = "Telescope ready. Use the console to begin sky observation.\n望远镜已就绪。使用控制台开始观测。"
+		status_label.text = GameManager.text(
+			"Telescope ready. Use the console to begin sky observation.",
+			"望远镜已就绪。使用控制台开始观测。"
+		)
 		start_button.disabled = false
 	else:
-		status_label.text = NOT_READY_TEXT + "\n望远镜还没有准备好。请先组装核心部件。"
+		status_label.text = GameManager.text(
+			"The telescope is not ready yet. Assemble the core parts before entering observation mode.",
+			"望远镜还没有准备好。请先组装核心部件。"
+		)
 		start_button.disabled = true
 
 
 func _start_observation() -> void:
 	if not GameManager.telescope_is_ready():
-		status_label.text = NOT_READY_TEXT + "\n望远镜还没有准备好。请先组装核心部件。"
+		status_label.text = GameManager.text(
+			"The telescope is not ready yet. Assemble the core parts first.",
+			"望远镜还没有准备好。请先组装核心部件。"
+		)
 		return
 	GameManager.set_observatory_spawn("door")
 	GameManager.go("sky")

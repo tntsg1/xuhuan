@@ -434,7 +434,7 @@ func _click_interactable(id: String) -> void:
 	if nearby_id == id:
 		_handle_interaction(id)
 		return
-	_show_feedback("Move closer to interact. / 靠近后互动。", 1800)
+	_show_feedback(GameManager.text("Move closer to interact.", "靠近后互动。"), 1800)
 
 
 func _handle_interaction(id: String) -> void:
@@ -497,11 +497,11 @@ func _toggle_mission_board() -> void:
 	var note := GameManager.mission_board_note()
 	var concept := GameManager.get_learning_card(GameManager.current_concept_card_id())
 	var stage_names := {
-		"eye": "Naked Eye / 肉眼",
-		"refractor_basic": "Basic Refractor / 基础折射镜",
-		"refractor_with_finder": "Refractor + Finder / 折射镜+寻星镜",
-		"newtonian_basic": "Newtonian Reflector / 牛顿反射镜",
-		"advanced": "Advanced Setup / 高级设备"
+		"eye": GameManager.text("Naked Eye", "肉眼"),
+		"refractor_basic": GameManager.text("Basic Refractor", "基础折射镜"),
+		"refractor_with_finder": GameManager.text("Refractor + Finder", "折射镜+寻星镜"),
+		"newtonian_basic": GameManager.text("Newtonian Reflector", "牛顿反射镜"),
+		"advanced": GameManager.text("Advanced Setup", "高级设备")
 	}
 
 	mission_board_popup = Control.new()
@@ -530,7 +530,7 @@ func _toggle_mission_board() -> void:
 	)
 	note_label.max_lines_visible = 3
 
-	var objective_heading := "Objective / 目标"
+	var objective_heading := GameManager.text("Objective", "目标")
 	if not level.get("target_pool", []).is_empty():
 		var picked := GameManager.current_target()
 		objective_heading = "Objective / 目标 -> " + GameManager.dict_text(picked, "name").replace("\n", " · ")
@@ -673,11 +673,11 @@ func _toggle_stats_terminal() -> void:
 	_terminal_label("STATS TERMINAL / 统计终端", Vector2(292, 184), Vector2(440, 22), 13, Color(0.45, 0.95, 0.60), HORIZONTAL_ALIGNMENT_CENTER)
 
 	var rows: Array = [
-		["Assembly / 组装", float(stats.get("assembly_score", 0.0))],
-		["Light / 集光", float(stats.get("light_score", 0.0))],
-		["Clarity / 清晰", float(stats.get("clarity_score", 0.0))],
-		["Stability / 稳定", float(stats.get("stability_score", 0.0))],
-		["Focus Ctrl / 调焦", float(stats.get("focus_control_score", 0.0))]
+		[GameManager.text("Assembly", "组装"), float(stats.get("assembly_score", 0.0))],
+		[GameManager.text("Light", "集光"), float(stats.get("light_score", 0.0))],
+		[GameManager.text("Clarity", "清晰"), float(stats.get("clarity_score", 0.0))],
+		[GameManager.text("Stability", "稳定"), float(stats.get("stability_score", 0.0))],
+		[GameManager.text("Focus Ctrl", "调焦"), float(stats.get("focus_control_score", 0.0))]
 	]
 	var y := 220.0
 	for row_value in rows:
