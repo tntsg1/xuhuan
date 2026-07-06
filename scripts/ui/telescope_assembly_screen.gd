@@ -695,8 +695,8 @@ func _finish() -> void:
 	var missing := GameManager.missing_parts()
 	var names: Array[String] = []
 	for part_type in missing:
-		names.append(str(PART_LABELS.get(part_type, {"short": part_type})["short"]))
-	feedback_label.text = "Missing core parts: " + ", ".join(names) + ".\n核心部件未齐，请先装完缺少部件。"
+		names.append(_part_label(str(part_type), "short"))
+	feedback_label.text = GameManager.text("Missing core parts: " + ", ".join(names) + ".", "核心部件未齐：" + ", ".join(names) + "。")
 
 
 func _reset() -> void:
@@ -773,7 +773,7 @@ func _part_for_type(part_type: String) -> Dictionary:
 	var fallback := {
 		"id": str(DEFAULT_PART_IDS.get(part_type, "")),
 		"type": part_type,
-		"name_en": str(PART_LABELS.get(part_type, {"short": part_type})["short"])
+		"name_en": _part_label(str(part_type), "short")
 	}
 	if unlocked.is_empty():
 		return fallback
