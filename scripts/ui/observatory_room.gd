@@ -145,16 +145,16 @@ func _draw_full_background() -> void:
 
 
 func _register_hitboxes() -> void:
-	_register_interactable("cabinet", "Parts Cabinet", "Review unlocked telescope parts.", Rect2(82, 124, 214, 182))
-	_register_interactable("door", "Observatory Door", "Enter the observatory control room.", Rect2(468, 88, 88, 188))
-	_register_interactable("mission", "Mission Board", "Read the current level goal here.", Rect2(622, 108, 138, 124))
-	_register_interactable("assembly", "Assembly Table", "Build and align the telescope.", Rect2(782, 214, 170, 160))
+	_register_interactable("cabinet", GameManager.text("Parts Cabinet", "零件柜"), GameManager.text("Review unlocked telescope parts.", "查看已解锁的望远镜零件。"), Rect2(82, 124, 214, 182))
+	_register_interactable("door", GameManager.text("Observatory Door", "天文台门"), GameManager.text("Enter the observatory control room.", "进入天文台控制室。"), Rect2(468, 88, 88, 188))
+	_register_interactable("mission", GameManager.text("Mission Board", "任务公告板"), GameManager.text("Read the current level goal here.", "在此查看当前关卡目标。"), Rect2(622, 108, 138, 124))
+	_register_interactable("assembly", GameManager.text("Assembly Table", "组装台"), GameManager.text("Build and align the telescope.", "组装和校准望远镜。"), Rect2(782, 214, 170, 160))
 	if GameManager.current_observation_mode() == "naked_eye":
-		_register_interactable("telescope", "Naked Eye Observation", "Observe the night sky with your own eyes.", Rect2(455, 398, 120, 124))
+		_register_interactable("telescope", GameManager.text("Naked Eye Observation", "肉眼观测"), GameManager.text("Observe the night sky with your own eyes.", "用肉眼观察夜空。"), Rect2(455, 398, 120, 124))
 	else:
-		_register_interactable("telescope", "Telescope Observation Pad", "Start observation here after assembly.", Rect2(455, 398, 120, 124))
-	_register_interactable("journal", "Learning Journal", "Review completed observations and learning cards.", Rect2(96, 476, 214, 132))
-	_register_interactable("computer", "Stats Terminal", "Check telescope performance and readiness.", Rect2(730, 492, 146, 116))
+		_register_interactable("telescope", GameManager.text("Telescope Observation Pad", "望远镜观测台"), GameManager.text("Start observation here after assembly.", "组装完成后在此开始观测。"), Rect2(455, 398, 120, 124))
+	_register_interactable("journal", GameManager.text("Learning Journal", "学习日志"), GameManager.text("Review completed observations and learning cards.", "查看已完成的观测和学习卡。"), Rect2(96, 476, 214, 132))
+	_register_interactable("computer", GameManager.text("Stats Terminal", "统计终端"), GameManager.text("Check telescope performance and readiness.", "查看望远镜性能和就绪状态。"), Rect2(730, 492, 146, 116))
 
 	# Foot blockers only: keep furniture edges walkable while preventing the player from standing inside bases.
 	obstacles.append_array([
@@ -251,7 +251,7 @@ func _draw_hud() -> void:
 	guidance_action_label.add_theme_color_override("font_color", Color(0.52, 0.86, 1.0))
 
 	focus_label = _label("", Vector2(260, 662), Vector2(504, 20), 13, HORIZONTAL_ALIGNMENT_CENTER)
-	feedback_label = _label("Start at the Mission Board, then use the Assembly Table.", Vector2(112, 680), Vector2(800, 20), 13, HORIZONTAL_ALIGNMENT_CENTER)
+	feedback_label = _label(GameManager.text("Start at the Mission Board, then use the Assembly Table.", "先从任务公告板开始，然后去组装台。"), Vector2(112, 680), Vector2(800, 20), 13, HORIZONTAL_ALIGNMENT_CENTER)
 
 
 func _move_player(delta: float) -> void:
