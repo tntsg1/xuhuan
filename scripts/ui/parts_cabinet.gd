@@ -89,7 +89,7 @@ func _draw_title_bar() -> void:
 	var title := _label_to(self, GameManager.text("Parts Cabinet", "零件柜"), Vector2(252, 24), Vector2(520, 32), 24, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 
-	var back := _button("Back to Base\n返回基地", Vector2(842, 22), Vector2(144, 40))
+	var back := _button(GameManager.text("Back to Base", "返回基地"), Vector2(842, 22), Vector2(144, 40))
 	back.pressed.connect(func() -> void:
 		GameManager.set_observatory_spawn("cabinet")
 		GameManager.go("observatory")
@@ -113,16 +113,16 @@ func _draw_empty_eye_stage() -> void:
 func _draw_summary_panel() -> void:
 	_panel(SUMMARY_RECT.position, SUMMARY_RECT.size, Color(0.040, 0.060, 0.105, 0.96), BRASS)
 	var mission := GameManager.current_level()
-	var mission_title := str(mission.get("title_en", "Current Mission"))
+	var mission_title := GameManager.dict_text(mission, "title")
 	var stage := _stage_label(GameManager.current_equipment_stage())
-	var summary := "Mission: %s\nEquipment: %s · Choose parts here, then reassemble at the Assembly Table." % [mission_title, stage]
+	var summary := GameManager.text("Mission: ", "任务: ") + mission_title + "\n" + GameManager.text("Equipment: ", "设备: ") + stage
 	_label_to(self, summary, Vector2(58, 102), Vector2(558, 44), 13, Color(0.84, 0.90, 0.90))
-	_label_to(self, "当前任务零件建议会以金色标记。更换零件后需要回组装台重新安装。", Vector2(58, 145), Vector2(560, 18), 12, Color(0.72, 0.82, 0.86))
+	_label_to(self, GameManager.text("Recommended parts marked in gold. Reassemble at Assembly Table after swapping.", "当前任务零件建议会以金色标记。更换零件后需要回组装台重新安装。"), Vector2(58, 145), Vector2(560, 18), 12, Color(0.72, 0.82, 0.86))
 
-	var ready_text := "READY / 已就绪" if GameManager.telescope_is_ready() else "NEEDS ASSEMBLY / 需要组装"
+	var ready_text := GameManager.text("READY", "已就绪") if GameManager.telescope_is_ready() else GameManager.text("NEEDS ASSEMBLY", "需要组装")
 	var ready_color := GREEN if GameManager.telescope_is_ready() else WARNING
 	_label_to(self, ready_text, Vector2(738, 100), Vector2(224, 20), 14, ready_color, HORIZONTAL_ALIGNMENT_RIGHT)
-	_label_to(self, "Club Credits: %d\nUnlocked: %d / %d" % [int(GameManager.progress.get("credits", 0)), _unlocked_count(), GameManager.parts_data.size()], Vector2(748, 124), Vector2(214, 42), 12, GOLD, HORIZONTAL_ALIGNMENT_RIGHT)
+	_label_to(self, GameManager.text("Club Credits: %d", "社团积分: %d") % int(GameManager.progress.get("credits", 0)) + "\n" + GameManager.text("Unlocked: %d / %d", "已解锁: %d / %d") % [_unlocked_count(), GameManager.parts_data.size()], Vector2(748, 124), Vector2(214, 42), 12, GOLD, HORIZONTAL_ALIGNMENT_RIGHT)
 
 	if feedback_text != "":
 		var chip := _badge_to(self, feedback_text, Vector2(624, 140), Vector2(342, 24), feedback_color, HORIZONTAL_ALIGNMENT_RIGHT)
@@ -207,7 +207,7 @@ func _part_card(part: Dictionary) -> Control:
 	var text_x := 106.0
 	var title_y := 36.0 if not recommended and not is_next_step else 34.0
 	var name_color := WARM_TEXT if unlocked else Color(0.52, 0.58, 0.62)
-	_label_to(root, str(part.get("name_en", type_info["en"])), Vector2(text_x, title_y), Vector2(370, 20), 15, name_color)
+	_label_to(root, GameManager.dict_text(part, "name"), Vector2(text_x, title_y), Vector2(370, 20), 15, name_color)
 	_label_to(root, _safe_zh_name(part, str(type_info.get("zh", "零件"))), Vector2(text_x, title_y + 22), Vector2(370, 18), 13, Color(0.78, 0.88, 0.88) if unlocked else Color(0.46, 0.52, 0.54))
 	_badge_to(root, str(type_info.get("role", "Equipment / 设备")), Vector2(text_x, title_y + 45), Vector2(250, 20), Color(0.46, 0.66, 0.86))
 
@@ -469,7 +469,7 @@ func _short_description(part: Dictionary) -> String:
 			return GameManager.text("Tracks sky drift for long observations.", "抵消星空漂移，适合长时间观测。")
 		"basic_focus_knob":
 			return GameManager.text("Moves the eyepiece to sharpen focus.", "移动目镜，让图像清晰。")
-	return str(part.get("description_en", ""))
+	return GameManager.dict_text(part, "description")
 
 
 func _safe_zh_name(part: Dictionary, fallback: String) -> String:
@@ -493,23 +493,23 @@ func _safe_zh_name(part: Dictionary, fallback: String) -> String:
 func _part_stat_chips(part: Dictionary) -> Array[String]:
 	var chips: Array[String] = []
 	if part.has("aperture_mm"):
-		chips.append("Aperture: %smm" % part.get("aperture_mm"))
+		chips.append(GameManager.text("Aperture: %smm", "口径: %smm") % part.get("aperture_mm"))
 	if part.has("focal_length_mm"):
-		chips.append("Focal: %smm" % part.get("focal_length_mm"))
+		chips.append(GameManager.text("Focal: %smm", "焦距: %smm") % part.get("focal_length_mm"))
 	if part.has("quality"):
-		chips.append("Quality: %s" % part.get("quality"))
+		chips.append(GameManager.text("Quality: %s", "质量: %s") % part.get("quality"))
 	if part.has("field_of_view"):
-		chips.append("FOV: %s" % part.get("field_of_view"))
+		chips.append(GameManager.text("FOV: %s", "视野: %s") % part.get("field_of_view"))
 	if part.has("stability"):
-		chips.append("Stability: %s" % part.get("stability"))
+		chips.append(GameManager.text("Stability: %s", "稳定: %s") % part.get("stability"))
 	if part.has("stability_bonus"):
-		chips.append("Stability: %s" % part.get("stability_bonus"))
+		chips.append(GameManager.text("Stability: %s", "稳定: %s") % part.get("stability_bonus"))
 	if part.has("tracking"):
-		chips.append("Tracking: %s" % part.get("tracking"))
+		chips.append(GameManager.text("Tracking: %s", "追踪: %s") % part.get("tracking"))
 	if part.has("aim_assist"):
-		chips.append("Aim: %s" % part.get("aim_assist"))
+		chips.append(GameManager.text("Aim: %s", "瞄准: %s") % part.get("aim_assist"))
 	if part.has("focus_sensitivity"):
-		chips.append("Focus: %s" % part.get("focus_sensitivity"))
+		chips.append(GameManager.text("Focus: %s", "调焦: %s") % part.get("focus_sensitivity"))
 	return chips
 
 
