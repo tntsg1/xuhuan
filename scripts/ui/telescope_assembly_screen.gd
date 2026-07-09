@@ -52,6 +52,33 @@ const SLOT_RECTS := {
 	"tripod": Rect2(132, 272, 150, 92)
 }
 
+# Blueprint background art (the user's mockup) + where each slot sits on it,
+# in normalized 0-1 coords {u,v = center, w,h = size}. Drawn over the image
+# so installed parts / highlights land on the printed dashed slots.
+const BLUEPRINT_BG := "res://assets/assembly/blueprint_bg.png"
+const BP_ORIGIN := Vector2(326, 116)
+const BP_SIZE := Vector2(432, 432)
+const SLOT_NORM := {
+	"finder_scope": Rect2(0.335, 0.112, 0.205, 0.120),
+	"objective": Rect2(0.857, 0.216, 0.145, 0.125),
+	"tube": Rect2(0.470, 0.310, 0.280, 0.150),
+	"eyepiece": Rect2(0.108, 0.348, 0.135, 0.115),
+	"focus_knob": Rect2(0.385, 0.560, 0.090, 0.090),
+	"mount": Rect2(0.459, 0.490, 0.145, 0.135),
+	"tripod": Rect2(0.463, 0.795, 0.190, 0.230)
+}
+# tube (solid diagonal barrel) and focus_knob (drawn knob by the mount) have
+# no printed dashed box on the blueprint, so we draw one for them in code.
+const PARTS_WITHOUT_PRINTED_BOX: Array[String] = ["tube", "focus_knob"]
+
+
+func _slot_display_rect(part_type: String) -> Rect2:
+	var norm: Rect2 = SLOT_NORM[part_type]
+	var size := Vector2(norm.size.x * BP_SIZE.x, norm.size.y * BP_SIZE.y)
+	var center := Vector2(norm.position.x * BP_SIZE.x, norm.position.y * BP_SIZE.y)
+	return Rect2(center - size * 0.5, size)
+
+
 const PART_COLORS := {
 	"tripod": Color(0.55, 0.61, 0.68),
 	"mount": Color(0.62, 0.68, 0.74),
@@ -72,6 +99,7 @@ var inspector_title: Label
 var inspector_body: Label
 var feedback_label: Label
 var stats_list: Control
+var ready_dot: Panel
 
 
 func _ready() -> void:
@@ -113,7 +141,7 @@ func _draw_title_bar() -> void:
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	add_child(title)
 
-	var subtitle := _label("Pick a part, then click its blueprint slot. / 选择零件，再点击蓝图安装位。", 11, Color(0.76, 0.84, 0.88))
+	var subtitle := _label(GameManager.text("Pick a part, then click its blueprint slot.", "选择零件，再点击蓝图安装位。"), 11, Color(0.76, 0.84, 0.88))
 	subtitle.position = Vector2(708, 16)
 	subtitle.size = Vector2(286, 30)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -146,88 +174,150 @@ func _build_parts_panel() -> void:
 
 
 func _build_blueprint_panel() -> void:
-	_panel(Vector2(336, 74), Vector2(420, 636), Color(0.030, 0.060, 0.115, 0.96), Color(0.78, 0.56, 0.28))
-	_rect(Vector2(340, 78), Vector2(412, 34), Color(0.035, 0.070, 0.135, 0.96))
-	var heading := _label(GameManager.text("Assembly Blueprint", "组装蓝图"), 17, Color(0.96, 0.93, 0.84))
-	heading.position = Vector2(356, 91)
-	heading.size = Vector2(310, 26)
+	_panel(Vector2(332, 74), Vector2(436, 636), Color(0.020, 0.045, 0.095, 0.98), Color(0.78, 0.56, 0.28))
+	# Gold nameplate header (mockup style).
+	_dark_panel_add(Vector2(452, 80), Vector2(196, 34), Color(0.10, 0.13, 0.075, 0.96), Color(0.82, 0.62, 0.30))
+	var heading := _label(GameManager.text("BLUEPRINT · 蓝图", "BLUEPRINT · 蓝图"), 16, Color(0.96, 0.82, 0.42))
+	heading.position = Vector2(452, 88)
+	heading.size = Vector2(196, 24)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.autowrap_mode = TextServer.AUTOWRAP_OFF
 	add_child(heading)
 
+	# The mockup blueprint art fills the panel; slot interaction/highlight
+	# and installed parts are layered on top by blueprint_layer.
+	_mission_bg_texture(BLUEPRINT_BG, BP_ORIGIN, BP_SIZE)
+
 	blueprint_layer = Control.new()
-	blueprint_layer.position = Vector2(354, 132)
-	blueprint_layer.size = Vector2(382, 370)
+	blueprint_layer.position = BP_ORIGIN
+	blueprint_layer.size = BP_SIZE
 	add_child(blueprint_layer)
 
-	_rect(Vector2(354, 516), Vector2(382, 118), Color(0.028, 0.048, 0.082))
-	var helper := _label(GameManager.text("[1] Pick a part card. [2] Click the matching slot.", "先选左侧零件卡，再点击中间对应安装位。"), 13, Color(0.80, 0.86, 0.86))
-	helper.position = Vector2(372, 532)
-	helper.size = Vector2(346, 58)
+	var helper := _label(GameManager.text("Pick a part card, then click its slot on the blueprint.", "选左侧零件卡，再点击蓝图上对应安装位。"), 12, Color(0.72, 0.82, 0.90))
+	helper.position = Vector2(346, 560)
+	helper.size = Vector2(408, 40)
+	helper.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(helper)
 
-	var order := _label(GameManager.text("Order: Tripod → Mount → Tube → Lens → Eye → Focus", "顺序: 三脚架 → 支架 → 镜筒 → 物镜 → 目镜 → 调焦"), 12, Color(0.66, 0.76, 0.82))
-	order.position = Vector2(372, 604)
-	order.size = Vector2(346, 22)
+	var order := _label(GameManager.text("Tripod → Mount → Tube → Lens → Eye → Focus", "三脚架 → 支架 → 镜筒 → 物镜 → 目镜 → 调焦"), 11, Color(0.56, 0.68, 0.78))
+	order.position = Vector2(346, 606)
+	order.size = Vector2(408, 20)
+	order.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	order.autowrap_mode = TextServer.AUTOWRAP_OFF
 	add_child(order)
 
 
+func _dark_panel_add(pos: Vector2, size: Vector2, color: Color, border: Color) -> Panel:
+	var panel := Panel.new()
+	panel.position = pos
+	panel.size = size
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.border_color = border
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(4)
+	panel.add_theme_stylebox_override("panel", style)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(panel)
+	return panel
+
+
+func _mission_bg_texture(path: String, pos: Vector2, size: Vector2) -> void:
+	var rect := TextureRect.new()
+	if ResourceLoader.exists(path):
+		rect.texture = load(path)
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_SCALE
+	rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	rect.position = pos
+	rect.size = size
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(rect)
+
+
 func _build_inspector_panel() -> void:
-	_panel(Vector2(772, 74), Vector2(232, 636), Color(0.050, 0.070, 0.120, 0.96), Color(0.78, 0.56, 0.28))
-	_rect(Vector2(776, 78), Vector2(224, 34), Color(0.30, 0.20, 0.10, 0.92))
-	var heading := _label(GameManager.text("Inspector", "检查器"), 17, Color(0.96, 0.93, 0.84))
-	heading.position = Vector2(790, 91)
-	heading.size = Vector2(194, 24)
+	_panel(Vector2(776, 74), Vector2(232, 636), Color(0.045, 0.065, 0.115, 0.98), Color(0.78, 0.56, 0.28))
+	_dark_panel_add(Vector2(812, 80), Vector2(160, 34), Color(0.10, 0.13, 0.075, 0.96), Color(0.82, 0.62, 0.30))
+	var heading := _label("INSPECTOR · 检查器", 14, Color(0.96, 0.82, 0.42))
+	heading.position = Vector2(812, 88)
+	heading.size = Vector2(160, 24)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.autowrap_mode = TextServer.AUTOWRAP_OFF
 	add_child(heading)
 
-	inspector_title = _label("No part selected / 未选择零件", 15, Color(0.91, 0.96, 0.98))
-	inspector_title.position = Vector2(790, 126)
-	inspector_title.size = Vector2(194, 42)
+	# READY status box (green when the scope is complete).
+	_dark_panel_add(Vector2(792, 128), Vector2(200, 56), Color(0.020, 0.045, 0.030, 0.96), Color(0.30, 0.55, 0.34))
+	inspector_title = _label("READY", 20, Color(0.42, 0.92, 0.50))
+	inspector_title.position = Vector2(812, 142)
+	inspector_title.size = Vector2(120, 28)
+	inspector_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	inspector_title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	add_child(inspector_title)
+	ready_dot = Panel.new()
+	ready_dot.position = Vector2(946, 146)
+	ready_dot.size = Vector2(24, 24)
+	var dot_style := StyleBoxFlat.new()
+	dot_style.bg_color = Color(0, 0, 0, 0)
+	dot_style.border_color = Color(0.42, 0.92, 0.50)
+	dot_style.set_border_width_all(3)
+	dot_style.set_corner_radius_all(12)
+	ready_dot.add_theme_stylebox_override("panel", dot_style)
+	ready_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(ready_dot)
 
-	inspector_body = _label("Choose a card from the parts tray.\n从左侧零件托盘选择一个零件。", 12, Color(0.76, 0.83, 0.84))
-	inspector_body.position = Vector2(790, 172)
-	inspector_body.size = Vector2(194, 92)
+	# Assembly hint line (step-by-step guidance).
+	inspector_body = _label("", 11, Color(0.70, 0.80, 0.88))
+	inspector_body.position = Vector2(792, 190)
+	inspector_body.size = Vector2(200, 20)
+	inspector_body.visible = false
 	add_child(inspector_body)
-
-	_rect(Vector2(790, 276), Vector2(194, 1), Color(0.32, 0.42, 0.48))
-	var feedback_heading := _label(GameManager.text("Assembly Hint", "组装提示"), 13, Color(0.96, 0.89, 0.66))
-	feedback_heading.position = Vector2(790, 288)
-	feedback_heading.size = Vector2(194, 22)
-	feedback_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
-	add_child(feedback_heading)
-
-	feedback_label = _label("Start with Tripod at the bottom slot.\n先从底部三脚架安装位开始。", 12, Color(0.90, 0.88, 0.80))
-	feedback_label.position = Vector2(790, 314)
-	feedback_label.size = Vector2(194, 78)
+	feedback_label = _label("", 11, Color(0.82, 0.88, 0.82))
+	feedback_label.position = Vector2(792, 192)
+	feedback_label.size = Vector2(200, 44)
 	add_child(feedback_label)
 
-	var stats_heading := _label(GameManager.text("Telescope Stats", "性能"), 13, Color(0.96, 0.89, 0.66))
-	stats_heading.position = Vector2(790, 410)
-	stats_heading.size = Vector2(194, 22)
-	stats_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
-	add_child(stats_heading)
+	_dashed_divider(Vector2(792, 248), 200)
 
 	stats_list = Control.new()
-	stats_list.position = Vector2(790, 438)
-	stats_list.size = Vector2(194, 146)
+	stats_list.position = Vector2(792, 268)
+	stats_list.size = Vector2(200, 220)
 	add_child(stats_list)
 
-	var finish := _button(GameManager.text("Finish Assembly", "完成组装"), Vector2(790, 600), Vector2(194, 42))
+	_dashed_divider(Vector2(792, 566), 200)
+
+	var finish := _button(GameManager.text("✦  FINISH  完成", "✦  FINISH  完成"), Vector2(792, 584), Vector2(200, 54))
+	finish.add_theme_font_size_override("font_size", 18)
+	var fnormal := StyleBoxFlat.new()
+	fnormal.bg_color = Color(0.10, 0.14, 0.085)
+	fnormal.border_color = Color(0.85, 0.65, 0.32)
+	fnormal.set_border_width_all(3)
+	fnormal.set_corner_radius_all(5)
+	var fhover := fnormal.duplicate()
+	fhover.bg_color = Color(0.16, 0.20, 0.11)
+	finish.add_theme_stylebox_override("normal", fnormal)
+	finish.add_theme_stylebox_override("hover", fhover)
+	finish.add_theme_stylebox_override("pressed", fnormal)
+	finish.add_theme_color_override("font_color", Color(0.96, 0.82, 0.42))
 	finish.pressed.connect(_finish)
 	add_child(finish)
 
-	var reset := _button(GameManager.text("Reassemble", "重新组装"), Vector2(790, 650), Vector2(92, 38))
+	var reset := _button(GameManager.text("Reassemble", "重装"), Vector2(792, 648), Vector2(98, 34))
 	reset.pressed.connect(_reset)
 	add_child(reset)
 
-	var back := _button(GameManager.text("Back", "返回"), Vector2(892, 650), Vector2(92, 38))
+	var back := _button(GameManager.text("Back", "返回"), Vector2(894, 648), Vector2(98, 34))
 	back.pressed.connect(func() -> void:
 		GameManager.set_observatory_spawn("assembly")
 		GameManager.go("observatory")
 	)
 	add_child(back)
+
+
+func _dashed_divider(pos: Vector2, width: float) -> void:
+	var x := 0.0
+	while x < width:
+		_rect(pos + Vector2(x, 0), Vector2(6, 1), Color(0.40, 0.50, 0.56, 0.6))
+		x += 12.0
 
 
 func _refresh_all() -> void:
@@ -398,10 +488,10 @@ func _draw_part_icon(parent: Control, part: Dictionary, box_pos: Vector2, instal
 
 
 func _refresh_blueprint() -> void:
+	# Transparent overlay ON TOP of the blueprint art: highlights the active
+	# slot, shows installed parts, and carries the click hotspots. The dashed
+	# slot outlines and telescope drawing come from the background image.
 	_clear(blueprint_layer)
-	_rect_local(blueprint_layer, Vector2.ZERO, blueprint_layer.size, Color(0.060, 0.075, 0.090))
-	_draw_blueprint_grid()
-
 	var next_part := _next_installable_part()
 	for part_type in PART_ORDER:
 		if OPTIONAL_PARTS.has(part_type) and GameManager.unlocked_parts_by_type(part_type).is_empty():
@@ -467,40 +557,31 @@ func _draw_connection_hardware() -> void:
 
 
 func _draw_slot(part_type: String, next_part: String) -> void:
-	var rect: Rect2 = SLOT_RECTS[part_type]
+	var rect := _slot_display_rect(part_type)
 	var installed := _is_installed(part_type)
 	var selected := selected_part_type == part_type
 	var next := next_part == part_type
 	var can_show_selected := selected_part_type != "" and selected
 
-	var border := Color(0.43, 0.58, 0.66, 0.74)
-	var fill := Color(0.11, 0.16, 0.18, 0.38)
+	var needs_drawn_box := PARTS_WITHOUT_PRINTED_BOX.has(part_type)
 	if installed:
-		border = Color(0.52, 0.83, 0.64, 0.42)
-		fill = Color(0.20, 0.30, 0.26, 0.12)
-	elif can_show_selected:
-		border = Color(0.96, 0.78, 0.30, 1.0)
-		fill = Color(0.34, 0.26, 0.10, 0.46)
-	elif selected_part_type == "" and next:
-		border = Color(0.56, 0.78, 0.92, 0.90)
-		fill = Color(0.12, 0.22, 0.28, 0.48)
-
-	if installed:
-		_draw_installed_part(part_type, rect)
+		# Cover the printed dashed slot with the real part sprite + a soft
+		# green "locked in" glow so progress is obvious over the blueprint.
+		_draw_glow_frame(rect.grow(2.0), Color(0.40, 0.90, 0.55, 0.55))
+		var part := _part_for_type(part_type)
+		var pad := rect.size * 0.08
+		var inner := Rect2(rect.position + pad, rect.size - pad * 2.0)
+		if not _draw_part_texture(blueprint_layer, part, inner.position, inner.size, 0.98):
+			_rect_local(blueprint_layer, inner.position, inner.size, PART_COLORS.get(part_type, Color(0.5, 0.6, 0.7)))
 	else:
-		_panel_local(blueprint_layer, rect.position, rect.size, fill, border)
-		_draw_corner_ticks(rect, border)
-		var dot := _rect_local(blueprint_layer, rect.position + rect.size * 0.5 - Vector2(4, 4), Vector2(8, 8), border)
-		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-		var slot_name := str(_part_label(part_type, "short"))
-		var label := _label(slot_name, 11, Color(0.88, 0.94, 0.92))
-		label.position = rect.position + Vector2(5, 4)
-		label.size = Vector2(rect.size.x - 10, 16)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.autowrap_mode = TextServer.AUTOWRAP_OFF
-		label.clip_text = true
-		blueprint_layer.add_child(label)
+		# tube / focus_knob have no printed box - draw a cyan dashed one so
+		# they read as real slots like the others.
+		if needs_drawn_box:
+			_draw_dashed_box(rect, Color(0.55, 0.82, 0.98, 0.85), part_type)
+		if can_show_selected:
+			_draw_glow_frame(rect.grow(3.0), Color(0.98, 0.80, 0.30, 0.95))
+		elif selected_part_type == "" and next:
+			_draw_glow_frame(rect.grow(2.0), Color(0.55, 0.82, 0.98, 0.85))
 
 	var hot := Button.new()
 	hot.position = rect.position
@@ -510,6 +591,50 @@ func _draw_slot(part_type: String, next_part: String) -> void:
 	hot.focus_mode = Control.FOCUS_NONE
 	hot.pressed.connect(_try_install.bind(part_type))
 	blueprint_layer.add_child(hot)
+
+
+func _draw_glow_frame(rect: Rect2, color: Color) -> void:
+	# Layered rounded borders (outer faint, inner bright) = cheap glow.
+	for i in range(3):
+		var g := rect.grow(float(i) * 2.0)
+		var c := Color(color.r, color.g, color.b, color.a * (0.30 - float(i) * 0.08))
+		var panel := Panel.new()
+		panel.position = g.position
+		panel.size = g.size
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0, 0, 0, 0)
+		style.border_color = c
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(6)
+		panel.add_theme_stylebox_override("panel", style)
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		blueprint_layer.add_child(panel)
+
+
+func _draw_dashed_box(rect: Rect2, color: Color, part_type: String) -> void:
+	# Cyan dashed rectangle matching the blueprint's printed slots, drawn in
+	# blueprint_layer-local coords, for slots the art doesn't already show.
+	var dash := 7.0
+	var gap := 5.0
+	var p := rect.position
+	var s := rect.size
+	var x := 0.0
+	while x < s.x:
+		var w: float = minf(dash, s.x - x)
+		_rect_local(blueprint_layer, p + Vector2(x, 0), Vector2(w, 2), color)
+		_rect_local(blueprint_layer, p + Vector2(x, s.y - 2), Vector2(w, 2), color)
+		x += dash + gap
+	var y := 0.0
+	while y < s.y:
+		var h: float = minf(dash, s.y - y)
+		_rect_local(blueprint_layer, p + Vector2(0, y), Vector2(2, h), color)
+		_rect_local(blueprint_layer, p + Vector2(s.x - 2, y), Vector2(2, h), color)
+		y += dash + gap
+	var label := _label(str(_part_label(part_type, "short")), 10, Color(0.72, 0.86, 0.96))
+	label.position = p + Vector2(2, -14)
+	label.size = Vector2(s.x + 20, 14)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	blueprint_layer.add_child(label)
 
 
 func _draw_installed_part(part_type: String, rect: Rect2) -> void:
@@ -591,62 +716,110 @@ func _draw_corner_ticks(rect: Rect2, color: Color) -> void:
 
 
 func _refresh_inspector() -> void:
-	if selected_part_type == "":
-		var next_part := _next_installable_part()
-		if next_part == "":
-			inspector_title.text = GameManager.text("Ready to finish", "可以完成组装")
-			inspector_body.text = GameManager.text("All required core parts are installed.", "核心部件已经装齐。")
-			feedback_label.text = GameManager.text("Click Finish Assembly to return to the observatory.", "点击完成组装返回观测室。")
-		else:
-			inspector_title.text = GameManager.text("Next step: ", "下一步：") + str(_part_label(next_part, "short"))
-			inspector_body.text = _next_step_description(next_part)
-			feedback_label.text = GameManager.text("Select " + str(_part_label(next_part, "short")) + " on the left, then click its slot.", "先选择 " + str(_part_label(next_part, "short")) + "，再点击对应安装位。")
+	var is_ready := GameManager.telescope_is_ready()
+	if is_ready:
+		inspector_title.text = "READY"
+		inspector_title.add_theme_color_override("font_color", Color(0.42, 0.92, 0.50))
+		_set_ready_dot(Color(0.42, 0.92, 0.50))
+	else:
+		inspector_title.text = GameManager.text("ASSEMBLING", "组装中")
+		inspector_title.add_theme_color_override("font_color", Color(0.95, 0.78, 0.35))
+		_set_ready_dot(Color(0.95, 0.78, 0.35))
+
+	if selected_part_type != "":
+		var unlocked: Array = GameManager.unlocked_parts_by_type(selected_part_type)
+		if not unlocked.is_empty():
+			var part: Dictionary = _part_for_type(selected_part_type)
+			feedback_label.text = GameManager.dict_text(part, "name") + " · " + GameManager.text("click its slot", "点击对应安装位")
+			return
+	var next_part := _next_installable_part()
+	if next_part == "":
+		feedback_label.text = GameManager.text("All core parts installed. Press Finish.", "核心部件已装齐，点击完成。")
+	else:
+		feedback_label.text = GameManager.text("Next: ", "下一步：") + str(_part_label(next_part, "short")) + GameManager.text(" - pick it, click its slot.", " —— 选它，点击安装位。")
+
+
+func _set_ready_dot(color: Color) -> void:
+	if ready_dot == null:
 		return
-	var unlocked: Array = GameManager.unlocked_parts_by_type(selected_part_type)
-	if unlocked.is_empty():
-		return
-	var part: Dictionary = _part_for_type(selected_part_type)
-	inspector_title.text = GameManager.dict_text(part, "name")
-	inspector_body.text = GameManager.dict_text(part, "description")
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r, color.g, color.b, 0.14)
+	style.border_color = color
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(12)
+	ready_dot.add_theme_stylebox_override("panel", style)
 
 
 func _refresh_stats() -> void:
 	_clear(stats_list)
 	var stats: Dictionary = GameManager.calculate_stats()
-	var values := [
-		{"name": GameManager.text("Magnification", "倍率"), "value": float(stats.get("magnification", 0.0)), "max": 120.0, "suffix": "x"},
-		{"name": GameManager.text("Light", "集光"), "value": float(stats.get("light_score", 0.0)), "max": 100.0, "suffix": ""},
-		{"name": GameManager.text("Stability", "稳定"), "value": float(stats.get("stability_score", 0.0)), "max": 100.0, "suffix": ""},
-		{"name": GameManager.text("Clarity", "清晰"), "value": float(stats.get("clarity_score", 0.0)), "max": 100.0, "suffix": ""},
-		{"name": GameManager.text("Field", "视野"), "value": float(stats.get("field_of_view", 0.0)), "max": 70.0, "suffix": ""},
-		{"name": GameManager.text("Assembly", "组装"), "value": float(stats.get("assembly_score", 0.0)), "max": 100.0, "suffix": ""}
+	var rows := [
+		{"icon": "tripod", "name": GameManager.text("STABILITY", "稳定度"), "ratio": float(stats.get("stability_score", 0.0)) / 100.0},
+		{"icon": "optics", "name": GameManager.text("OPTICS", "光学"), "ratio": (float(stats.get("light_score", 0.0)) + float(stats.get("clarity_score", 0.0))) / 200.0},
+		{"icon": "align", "name": GameManager.text("ALIGNMENT", "对齐"), "ratio": float(stats.get("assembly_score", 0.0)) / 100.0}
 	]
-	var y := 0.0
-	for row in values:
-		_draw_stat_row(str(row["name"]), float(row["value"]), float(row["max"]), str(row["suffix"]), y)
-		y += 23.0
+	var y := 6.0
+	for row in rows:
+		_draw_gauge(str(row["icon"]), str(row["name"]), clampf(float(row["ratio"]), 0.0, 1.0), y)
+		y += 66.0
 
 
-func _draw_stat_row(name: String, value: float, max_value: float, suffix: String, y: float) -> void:
-	var label := _label(name, 10, Color(0.82, 0.88, 0.86))
-	label.position = Vector2(0, y)
-	label.size = Vector2(82, 16)
+func _draw_gauge(icon: String, gname: String, ratio: float, y: float) -> void:
+	_draw_gauge_icon(icon, Vector2(2, y + 2))
+	var label := _label(gname, 12, Color(0.86, 0.90, 0.94))
+	label.position = Vector2(36, y)
+	label.size = Vector2(160, 18)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	label.clip_text = true
 	stats_list.add_child(label)
+	var cells := 8
+	var cell_w := 18.0
+	var gap := 2.0
+	var filled := int(round(ratio * float(cells)))
+	for i in range(cells):
+		var cx := 36.0 + float(i) * (cell_w + gap)
+		var col := Color(0.34, 0.78, 0.38) if i < filled else Color(0.10, 0.16, 0.14)
+		_rect_local(stats_list, Vector2(cx, y + 24), Vector2(cell_w, 16), col)
+		_rect_local(stats_list, Vector2(cx, y + 24), Vector2(cell_w, 1), Color(0.55, 0.92, 0.55, 0.30) if i < filled else Color(0.2, 0.3, 0.3, 0.2))
 
-	_rect_local(stats_list, Vector2(84, y + 4), Vector2(72, 8), Color(0.060, 0.075, 0.086))
-	var ratio := clampf(value / maxf(1.0, max_value), 0.0, 1.0)
-	_rect_local(stats_list, Vector2(84, y + 4), Vector2(72.0 * ratio, 8), Color(0.46, 0.72, 0.86))
 
-	var value_text := str(snapped(value, 0.1)) + suffix
-	var value_label := _label(value_text, 10, Color(0.95, 0.91, 0.76))
-	value_label.position = Vector2(160, y)
-	value_label.size = Vector2(34, 16)
-	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	value_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	value_label.clip_text = true
-	stats_list.add_child(value_label)
+func _draw_gauge_icon(icon: String, pos: Vector2) -> void:
+	var c := Color(0.78, 0.85, 0.90)
+	match icon:
+		"tripod":
+			_rect_local(stats_list, pos + Vector2(10, 2), Vector2(6, 4), c)
+			_rect_local(stats_list, pos + Vector2(12, 6), Vector2(2, 7), c)
+			var leg := Color(c.r, c.g, c.b, 0.9)
+			for step in range(6):
+				var t := float(step)
+				_rect_local(stats_list, pos + Vector2(13 - t, 13 + t * 1.8), Vector2(2, 2), leg)
+				_rect_local(stats_list, pos + Vector2(13 + t, 13 + t * 1.8), Vector2(2, 2), leg)
+		"optics":
+			var ring := Panel.new()
+			ring.position = pos + Vector2(4, 4)
+			ring.size = Vector2(18, 18)
+			var st := StyleBoxFlat.new()
+			st.bg_color = Color(0.15, 0.30, 0.55, 0.7)
+			st.border_color = c
+			st.set_border_width_all(2)
+			st.set_corner_radius_all(9)
+			ring.add_theme_stylebox_override("panel", st)
+			ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			stats_list.add_child(ring)
+			_rect_local(stats_list, pos + Vector2(11, 11), Vector2(4, 4), Color(0.6, 0.8, 1.0))
+		"align":
+			var ring2 := Panel.new()
+			ring2.position = pos + Vector2(5, 5)
+			ring2.size = Vector2(16, 16)
+			var st2 := StyleBoxFlat.new()
+			st2.bg_color = Color(0, 0, 0, 0)
+			st2.border_color = c
+			st2.set_border_width_all(2)
+			st2.set_corner_radius_all(8)
+			ring2.add_theme_stylebox_override("panel", st2)
+			ring2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			stats_list.add_child(ring2)
+			_rect_local(stats_list, pos + Vector2(12, 1), Vector2(2, 24), c)
+			_rect_local(stats_list, pos + Vector2(1, 12), Vector2(24, 2), c)
 
 
 func _select_part(part_type: String) -> void:

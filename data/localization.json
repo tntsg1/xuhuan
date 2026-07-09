@@ -1,4 +1,4 @@
 {
-  "language_mode": "both",
-  "note": "MVP displays English and Chinese together for classroom-friendly testing."
+  "language_mode": "en",
+  "note": "Player-facing UI uses one language at a time. The main menu language button toggles English and Chinese."
 }

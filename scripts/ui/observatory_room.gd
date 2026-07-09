@@ -17,10 +17,6 @@ const PLAYER_DISPLAY_SIZE := PLAYER_FRAME_SIZE * PLAYER_DISPLAY_SCALE
 const PLAYER_FOOT_Y := 120.0
 const PLAYER_ANIM_FPS := 8.0
 
-const NOT_READY_TEXT := "The telescope is not ready yet. Go to the Assembly Table and install the core parts."
-const READY_GUIDANCE_TEXT := "Telescope ready. Go to the Telescope Observation Pad or Observatory Door to begin sky observation."
-const READY_FOCUS_TEXT := "Ready to observe. Press E at the telescope pad or observatory door."
-
 const NAVY := Color(0.025, 0.040, 0.075, 0.92)
 const NAVY_SOFT := Color(0.050, 0.075, 0.120, 0.82)
 const WARM_TEXT := Color(0.96, 0.91, 0.78)
@@ -400,9 +396,15 @@ func _update_hud() -> void:
 		elif GameManager.room_guidance_target != "":
 			feedback_label.text = GameManager.room_guidance_hint
 		elif active_guidance == "ready_to_observe":
-			feedback_label.text = READY_GUIDANCE_TEXT
+			feedback_label.text = GameManager.text(
+				"Telescope ready. Go to the Telescope Observation Pad or Observatory Door to begin sky observation.",
+				"望远镜已就绪。前往望远镜观测台或天文台门开始观星。"
+			)
 		elif ready:
-			feedback_label.text = READY_FOCUS_TEXT
+			feedback_label.text = GameManager.text(
+				"Ready to observe. Press E at the telescope pad or observatory door.",
+				"可以观测了。在观测台或天文台门前按 E。"
+			)
 		else:
 			feedback_label.text = GameManager.text("Check the Mission Board, then build the telescope at the Assembly Table.", "先查看任务公告板，然后去组装台制造望远镜。")
 		_update_room_guidance_panel()
@@ -478,7 +480,10 @@ func _handle_interaction(id: String) -> void:
 			GameManager.clear_room_guidance()
 			GameManager.go("sky")
 		else:
-			_show_feedback(GameManager.text(str(gate.get("reason_en", NOT_READY_TEXT)), str(gate.get("reason_zh", ""))), 3600)
+			_show_feedback(GameManager.text(
+				str(gate.get("reason_en", "The telescope is not ready yet. Go to the Assembly Table and install the core parts.")),
+				str(gate.get("reason_zh", "望远镜还没有准备好。请到组装台安装核心部件。"))
+			), 3600)
 	elif id == "journal":
 		GameManager.set_observatory_spawn("journal")
 		GameManager.clear_room_guidance()
@@ -519,11 +524,11 @@ func _toggle_mission_board() -> void:
 	panel.add_theme_stylebox_override("panel", _style(Color(0.035, 0.050, 0.090, 0.98), BRASS, 3, 5))
 	mission_board_popup.add_child(panel)
 
-	_popup_label("CLUB MISSION / 俱乐部任务", Vector2(282, 164), Vector2(460, 22), 13, BRASS, HORIZONTAL_ALIGNMENT_CENTER)
+	_popup_label(GameManager.text("CLUB MISSION", "俱乐部任务"), Vector2(282, 164), Vector2(460, 22), 13, BRASS, HORIZONTAL_ALIGNMENT_CENTER)
 	var title_label := _popup_label(GameManager.dict_text(level, "title"), Vector2(282, 190), Vector2(460, 52), 20, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
 	title_label.max_lines_visible = 2
 
-	_popup_label("Maya's Note / Maya 的提示", Vector2(292, 252), Vector2(440, 18), 11, Color(0.66, 0.76, 0.86))
+	_popup_label(GameManager.text("Maya's Note", "Maya 的提示"), Vector2(292, 252), Vector2(440, 18), 11, Color(0.66, 0.76, 0.86))
 	var note_label := _popup_label(
 		"\"" + GameManager.text(str(note.get("en", "")), str(note.get("zh", ""))) + "\"",
 		Vector2(292, 272), Vector2(440, 58), 12, Color(0.98, 0.85, 0.58)
@@ -533,20 +538,20 @@ func _toggle_mission_board() -> void:
 	var objective_heading := GameManager.text("Objective", "目标")
 	if not level.get("target_pool", []).is_empty():
 		var picked := GameManager.current_target()
-		objective_heading = "Objective / 目标 -> " + GameManager.dict_text(picked, "name").replace("\n", " · ")
+		objective_heading = GameManager.text("Objective -> ", "目标 -> ") + GameManager.dict_text(picked, "name")
 	_popup_label(objective_heading, Vector2(292, 334), Vector2(440, 18), 11, Color(0.66, 0.76, 0.86))
 	var objective_label := _popup_label(GameManager.dict_text(level, "description"), Vector2(292, 354), Vector2(440, 56), 12, WARM_TEXT)
 	objective_label.max_lines_visible = 4
 
-	_popup_label("Equipment / 设备阶段", Vector2(292, 416), Vector2(220, 18), 11, Color(0.66, 0.76, 0.86))
+	_popup_label(GameManager.text("Equipment", "设备阶段"), Vector2(292, 416), Vector2(220, 18), 11, Color(0.66, 0.76, 0.86))
 	_popup_label(str(stage_names.get(GameManager.current_equipment_stage(), GameManager.current_equipment_stage())), Vector2(292, 436), Vector2(220, 40), 12, CYAN)
 
-	_popup_label("Concept / 学习概念", Vector2(522, 416), Vector2(210, 18), 11, Color(0.66, 0.76, 0.86))
+	_popup_label(GameManager.text("Concept", "学习概念"), Vector2(522, 416), Vector2(210, 18), 11, Color(0.66, 0.76, 0.86))
 	var concept_label := _popup_label(GameManager.dict_text(concept, "title") if not concept.is_empty() else "-", Vector2(522, 436), Vector2(210, 60), 12, Color(0.86, 0.72, 1.0))
 	concept_label.max_lines_visible = 3
 
 	var close := Button.new()
-	close.text = GameManager.text("Close", "关闭").replace("\n", " · ")
+	close.text = GameManager.text("Close", "关闭")
 	close.position = Vector2(432, 546)
 	close.size = Vector2(160, 40)
 	close.add_theme_font_size_override("font_size", 14)
@@ -603,7 +608,7 @@ func _maybe_show_unlock_popup() -> void:
 
 	var x_text := panel.position.x + 140.0
 	var y := panel.position.y + 18.0
-	_popup_label_on(unlock_popup, "NEW EQUIPMENT UNLOCKED! / 新装备已解锁！", Vector2(panel.position.x + 20, y), Vector2(480, 24), 15, Color(0.98, 0.85, 0.45), HORIZONTAL_ALIGNMENT_CENTER)
+	_popup_label_on(unlock_popup, GameManager.text("NEW EQUIPMENT UNLOCKED!", "新装备已解锁！"), Vector2(panel.position.x + 20, y), Vector2(480, 24), 15, Color(0.98, 0.85, 0.45), HORIZONTAL_ALIGNMENT_CENTER)
 	y += 34.0
 	var maya_line := _popup_label_on(unlock_popup,
 		GameManager.text("Maya: \"New parts just arrived for the club!\"", "Maya：“俱乐部的新零件到货啦！”"),
@@ -612,7 +617,7 @@ func _maybe_show_unlock_popup() -> void:
 	y += 44.0
 	for index in range(line_count):
 		var part: Dictionary = GameManager.get_part(str(pending[index]))
-		var part_name := "%s / %s" % [str(part.get("name_en", pending[index])), str(part.get("name_zh", ""))]
+		var part_name := GameManager.dict_text(part, "name")
 		_popup_label_on(unlock_popup, "•  " + part_name, Vector2(x_text, y), Vector2(360, 22), 13, Color(0.60, 0.95, 0.70))
 		y += 26.0
 	y += 10.0
@@ -771,10 +776,10 @@ func _update_room_guidance_panel() -> void:
 		target_name = str(item.get("name", ""))
 	if nearby_id == GameManager.room_guidance_target:
 		guidance_hint_label.text = "[E] " + target_name
-		guidance_action_label.text = "Press E to continue / 按 E 继续"
+		guidance_action_label.text = GameManager.text("Press E to continue", "按 E 继续")
 	else:
 		guidance_hint_label.text = GameManager.room_guidance_hint
-		guidance_action_label.text = "Follow the highlighted area / 跟随高亮区域"
+		guidance_action_label.text = GameManager.text("Follow the highlighted area", "跟随高亮区域")
 	_update_guidance_overlay(item)
 
 

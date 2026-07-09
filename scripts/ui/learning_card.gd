@@ -50,11 +50,11 @@ func _build_concept_brief(card: Dictionary) -> void:
 	_label("Before you start, learn the idea you are about to use.", Vector2(0, 62), Vector2(1024, 24), 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 
 	_panel(Vector2(92, 104), Vector2(840, 560))
-	_label(str(card.get("title_en", "Concept")), Vector2(150, 114), Vector2(724, 28), 22, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_label(GameManager.dict_text(card, "title"), Vector2(150, 114), Vector2(724, 28), 22, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	_diagram(str(card.get("image", "")), Vector2(152, 142), Vector2(720, 405))
 
 	var body: Label = _label(
-		str(card.get("text_en", "")),
+		GameManager.dict_text(card, "text"),
 		Vector2(150, 562),
 		Vector2(724, 72),
 		15,
@@ -63,7 +63,7 @@ func _build_concept_brief(card: Dictionary) -> void:
 	)
 	body.max_lines_visible = 3
 
-	var start: Button = _button("Start", Vector2(382, 686), Vector2(260, 48))
+	var start: Button = _button(GameManager.text("Start", "开始"), Vector2(382, 686), Vector2(260, 48))
 	start.pressed.connect(func() -> void:
 		GameManager.complete_current_brief()
 	)
@@ -113,8 +113,7 @@ func _mission_bg() -> void:
 
 func _title_banner() -> void:
 	_dark_panel(Vector2(362, 14), Vector2(300, 54), Color(0.025, 0.045, 0.080, 0.96), GOLD)
-	_label("MISSION COMPLETE", Vector2(362, 18), Vector2(300, 25), 23, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	_label("观测完成", Vector2(362, 43), Vector2(300, 18), 15, Color(1.0, 0.88, 0.52), HORIZONTAL_ALIGNMENT_CENTER)
+	_label(GameManager.text("MISSION COMPLETE", "观测完成"), Vector2(362, 22), Vector2(300, 32), 23, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 
 
 func _observation_image(obj: Dictionary) -> void:
@@ -286,7 +285,19 @@ func _paper_quality_color(quality: String) -> Color:
 
 func _target_subtitle(obj: Dictionary) -> String:
 	var parts: Array[String] = []
-	for key in ["messier", "constellation_en", "type_en", "distance_en"]:
+	for key in ["messier", "constellation", "type", "distance"]:
+		var value := ""
+		if key == "messier":
+			value = str(obj.get(key, ""))
+		else:
+			value = GameManager.dict_text(obj, key)
+		if value != "":
+			parts.append(value)
+	if not parts.is_empty():
+		return " · ".join(parts)
+	# Backward compatibility for older object rows that only have English
+	# subtitle metadata.
+	for key in ["constellation_en", "type_en", "distance_en"]:
 		var value := str(obj.get(key, ""))
 		if value != "":
 			parts.append(value)
@@ -303,7 +314,7 @@ func _learned_lines(obj: Dictionary, level: Dictionary, observation: Dictionary,
 	if success != "":
 		lines.append(success.replace("\n", " / "))
 	var variation := str(level.get("variation", ""))
-	var concept_title := GameManager.dict_text(concept, "title")
+	var concept_title := _dict_inline(concept, "title")
 	if concept_title != "":
 		lines.append(_inline_text("Concept logged:", "知识点记录：") + " " + concept_title.replace("\n", " / "))
 
@@ -350,7 +361,7 @@ func _learned_lines(obj: Dictionary, level: Dictionary, observation: Dictionary,
 		if object_learning != "":
 			lines.append(object_learning.replace("\n", " / "))
 
-	var maya_recap := str(data.get("maya_recap_en", ""))
+	var maya_recap := str(data.get("maya_recap_zh", "")) if GameManager.language_mode == "zh" else str(data.get("maya_recap_en", ""))
 	if maya_recap != "":
 		lines.append("Maya: " + maya_recap)
 	while lines.size() > 3:
@@ -474,9 +485,7 @@ func _mission_button(text: String, pos: Vector2, size: Vector2, color: Color) ->
 func _inline_text(en: String, zh: String) -> String:
 	if GameManager.language_mode == "zh":
 		return zh
-	if GameManager.language_mode == "en":
-		return en
-	return en + " / " + zh
+	return en
 
 
 func _dict_inline(data: Dictionary, base: String) -> String:

@@ -92,7 +92,7 @@ func _build_feedback() -> void:
 	lang_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lang_indicator.add_theme_font_size_override("font_size", 11)
 	var mode := GameManager.language_mode
-	var mode_text := "EN+中文" if mode == "both" else ("English" if mode == "en" else "中文")
+	var mode_text := "English" if mode == "en" else "中文"
 	lang_indicator.text = "🌐 " + mode_text
 	lang_indicator.add_theme_color_override("font_color", Color(0.65, 0.70, 0.75))
 	lang_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE

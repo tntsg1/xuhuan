@@ -208,8 +208,8 @@ func _part_card(part: Dictionary) -> Control:
 	var title_y := 36.0 if not recommended and not is_next_step else 34.0
 	var name_color := WARM_TEXT if unlocked else Color(0.52, 0.58, 0.62)
 	_label_to(root, GameManager.dict_text(part, "name"), Vector2(text_x, title_y), Vector2(370, 20), 15, name_color)
-	_label_to(root, _safe_zh_name(part, str(type_info.get("zh", "零件"))), Vector2(text_x, title_y + 22), Vector2(370, 18), 13, Color(0.78, 0.88, 0.88) if unlocked else Color(0.46, 0.52, 0.54))
-	_badge_to(root, str(type_info.get("role", "Equipment / 设备")), Vector2(text_x, title_y + 45), Vector2(250, 20), Color(0.46, 0.66, 0.86))
+	_label_to(root, _type_label(str(part.get("type", "")), "role"), Vector2(text_x, title_y + 22), Vector2(370, 18), 13, Color(0.78, 0.88, 0.88) if unlocked else Color(0.46, 0.52, 0.54))
+	_badge_to(root, str(type_info.get("role", GameManager.text("Equipment", "设备"))), Vector2(text_x, title_y + 45), Vector2(250, 20), Color(0.46, 0.66, 0.86))
 
 	var desc := _short_description(part)
 	var desc_label := _label_to(root, desc, Vector2(text_x, title_y + 72), Vector2(500, 34), 12, Color(0.78, 0.84, 0.84) if unlocked else Color(0.46, 0.50, 0.54))
@@ -271,7 +271,7 @@ func _draw_action_column(root: Control, part: Dictionary, unlocked: bool, equipp
 func _draw_stat_chips(parent: Control, part: Dictionary, pos: Vector2, unlocked: bool) -> void:
 	var chips := _part_stat_chips(part)
 	if chips.is_empty():
-		chips.append("No special stats / 暂无特殊属性")
+		chips.append(GameManager.text("No special stats", "暂无特殊属性"))
 	var x := pos.x
 	var y := pos.y
 	for chip in chips:

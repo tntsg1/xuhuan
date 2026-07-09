@@ -33,7 +33,7 @@ var last_guidance := ""
 var room_guidance_target := ""
 var room_guidance_title := ""
 var room_guidance_hint := ""
-var language_mode := "both"
+var language_mode := "en"
 var observatory_spawn_id := "default"
 # Last sky-observation aim, restored when re-entering the pad.
 var last_sky_aim: Dictionary = {"valid": false}
@@ -49,7 +49,7 @@ func _ready() -> void:
 		mission_manager.load_levels(levels_data)
 	progress = SaveManager.load_progress(default_progress())
 	_normalize_progress()
-	language_mode = str(progress.get("language_mode", "both"))
+	language_mode = _normalized_language_mode(str(progress.get("language_mode", "en")))
 	_unlock_parts_for_current_level()
 	save()
 
@@ -80,7 +80,7 @@ func default_progress() -> Dictionary:
 		"seen_story_events": [],
 		"pending_unlock_notice": [],
 		"unlocked_equipment_stages": ["eye"],
-		"language_mode": "both",
+		"language_mode": "en",
 		"mission_step_state": {},
 		"level_target_overrides": {},
 		"finder_offset": {"az": 0.0, "alt": 0.0},
@@ -91,7 +91,7 @@ func default_progress() -> Dictionary:
 
 func new_game() -> void:
 	progress = SaveManager.reset_progress(default_progress())
-	language_mode = str(progress.get("language_mode", "both"))
+	language_mode = _normalized_language_mode(str(progress.get("language_mode", "en")))
 	selected_object_id = ""
 	last_observation = {}
 	last_learning_card = {}
@@ -154,14 +154,18 @@ func dict_text(data: Dictionary, base: String) -> String:
 
 
 func cycle_language() -> void:
-	if language_mode == "both":
-		language_mode = "en"
-	elif language_mode == "en":
+	if language_mode == "en":
 		language_mode = "zh"
 	else:
-		language_mode = "both"
+		language_mode = "en"
 	save()
 	language_changed.emit()
+
+
+func _normalized_language_mode(mode: String) -> String:
+	if mode == "zh":
+		return "zh"
+	return "en"
 
 
 func current_level() -> Dictionary:
@@ -875,6 +879,8 @@ func _migrate_progress_schema() -> void:
 		progress["finder_offset_initial_len"] = maxf(3.0, finder_offset_length())
 	if not (progress.get("tracking_rate") is float or progress.get("tracking_rate") is int):
 		progress["tracking_rate"] = 0.0
+	progress["language_mode"] = _normalized_language_mode(str(progress.get("language_mode", "en")))
+	language_mode = str(progress["language_mode"])
 
 
 func _ensure_progress_array(key: String) -> void:
