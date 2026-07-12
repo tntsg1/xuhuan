@@ -20,25 +20,6 @@
 
 ---
 
-## 📊 项目进度
-
-| 模块 | 完成度 |
-|------|--------|
-| 双语系统 | ✅ 100% |
-| 基础大厅 | ✅ 95% |
-| 基础组装 | ✅ 95% |
-| L1-L24 基础关卡 | ✅ 90% |
-| 教学和剧情框架 | ✅ 85% |
-| 观测环境机制 | ✅ 80% |
-| Mission Board | ✅ 85% |
-| 任务路线引导 | ✅ 85% |
-| 高级关卡数据框架 | ✅ 70% |
-| FAST 和多波段玩法 | ⚠️ 60% |
-| 牛顿反射式蓝图 | ⚠️ 50% |
-| L25-L45 高级内容 | ⚠️ 40% |
-
----
-
 ## 🗺️ 24 关主线
 
 | 章节 | 关卡 | 主题 | 核心知识点 |
@@ -76,114 +57,78 @@ Pixel Observatory (Godot 4.7, 1024×768)
 
 ---
 
-## 🔧 18 项主要功能更新
+## 🔧 系统详情
 
 ### 1. 双语语言系统
 - 中文/英文/双语三模式切换
 - UI、剧情、教学、任务、零件名称同步切换
-- 修复中文乱码和文字溢出
 - 全部文本统一通过 `GameManager.text()` 管理
 - 所有 10 个 UI 场景连接 `language_changed` 信号自动重建
 
-### 2. 主观测室重做
+### 2. 主观测室
 - 完整伪 3D 天文台背景替代错误的家具切片拼装
 - 修复家具互相覆盖
 - 调整零件柜、组装台、任务板、观测台、日志和统计终端位置
-- 所有交互物体名和提示走 `GameManager.text()`
 
 ### 3. 主角系统
-- 接入像素人物素材，上下左右四方向
-- 增加行走动画
-- 修复人物过大过小、方向错乱、头皮残影和位置偏移
+- 接入像素人物素材，上下左右四方向 + 行走动画
 - 分离显示尺寸和碰撞尺寸
 - 修正角色碰撞与实际脚底位置
 
 ### 4. 大厅交互和碰撞
-- 缩小家具碰撞范围
-- 修复碰到家具后无法左右移动
+- 缩小家具碰撞范围，修复碰到家具后无法左右移动
 - 远距离点击不再直接进入界面，必须靠近后按 E
 - 修复交互后返回错误位置
 
 ### 5. Mission Board 任务中心
-- 从装饰物变成真正的任务中心
 - 显示当前目标、任务描述、设备需求、准备状态和任务步骤
-- 增加 Show Route 大厅目标高亮
-- 增加方向箭头、距离提示和奖励预览
-- 增加打开观测日志的入口
-- 任务清单根据关卡机制动态变化
+- 增加 Show Route 大厅目标高亮、方向箭头、距离提示和奖励预览
 
 ### 6. 大厅路线引导
 - 观测、组装、日志、任务板和统计终端均可作为下一步目标
 - 靠近目标后切换为 E 提示
 - 任务完成后自动设置下一步路线
-- 修复剧情结束后不知下一步的问题
 
 ### 7. StoryManager 剧情系统
-- 引入 Maya 导师
-- New Game 开始时播放加入天文俱乐部剧情
-- 增加观测前、组装前、调焦前剧情
-- 增加 Mission Board 任务说明
-- 增加任务完成后 Maya 复盘
-- 修复剧情重复播放和剧情目标不一致
+- 引入 Maya 导师，New Game 开始时播放加入天文俱乐部剧情
+- 增加观测前、组装前、调焦前剧情和任务完成后 Maya 复盘
 
 ### 8. TeachingFlowManager 教学状态机
 - 教学、剧情和关卡完成状态分开记录
-- 教学卡可在操作前弹出
-- 支持一关多个教学步骤
-- 已看过的教学不重复弹出
-- 教学结束后返回原目标场景
-- 增加教学图解卡（12 张像素风教学图）
+- 支持一关多个教学步骤，已看过的教学不重复弹出
+- 增加 12 张像素风教学图解卡
 
 ### 9. 组装台系统
 - 修复 Unlocked 和 Installed 状态分离
-- 修复左侧图标溢出卡片
-- 增加实际零件图标（11 张正式零件 PNG）
-- 修复安装顺序和错误零件安装
-- 增加零件滚动列表
-- 增加调焦旋钮和寻星镜
-- 增加安装后性能实时计算
+- 增加 11 张正式零件图标，修复安装顺序和错误零件安装
+- 增加调焦旋钮和寻星镜，安装后性能实时计算
 
 ### 10. 调焦系统
 - 调焦旋钮必须实际安装后才允许观测
 - 失焦产生重影、模糊和清晰度下降
-- Q/E 或滑条调焦
-- 不同天体使用不同调焦容差
-- 星云关卡改为看到淡斑即可成功
+- Q/E 或滑条调焦，不同天体使用不同调焦容差
 
 ### 11. 观星界面
-- 增加肉眼、寻星镜和主望远镜三模式
-- 增加视角切换和方位角/俯仰角
-- 增加度分秒（DMS）显示
-- 增加东南西北方向刻度
-- 增加目标选择、目标中心提示和任务目标比较
-- 修复返回按钮错误返回组装台
+- 肉眼、寻星镜和主望远镜三模式，支持视角切换
+- 方位角/俯仰角 + DMS 显示，目标选择与任务目标比较
 
 ### 12. 天体视觉表现
 - 月球、火星、木星、恒星、星云和星系使用不同贴图
 - 木星和火星增加清晰/模糊/变暗三态
-- 修复贴图超出圆形视野和黑色方形背景
-- 使用圆形遮罩
-- 修复倍率过大导致天体偏移
+- 圆形遮罩、倍率适配
 
 ### 13. 环境拟真效果
-- 大气扰动（turbulence shader）
-- 视宁度（seeing）
-- 云层移动和遮挡
-- 光污染（sky_brightness）
-- 暗适应（dark adaptation）
-- 侧视法（averted vision）
-- 地球自转漂移（drift）
-- 追踪架和追踪速率
+- 大气扰动（turbulence shader）、视宁度（seeing）、云层移动和遮挡
+- 光污染（sky_brightness）、暗适应（dark adaptation）、侧视法（averted vision）
+- 地球自转漂移（drift）、追踪架和追踪速率
 
 ### 14. 观测完成和日志系统
 - Mission Complete 界面：奖励、徽章和概念知识
 - Club Logbook 替代百科式日志
 - 日志保存设备、倍率、环境、操作和结果
-- 日志滚动区域，修复重复、覆盖和文字溢出
 
 ### 15. 统计终端
-- 望远镜性能显示
-- 观测历史和社团积分
+- 望远镜性能显示、观测历史、社团积分
 - 发现数量和已解锁设备/知识卡
 
 ### 16. 24 关基础教学主线
@@ -193,16 +138,113 @@ Pixel Observatory (Godot 4.7, 1024×768)
 
 ### 17. L25-L45 高级内容框架
 - 牛顿反射式、多布森式、卡塞格林式、格里高利式
-- 空间分段反射镜、红外观测
-- FAST 射电观测和多波段综合观测
+- 空间分段反射镜、红外观测、FAST 射电观测和多波段综合观测
 - 高级零件数据和场景框架（部分仍是占位素材）
 
 ### 18. 高级组装和子蓝图
 - 高级主组装台和光学镜筒子蓝图
-- 准直界面
-- FAST 射电观测界面
-- 红外/可见光/无线电证据选择界面
+- 准直界面、FAST 射电观测界面、多波段证据选择界面
 - 正在修正：接入正式牛顿反射式蓝图替代 Agent 占位图
+
+---
+
+## 版本进度记录
+
+### v0.1 - 项目初始化
+
+- 建立 Godot 4.7 项目
+- 建立主菜单、观测室、组装台、观测界面、学习卡基础场景
+- 建立 GameManager、SaveManager、TelescopeMath、AssemblyManager、ObservationSystem
+- 支持本地 JSON 存档
+
+### v0.2 - 第一版观测流程
+
+- 任务系统和关卡数据雏形
+- 组装台按顺序安装基础零件
+- Telescope View 支持识别目标
+- Learning Journal 记录观测结果
+
+### v0.3 - UI 大厅与日志重构
+
+- Observatory Room 改成更完整的像素天文台大厅
+- 学习日志改成卡片式记录
+- 主菜单和组装台视觉初步优化
+- 增加更多任务和基础升级零件
+
+### v0.4 - SkyPositionService 与真实天空数据
+
+- 增加 SkyPositionService
+- Moon / Mars / Jupiter 支持 AstronomyAPI 在线位置
+- Polaris / Sirius / Betelgeuse / Orion Nebula / Andromeda 使用本地 RA/Dec 计算
+
+### v0.5 - Finder Scope / 局部视野
+
+- Sky Observation 从全天固定星图改成可旋转望远镜视野
+- 支持 azimuth / altitude 控制和 FOV 判定
+- 使用 shortest_angle_degrees 处理 0/360 度跨界
+
+### v0.6 - Telescope View 视觉与识别修复
+
+- Telescope View Back 返回 Observatory，不再错误返回 Assembly
+- Identify 选项限制为最多 4 个
+- 星体显示改用 PNG 图像，不再用几何图形拼
+
+### v0.7 - 玩家比例与大厅交互修复
+
+- 修正 Observatory Room 玩家角色比例
+- 保持脚底锚点和交互范围稳定
+
+### v1.0 - Pixel Observatory v2 教学主线
+
+- 重新规划 L1-L9，加入 naked eye observation、equipment_stage、focus training
+- 学习卡支持图解
+
+### v1.1 - Teaching Flow State Machine
+
+- 新增 TeachingFlowManager，使用 teaching_steps 数据驱动教学卡
+- 区分 seen brief 和 completed concept card
+
+### v1.2 - Focus Knob 成为真实零件
+
+- basic_focus_knob 加入 telescope_parts.json
+- L4 之后需要安装 Focus Knob 才能调焦
+
+### v1.3 - Story System / Maya 剧情框架
+
+- 新增 StoryManager 和 story_dialogues.json
+- 引入 Maya 作为天文俱乐部导师
+
+### v1.4 - 三段式 Sky Observation
+
+- 支持 Naked Eye / Finder Scope / Telescope Alignment 三模式
+- Guidance 显示具体转动角度
+
+### v1.5 - Focus 与 Quality 判定拆分
+
+- is_focus_acceptable() 只判断调焦
+- is_quality_acceptable() 只判断观测质量
+- 修复 Orion Nebula 永远像无法对焦的问题
+
+### v1.6 - 流程体验修复
+
+- 修复剧情/教学从设备触发后又退回大厅的问题
+- 大厅增加下一步引导和目标高亮
+- 远距离点击家具不再直接进入界面
+
+### v1.7 - Main Menu 重做
+
+- 主菜单替换为 Starlight Observatory 风格标题画面
+
+### v1.8 - L10-L24 章节规划与数据扩展
+
+- L10-L24 螺旋式重复练习结构
+- 新增 chapter_id、lesson_thread、practice_step、variation 等数据字段
+
+### v1.9 - Parts Cabinet 与 Telescope Assembly 视觉升级
+
+- 零件柜重做为可滚动装备列表
+- 新增 11 张正式零件图
+- 组装台使用正式零件图，删除粗糙几何零件图
 
 ---
 
@@ -304,7 +346,7 @@ C:/Users/tntsg/Downloads/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64.exe
 
 ## ⚠️ 开发约定
 
-1. `Dictionary.get()` 返回 Variant，必须显式标类型 `var x: String = d.get(...)`
+1. `Dictionary.get()` 返回 Variant，必须显式标类型
 2. float 取模用 `fmod()`，`%` 只能整数
 3. autoload 脚本不用 `class_name`
 4. 面向玩家的字符串走 `GameManager.text("EN", "中文")`
