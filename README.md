@@ -354,3 +354,53 @@ C:/Users/tntsg/Downloads/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64.exe
 6. 分辨率 1024×768，像素图用 `TEXTURE_FILTER_NEAREST`
 7. 改完必须编译检查 + 跑相关测试
 8. 不要把 `data/local_api_keys.json` 提交到仓库
+
+
+---
+
+## 📌 2026-07-12 Web 发布与稳定性更新
+
+### Web 浏览器版本
+
+- 完成 Godot Web 导出，支持直接在现代浏览器中运行。
+- Web 版本使用单线程构建，兼容 GitHub Pages 等普通静态网站托管。
+- 修复 Tama / Bullet GDExtension 的 Web 侧模块加载、入口导出和资源路径问题。
+- 修复浏览器运行时的 `AudioManager`、`BulletManager` 自动加载问题。
+- 修复宽屏浏览器中的画面偏移，游戏内容保持在屏幕中央。
+- 修复大厅路线提示箭头在 Web 版本中出现乱码的问题。
+- 天空观测界面的 EYE / FINDER / SCOPE 三个模式卡统一为相同尺寸和形态。
+- 模式卡从 PCK 资源中加载，避免导出后浏览器找不到图片。
+- 当前选中的观测模式使用青色边框和半透明高亮提示。
+
+### 星空观测灰屏修复
+
+- 修复进入星空观测界面时的灰屏问题。
+- 根因是观测脚本使用了未声明的 `CYAN` 颜色常量，导致 Godot Web 运行时脚本解析失败。
+- 已补充颜色常量并重新导出。
+- 为游戏数据分片增加版本标识，避免浏览器继续使用旧缓存。
+- 已在浏览器中验证：主菜单、教学流程和星空观测界面可以正常打开。
+
+### 大文件与网页加载方案
+
+- 原始 `index.pck` 约 112MB，超过部分 Git 静态托管服务的单文件限制。
+- 将游戏包拆分为 5 个约 22MB 的分片。
+- 网页启动时自动下载并合并分片，Godot 仍按完整游戏包运行。
+- 该方案不改变游戏内容，只解决网页托管和浏览器缓存问题。
+
+### 公开访问地址
+
+当前版本由 GitHub Pages 托管：
+
+- 游戏地址：[https://tntsg1.github.io/Pixel-Observatory/](https://tntsg1.github.io/Pixel-Observatory/)
+- GitHub 仓库：[https://github.com/tntsg1/Pixel-Observatory](https://github.com/tntsg1/Pixel-Observatory)
+- 网页发布分支：`gh-pages`
+
+GitHub Pages 不需要本地电脑保持开机，世界各地可以通过公开网址访问。后续重新导出并更新 `gh-pages` 分支后，网页会自动重新构建。
+
+### 公共演示注意事项
+
+- 这是公开演示版本，任何拿到网址的人都可以访问。
+- 当前进度只保存在访问者自己的浏览器中。
+- 清除浏览器数据、更换浏览器或更换设备，可能会丢失本地进度。
+- 当前没有账号系统、云端存档和多人联机功能。
+- 不要在游戏中输入个人隐私、账号密码或其他敏感信息。
