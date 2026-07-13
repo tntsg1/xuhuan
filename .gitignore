@@ -1,0 +1,4 @@
+output/
+.playwright-cli/
+*.log
+index.pck
