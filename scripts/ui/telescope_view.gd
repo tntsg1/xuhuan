@@ -261,6 +261,19 @@ func _ready() -> void:
 
 
 func _show_focus_tutorial() -> void:
+	if drift_enabled and not InteractionFeedback.was_tutorial_seen("first_earth_drift"):
+		var drift_target: Control = tracking_slider if tracking_slider != null else drift_label
+		InteractionFeedback.tutorial_highlight_once(drift_target, "first_earth_drift", GameManager.text(
+			"Earth rotation makes the target drift. Recenter it or tune tracking near 1.0x.",
+			"地球自转会让目标漂移；请重新居中，或把追踪调到接近 1.0x。"
+		), self)
+		return
+	if cloud_cover_level > 0.0 and not InteractionFeedback.was_tutorial_seen("first_scope_cloud"):
+		InteractionFeedback.tutorial_highlight_once(quality_label, "first_scope_cloud", GameManager.text(
+			"Cloud attenuation changes continuously. Focus cannot remove cloud cover.",
+			"云层遮挡会连续变化，调焦不能消除云层。"
+		), self)
+		return
 	InteractionFeedback.tutorial_highlight_once(
 		focus_slider,
 		"first_focus_control",

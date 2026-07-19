@@ -65,6 +65,14 @@ func _ready() -> void:
 	installed = saved.get("installed_subparts", saved.get("tube_assembly_state", {})).duplicate()
 	_build()
 	InteractionFeedback.page_enter(self)
+	call_deferred("_show_tube_tutorial")
+
+
+func _show_tube_tutorial() -> void:
+	InteractionFeedback.tutorial_highlight_once(blueprint, "first_tube_subassembly", GameManager.text(
+		"Build the internal reflected light path in order, then save the completed tube.",
+		"按顺序搭建内部反射光路，再保存完整镜筒。"
+	), self)
 
 
 func _build() -> void:

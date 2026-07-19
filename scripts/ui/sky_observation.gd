@@ -265,7 +265,23 @@ func _ready() -> void:
 	_load_real_star_points()
 	_build()
 	InteractionFeedback.page_enter(self)
+	call_deferred("_show_sky_feature_tutorial")
 	sky_service.request_online_planet_data(self, VIEW_RECT, _apply_online_sky_data)
+
+
+func _show_sky_feature_tutorial() -> void:
+	if mode_buttons.has("finder") and bool(_mode_available("finder").get("ok", false)) and not InteractionFeedback.was_tutorial_seen("first_finder"):
+		var finder_button := (mode_buttons["finder"] as Dictionary).get("button") as Control
+		InteractionFeedback.tutorial_highlight_once(finder_button, "first_finder", GameManager.text(
+			"Use the Finder for a medium field. Calibrate it with I/J/K/L when prompted.",
+			"使用寻星镜获得中等视野；出现提示时用 I/J/K/L 校准。"
+		), self)
+		return
+	if _cloud_cover_amount() > 0.0 and cloud_layer != null:
+		InteractionFeedback.tutorial_highlight_once(cloud_layer, "first_cloud_layer", GameManager.text(
+			"Clouds dim the target as they cross the observing field. Wait for a clear gap.",
+			"云层经过观测视野时会遮暗目标，请等待云隙。"
+		), self)
 
 
 func _process(delta: float) -> void:

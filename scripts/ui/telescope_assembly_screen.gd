@@ -111,6 +111,14 @@ func _ready() -> void:
 	_load_wrong_attempts()
 	_build()
 	InteractionFeedback.page_enter(self)
+	call_deferred("_show_assembly_tutorial")
+
+
+func _show_assembly_tutorial() -> void:
+	InteractionFeedback.tutorial_highlight_once(blueprint_layer, "first_refractor_assembly", GameManager.text(
+		"Choose a part card, then install it in the matching blueprint slot.",
+		"选择零件卡片，再安装到蓝图中的对应槽位。"
+	), self)
 
 
 func _load_wrong_attempts() -> void:

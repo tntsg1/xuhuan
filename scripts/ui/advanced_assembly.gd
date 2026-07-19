@@ -50,6 +50,15 @@ func _ready() -> void:
 	GameManager.language_changed.connect(_on_language_changed)
 	_build()
 	InteractionFeedback.page_enter(self)
+	call_deferred("_show_assembly_tutorial")
+
+
+func _show_assembly_tutorial() -> void:
+	var target: Control = template_blueprint_layer if template_blueprint_layer != null else blueprint
+	InteractionFeedback.tutorial_highlight_once(target, "first_advanced_assembly", GameManager.text(
+		"Select a real part card, then click its matching blueprint slot.",
+		"先选择真实零件卡片，再点击蓝图中的对应槽位。"
+	), self)
 
 
 func _build() -> void:
