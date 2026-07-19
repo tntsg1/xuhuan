@@ -6,6 +6,43 @@ const CYAN := Color(0.44, 0.84, 1.0)
 const GREEN := Color(0.48, 0.92, 0.58)
 const TEXT := Color(0.92, 0.91, 0.84)
 
+
+class CollimationStarPreview extends Control:
+	var alignment_error := Vector2.ZERO
+
+	func set_alignment_error(value: Vector2) -> void:
+		alignment_error = value
+		queue_redraw()
+
+	func _draw() -> void:
+		var center := size * 0.5
+		var field_radius := minf(size.x, size.y) * 0.43
+		draw_circle(center, field_radius, Color(0.002, 0.005, 0.012, 0.98))
+		draw_arc(center, field_radius, 0.0, TAU, 96, Color(0.35, 0.72, 0.82, 0.72), 2.0)
+		draw_line(center - Vector2(12, 0), center + Vector2(12, 0), Color(0.32, 0.58, 0.65, 0.22), 1.0)
+		draw_line(center - Vector2(0, 12), center + Vector2(0, 12), Color(0.32, 0.58, 0.65, 0.22), 1.0)
+
+		var severity := clampf(alignment_error.length() / 0.30, 0.0, 1.0)
+		var direction := alignment_error.normalized() if alignment_error.length() > 0.001 else Vector2.RIGHT
+		if severity > 0.015:
+			# Misaligned reflector optics turn a point source into an asymmetric
+			# coma flare. Wider, fainter lobes form the visible tail.
+			var perpendicular := Vector2(-direction.y, direction.x)
+			for step in range(6, 0, -1):
+				var distance := float(step) * (3.0 + severity * 3.8)
+				var radius := 2.0 + float(step) * severity * 1.15
+				var alpha := (0.05 + (7.0 - float(step)) * 0.035) * severity
+				var tail_center := center + direction * distance
+				draw_circle(tail_center, radius, Color(0.55, 0.82, 1.0, alpha))
+				draw_circle(tail_center + perpendicular * radius * 0.55, maxf(1.0, radius * 0.36), Color(0.95, 0.76, 0.34, alpha * 0.65))
+			draw_arc(center + direction * severity * 4.0, 10.0 + severity * 8.0, -1.8, 1.8, 36, Color(0.65, 0.88, 1.0, 0.42 + severity * 0.25), 1.0)
+		else:
+			# Correct collimation produces a compact Airy core and symmetric rings.
+			draw_arc(center, 10.0, 0.0, TAU, 40, Color(0.56, 0.92, 0.68, 0.62), 1.0)
+			draw_arc(center, 17.0, 0.0, TAU, 52, Color(0.56, 0.92, 0.68, 0.24), 1.0)
+		draw_circle(center, 4.5 + severity * 1.5, Color(0.98, 0.96, 0.84, 0.98))
+		draw_circle(center - direction * severity * 1.5, 1.8, Color(1.0, 1.0, 1.0, 1.0))
+
 var secondary_x := 0.18
 var secondary_y := -0.14
 var primary_x := -0.12
@@ -19,6 +56,8 @@ var alignment_cross: Label
 var reticle_rings: Array[Panel] = []
 var collimation_success_played := false
 var confirm_button: Button
+var star_preview: CollimationStarPreview
+var star_preview_label: Label
 
 
 func _ready() -> void:
@@ -101,6 +140,15 @@ func _refresh(immediate := false) -> void:
 	var score := _score()
 	var threshold := float(GameManager.current_level().get("collimation_threshold", 86.0))
 	var aligned := score >= threshold
+	var alignment_error := Vector2(secondary_x + primary_x * 0.7, secondary_y + primary_y * 0.7)
+	if star_preview != null:
+		star_preview.set_alignment_error(alignment_error)
+	if star_preview_label != null:
+		star_preview_label.text = GameManager.text(
+			"SYMMETRIC AIRY DISC" if aligned else "COMA: MIRROR AXIS OFFSET",
+			"对称艾里斑" if aligned else "彗差：镜面光轴偏移"
+		)
+		star_preview_label.add_theme_color_override("font_color", GREEN if aligned else Color(1.0, 0.72, 0.34))
 	score_label.text = GameManager.text("Collimation: %.0f%%" % score, "准直：%.0f%%" % score)
 	if aligned:
 		result_label.text = GameManager.text("Collimation complete. The reflected light path is centered.", "准直完成。反射光轴已经居中。")
@@ -141,6 +189,18 @@ func _build_reticle() -> void:
 	alignment_spot.add_theme_stylebox_override("panel", _ring_style(GOLD, 18))
 	reticle.add_child(alignment_spot)
 	alignment_cross = _label_to(reticle, "+", Vector2.ZERO, Vector2(36, 40), 30, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+
+	star_preview = CollimationStarPreview.new()
+	star_preview.name = "FocusedStarPreview"
+	star_preview.position = Vector2(12, 12)
+	star_preview.size = Vector2(148, 148)
+	star_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	reticle.add_child(star_preview)
+	var preview_title := _label_to(reticle, GameManager.text("FOCUSED STAR", "聚焦恒星像"), Vector2(10, 2), Vector2(152, 18), 10, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	preview_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	star_preview_label = _label_to(reticle, "", Vector2(4, 153), Vector2(164, 30), 9, Color(1.0, 0.72, 0.34), HORIZONTAL_ALIGNMENT_CENTER)
+	star_preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	star_preview_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 func _update_reticle(aligned: bool, immediate: bool) -> void:

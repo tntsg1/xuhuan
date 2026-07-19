@@ -20,6 +20,7 @@
 - One-to-one `410x410` naked-eye reticle with a `196 px` outer field boundary and a visible `64 px` center lock boundary.
 - Target approach and lock markers that follow the projected celestial object, remain transparent at center, and use compact target-derived sizing.
 - Focus, seeing, clouds, chromatic aberration, Earth-rotation drift, tracking-rate, hold-progress, and observation-quality feedback.
+- Collimation is now visible optical state: the bench previews asymmetric coma versus a symmetric Airy disc, while telescope targets retain score-driven coma, offset ghosting, and detail loss even at correct focus.
 - Shared interaction animations, first-use guidance, reduced-motion support, assembly snap feedback, collimation feedback, and observation success/failure feedback.
 - English/Chinese localization fixes, pre-quiz celestial-object guide, randomized A-D answers, and modal layer ordering fixes.
 - Current acceptance screenshots and regression tools under `artifacts/` and `tools/`.
@@ -53,6 +54,7 @@
 - Coordinate lock feedback: passed.
 - Animation feedback and reduced-motion acceptance: passed.
 - Environmental focus effects: passed.
+- Collimation optics feedback: passed.
 - Focus novice guidance: passed.
 - Assembly texture regression: passed.
 - Core task, story, teaching, and full-flow regressions: passed.

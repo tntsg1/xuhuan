@@ -330,6 +330,21 @@ func _is_diffuse_target() -> bool:
 	return type_lower.contains("nebula") or type_lower.contains("galaxy")
 
 
+func _collimation_severity() -> float:
+	if observation_mode != "telescope" or not bool(GameManager.current_level().get("requires_collimation", false)):
+		return 0.0
+	# Residual error at the normal acceptance threshold remains visible but
+	# modest; badly tilted mirrors quickly reach the full coma treatment.
+	return clampf((100.0 - GameManager.collimation_score()) / 50.0, 0.0, 1.0)
+
+
+func _collimation_direction() -> Vector2:
+	# Existing saves retain only alignment magnitude. Use a stable per-target
+	# direction so the aberration never flips while the player is observing.
+	var seed := absi(str(selected_object.get("id", "star")).hash())
+	return Vector2.from_angle(deg_to_rad(fmod(float(seed), 360.0)))
+
+
 # --------------------------------------------------------- conditions snapshot
 
 
@@ -989,8 +1004,13 @@ func _missing_required_parts_text() -> String:
 func _quality_shortfall_text() -> String:
 	# Focus is fine - name the REAL limiting factor so the player never
 	# blames the wrong thing (audit: story must match the mechanic).
-	# Priority (spec): focus (already excluded by caller) > cloud > seeing
-	# > sky brightness > aperture/stability.
+	# Priority: focus (already excluded by caller) > collimation > cloud >
+	# seeing > sky brightness > aperture/stability.
+	if _collimation_severity() > 0.28:
+		return GameManager.text(
+			"Focused. Comet tail = coma. Collimate.",
+			"已对焦。彗尾就是彗差；请准直。"
+		)
 	if cond_cloud_atten > 0.35:
 		return GameManager.text(
 			"Clouds are crossing the target. Wait for a gap.",
@@ -1457,7 +1477,10 @@ func _refresh_focus_ui() -> void:
 				# Sharp focus alone is not permission to identify - the
 				# overall quality (and, on drift levels, the hold timer) must
 				# also pass.
-				if drift_enabled and not is_hold_satisfied():
+				if _collimation_severity() > 0.28:
+					focus_state_label.text = GameManager.text("Coma: collimate mirrors.", "彗差：请准直镜面。")
+					focus_state_label.add_theme_color_override("font_color", Color(1.0, 0.62, 0.30))
+				elif drift_enabled and not is_hold_satisfied():
 					focus_state_label.text = _hold_progress_text()
 					focus_state_label.add_theme_color_override("font_color", Color(0.70, 0.85, 1.0))
 				elif is_quality_acceptable():
@@ -1494,6 +1517,8 @@ func _current_feedback() -> String:
 		)
 	if not _missing_required_parts().is_empty():
 		return _missing_required_parts_text()
+	if is_focus_acceptable() and _collimation_severity() > 0.28:
+		return _quality_shortfall_text()
 	if drift_enabled and not is_hold_satisfied():
 		return _hold_progress_text()
 	if not is_focus_acceptable():
@@ -1509,7 +1534,7 @@ func _current_feedback() -> String:
 		# are the dominant one.
 		var type_lower := str(selected_object.get("type_en", "")).to_lower()
 		var is_diffuse := type_lower.contains("nebula") or type_lower.contains("galaxy")
-		var environmental_cause := cond_cloud_atten > 0.35 or str(observation.get("seeing_label", "Good")) != "Good"
+		var environmental_cause := _collimation_severity() > 0.28 or cond_cloud_atten > 0.35 or str(observation.get("seeing_label", "Good")) != "Good"
 		if is_diffuse and not environmental_cause:
 			return GameManager.text(
 				"Focus aligned, but the image is too faint. Equip a bigger lens / stable mount at the Parts Cabinet, then reassemble.",
@@ -1578,7 +1603,11 @@ func _add_equipment_row(y: float) -> float:
 	var eyepiece_mm := int(eyepiece.get("focal_length_mm", 0))
 	var magnification := float(stats.get("magnification", 0.0))
 	var equip_line := "%dmm · %dmm · %sx" % [objective_mm, eyepiece_mm, snapped(magnification, 0.1)]
-	_plabel(equip_line, Vector2(CONTENT_X, y), Vector2(CONTENT_W, CONDITION_ROW_H), 9, Color(0.72, 0.80, 0.88))
+	var font_size := 9
+	if bool(GameManager.current_level().get("requires_collimation", false)):
+		equip_line += GameManager.text("  Coll. %d%%" % roundi(GameManager.collimation_score()), "  准直 %d%%" % roundi(GameManager.collimation_score()))
+		font_size = 8
+	_plabel(equip_line, Vector2(CONTENT_X, y), Vector2(CONTENT_W, CONDITION_ROW_H), font_size, Color(0.72, 0.80, 0.88))
 	return y + CONDITION_ROW_H
 
 
@@ -2173,7 +2202,8 @@ func _update_target_visuals() -> void:
 	if main_sprite == null:
 		return
 	_refresh_target_sprite()
-	if not requires_focus:
+	var collimation_severity := _collimation_severity()
+	if not requires_focus and collimation_severity <= 0.001:
 		return
 	# Defocus rendering, driven by SMOOTHED values so quantized inputs
 	# (slider steps, quality tiers) never snap the image around.
@@ -2182,18 +2212,24 @@ func _update_target_visuals() -> void:
 	var spread := visual_focus_error * 130.0
 	var cloud_mult := _cloud_alpha_multiplier()
 	var ghost_alpha := clampf(visual_focus_error * 2.6, 0.0, 0.55) * visual_base_alpha * cloud_mult
+	var collimation_blur := collimation_severity * (0.24 if _is_star_target() else 0.42)
+	var combined_blur := maxf(blur_weight, collimation_blur)
 	var origin := visual_target_center - main_sprite.size * display_scale * 0.5
 	if blur_overlay != null:
 		# Cross-fade: blurry photo dissolves into the sharp art.
 		# At full defocus the sharp base must be completely hidden. Leaving even
 		# a small clear-art alpha made some diffuse targets appear to switch back
 		# to their sharp texture after the focus input stopped.
-		main_sprite.modulate.a = visual_base_alpha * (1.0 - blur_weight) * cloud_mult
-		blur_overlay.modulate.a = visual_base_alpha * blur_weight * cloud_mult
+		main_sprite.modulate.a = visual_base_alpha * (1.0 - combined_blur) * cloud_mult
+		blur_overlay.modulate.a = visual_base_alpha * combined_blur * cloud_mult
 		blur_overlay.position = visual_target_center - blur_overlay.size * display_scale * 0.5
 	else:
 		main_sprite.modulate.a = visual_base_alpha * clampf(1.0 - visual_focus_error * 1.1, 0.30, 1.0) * cloud_mult
 	main_sprite.position = origin
+	ghost_a.scale = Vector2.ONE * display_scale
+	ghost_b.scale = Vector2.ONE * display_scale
+	ghost_a.rotation = 0.0
+	ghost_b.rotation = 0.0
 	if bool(GameManager.current_level().get("chromatic_aberration", false)):
 		# The separation remains visible at best focus. Extended targets need a
 		# wider split than star points so the colored rims read at the same scale.
@@ -2205,10 +2241,23 @@ func _update_target_visuals() -> void:
 		ghost_a.position = visual_target_center - ghost_a.size * display_scale * 0.5 + Vector2(chroma_offset, 0)
 		ghost_b.position = visual_target_center - ghost_b.size * display_scale * 0.5 - Vector2(chroma_offset, 0)
 	else:
-		ghost_a.modulate = Color(1, 1, 1, ghost_alpha)
-		ghost_a.position = visual_target_center - ghost_a.size * display_scale * 0.5 + Vector2(spread, spread * 0.6)
-		ghost_b.modulate = Color(1, 1, 1, ghost_alpha * 0.8)
-		ghost_b.position = visual_target_center - ghost_b.size * display_scale * 0.5 + Vector2(-spread * 0.8, spread * 0.4)
+		var coma_direction := _collimation_direction()
+		var coma_tail := coma_direction * collimation_severity * (34.0 if _is_star_target() else 20.0)
+		# Keep severe coma legible even when the quality verdict has already
+		# dimmed the core; otherwise the player only sees "dark" and cannot
+		# diagnose the mirror alignment problem from the star shape.
+		var coma_alpha := collimation_severity * (0.48 if _is_star_target() else 0.30) * maxf(visual_base_alpha, 0.65) * cloud_mult
+		ghost_a.modulate = Color(0.72, 0.88, 1.0, maxf(ghost_alpha, coma_alpha))
+		ghost_a.position = visual_target_center - ghost_a.size * display_scale * 0.5 + Vector2(spread, spread * 0.6) + coma_tail
+		ghost_b.modulate = Color(1.0, 0.78, 0.40, maxf(ghost_alpha * 0.8, coma_alpha * 0.55))
+		ghost_b.position = visual_target_center - ghost_b.size * display_scale * 0.5 + Vector2(-spread * 0.8, spread * 0.4) + coma_tail * 0.48
+		if _is_star_target() and collimation_severity > 0.01:
+			ghost_a.pivot_offset = ghost_a.size * 0.5
+			ghost_b.pivot_offset = ghost_b.size * 0.5
+			ghost_a.rotation = coma_direction.angle()
+			ghost_b.rotation = coma_direction.angle()
+			ghost_a.scale = Vector2(display_scale * (1.0 + collimation_severity * 0.55), display_scale * (1.0 - collimation_severity * 0.12))
+			ghost_b.scale = Vector2(display_scale * (1.0 + collimation_severity * 0.28), display_scale)
 
 
 func _setup_turbulence_materials() -> void:

@@ -416,6 +416,9 @@
 - Finder 使用 `finder_second_ring.png`，只保留从外向内第二个圆圈，移除中心金色区域、小十字和其他圆圈。
 - Scope 使用 `scope_center_tolerance.png`，中央参考框为正圆，不再出现纵向椭圆。
 - 详细 Telescope View 移除外部镜筒装饰框、中央十字和中心小圈，保留天体、云层、视宁度、漂移和调焦效果。
+- 准直台新增实时“聚焦恒星像”：镜轴偏移时显示方向一致的彗差拖尾，达到阈值后显示对称艾里斑与衍射环。
+- 主望远镜成像正式读取准直分数；低分时恒星产生单向彗尾，行星、月球、星云和星系出现偏心重影与细节损失，满分时效果消失。
+- 调焦与准直诊断分离：机械焦点正确但存在彗差时，界面明确提示返回准直镜面，不再误导玩家继续调焦。
 - 重新接入透明版 azimuth/altitude pointer、Eye icon、tracking knob、target approach ring 和 target lock ring。
 
 **目标反馈最终规则**
