@@ -693,6 +693,19 @@
       "processing": "generated edit + chroma removal + nearest-neighbor compositing",
       "resize_filter": "nearest-neighbor",
       "usage": "Finder overlay retaining only the second circle"
+    },
+    {
+      "source_name": null,
+      "derived_from": "3.1.png",
+      "runtime_asset": "assets/ui/observation/suc/processed/scope_center_tolerance.png",
+      "runtime_size": [
+        541,
+        560
+      ],
+      "runtime_has_alpha": true,
+      "processing": "generated edit + chroma removal + nearest-neighbor compositing",
+      "resize_filter": "nearest-neighbor",
+      "usage": "Scope overlay with a center frame matching the real lock tolerance"
     }
   ]
 }

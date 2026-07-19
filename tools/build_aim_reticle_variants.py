@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[1]
@@ -47,8 +47,42 @@ def build_eye_large_center() -> None:
     base.save(PROCESSED_DIR / "eye_large_center.png", optimize=True)
 
 
+def build_scope_tolerance_center() -> None:
+    base = Image.open(PROCESSED_DIR / "3.png").convert("RGBA")
+    center_x = base.width // 2
+    center_y = base.height // 2
+
+    # Scope projects 6x4 degrees into 630x560 px. The real 0.5-degree
+    # centering tolerance therefore occupies about 50x67 px from center.
+    # Clear that exact acceptance area and draw its brass boundary so the
+    # artwork agrees with the gameplay lock condition.
+    inner_rx = 52
+    inner_ry = 69
+    pixels = base.load()
+    for y in range(center_y - inner_ry, center_y + inner_ry + 1):
+        for x in range(center_x - inner_rx, center_x + inner_rx + 1):
+            normalized = ((x - center_x) / inner_rx) ** 2 + ((y - center_y) / inner_ry) ** 2
+            if normalized <= 1.0:
+                pixels[x, y] = (0, 0, 0, 0)
+
+    draw = ImageDraw.Draw(base)
+    draw.ellipse(
+        (center_x - 55, center_y - 72, center_x + 55, center_y + 72),
+        outline=(82, 57, 24, 255),
+        width=3,
+    )
+    draw.ellipse(
+        (center_x - 53, center_y - 70, center_x + 53, center_y + 70),
+        outline=(246, 218, 142, 255),
+        width=2,
+    )
+    base.save(PROCESSED_DIR / "scope_center_tolerance.png", optimize=True)
+
+
 if __name__ == "__main__":
     build_finder_ring()
     build_eye_large_center()
+    build_scope_tolerance_center()
     print(PROCESSED_DIR / "finder_second_ring.png")
     print(PROCESSED_DIR / "eye_large_center.png")
+    print(PROCESSED_DIR / "scope_center_tolerance.png")

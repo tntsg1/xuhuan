@@ -44,7 +44,7 @@ func _setup_level() -> void:
 func _test_assets_and_layers() -> void:
 	_check(str(ProjectSettings.get_setting("display/window/stretch/aspect", "")) == "keep", "window scaling preserves pixel-art aspect ratio")
 	var names := [
-		"1.png", "2.png", "3.png", "eye_large_center.png", "finder_second_ring.png",
+		"1.png", "2.png", "3.png", "eye_large_center.png", "finder_second_ring.png", "scope_center_tolerance.png",
 		"azimuth_scale_shell.png", "altitude_scale_shell.png",
 		"azimuth_tick_major.png", "azimuth_tick_minor.png",
 		"altitude_tick_major.png", "altitude_tick_minor.png",
@@ -65,7 +65,7 @@ func _test_assets_and_layers() -> void:
 	var reticle := view.get("scope_reticle_layer") as TextureRect
 	_check(reticle != null and reticle.get_rect().get_center().distance_to(Vector2(315.0, 280.0)) < 0.1, "reticle center matches the celestial projection center")
 	_check(reticle != null and reticle.position.y + reticle.size.y <= 486.0, "reticle stays above the bottom guidance band")
-	for file_name in ["eye_large_center.png", "finder_second_ring.png", "3.png", "target_approach_ring.png", "target_lock_ring.png"]:
+	for file_name in ["eye_large_center.png", "finder_second_ring.png", "scope_center_tolerance.png", "target_approach_ring.png", "target_lock_ring.png"]:
 		var image: Image = (load(ASSET_DIR + file_name) as Texture2D).get_image()
 		var center := Vector2i(image.get_width() / 2, image.get_height() / 2)
 		_check(image.get_pixelv(center).a < 0.15, "%s keeps the celestial target center transparent" % file_name)
@@ -73,6 +73,11 @@ func _test_assets_and_layers() -> void:
 	_check(_visible_pixels_outside_annulus(finder_image, 105.0, 122.0) == 0, "Finder artwork contains only the second circular ring")
 	var eye_image: Image = (load(ASSET_DIR + "eye_large_center.png") as Texture2D).get_image()
 	_check(_visible_pixels_in_annulus(eye_image, 31.0, 44.0) > 80, "Eye artwork contains the enlarged center aperture")
+	var scope_image: Image = (load(ASSET_DIR + "scope_center_tolerance.png") as Texture2D).get_image()
+	var scope_center := Vector2i(scope_image.get_width() / 2, scope_image.get_height() / 2)
+	_check(scope_image.get_pixelv(scope_center + Vector2i(50, 0)).a < 0.15, "Scope center frame contains the horizontal lock tolerance")
+	_check(scope_image.get_pixelv(scope_center + Vector2i(0, 67)).a < 0.15, "Scope center frame contains the vertical lock tolerance")
+	_check(104.0 >= 52.0 * 4.0 / 3.0, "Scope center frame is at least one third wider than the rendered Moon")
 	var object_icons: Dictionary = view.get("object_icons")
 	if not object_icons.is_empty():
 		var first_icon := object_icons.values()[0] as TextureRect
@@ -150,7 +155,7 @@ func _test_modes() -> void:
 		var info: Dictionary = view.call("_object_visual_for_mode", target_object)
 		target_sizes.append(float(info.get("size_px", 0.0)))
 		var reticle := view.get("scope_reticle_layer") as TextureRect
-		var expected_path := "res://assets/ui/observation/suc/processed/%s.png" % ({"naked_eye": "eye_large_center", "finder": "finder_second_ring", "telescope": "3"}[mode])
+		var expected_path := "res://assets/ui/observation/suc/processed/%s.png" % ({"naked_eye": "eye_large_center", "finder": "finder_second_ring", "telescope": "scope_center_tolerance"}[mode])
 		_check(reticle != null and reticle.texture != null and reticle.texture.resource_path == expected_path, "%s uses exactly one supplied reticle texture" % mode)
 	_check(fovs == [120.0, 28.0, 6.0], "Eye/Finder/Scope FOV values remain 120/28/6")
 	_check(target_sizes[0] < target_sizes[1] and target_sizes[1] < target_sizes[2], "target is smallest in Eye and largest in Scope")

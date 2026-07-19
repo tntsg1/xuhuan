@@ -32,7 +32,7 @@ const LOCK_RING_TEXTURE := OBS_UI_DIR + "target_lock_ring.png"
 const MODE_RETICLE_TEXTURES := {
 	"naked_eye": OBS_UI_DIR + "eye_large_center.png",
 	"finder": OBS_UI_DIR + "finder_second_ring.png",
-	"telescope": OBS_UI_DIR + "3.png"
+	"telescope": OBS_UI_DIR + "scope_center_tolerance.png"
 }
 
 const Z_SKY := 0

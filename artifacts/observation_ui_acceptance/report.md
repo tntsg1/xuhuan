@@ -27,7 +27,7 @@ Final mode variants:
 
 - Eye uses `eye_large_center.png` (`550x560`): latest `1.2` artwork with only its center aperture enlarged to about 78 source pixels.
 - Finder uses `finder_second_ring.png` (`560x560`): only the second circle remains; the outer circle, center gold circle, crosshair, ticks, dots, and ornaments are transparent.
-- Scope continues to use `3.png` only on the sky aiming page. The detailed `Telescope View` deliberately has no barrel/reticle overlay, crosshair, or center circle.
+- Scope uses `scope_center_tolerance.png`, derived from `3.png` without overwriting it. Its transparent center frame is approximately `104x138` pixels, matching the projected `0.5 degree` lock tolerance (`6x4` degree FOV) and exceeding the `52 px` Scope Moon diameter by more than one third. The detailed `Telescope View` deliberately has no barrel/reticle overlay, crosshair, or center circle.
 
 ## Scales and pointers
 

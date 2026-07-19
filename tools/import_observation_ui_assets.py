@@ -202,6 +202,7 @@ def create_reticle_variants(records: list[dict]) -> None:
     variants = {
         "eye_large_center.png": ("1.2.png + generated center-ring crop", "Eye overlay with enlarged transparent target aperture"),
         "finder_second_ring.png": ("generated crop from 2.png", "Finder overlay retaining only the second circle"),
+        "scope_center_tolerance.png": ("3.1.png", "Scope overlay with a center frame matching the real lock tolerance"),
     }
     for name, (derived_from, usage) in variants.items():
         path = PROCESSED_DIR / name
