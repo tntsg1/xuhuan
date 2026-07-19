@@ -1,6 +1,7 @@
 # Godot
 .godot/
 export/
+build/
 *.tmp
 
 # Pixel Observatory local secrets
