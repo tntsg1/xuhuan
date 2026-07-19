@@ -1,80 +1,93 @@
-# Observation UI Asset Integration
+# Observation UI Acceptance Report
 
-## Source handling
+## Latest source mapping
 
 - Source directory: `C:/Users/tntsg/Downloads/tw/suc`
-- Untouched copies: `assets/ui/observation/suc/source/`
+- Untouched project copies: `assets/ui/observation/suc/source/`
 - Runtime assets: `assets/ui/observation/suc/processed/`
-- Full filename, SHA-256, source dimensions, alpha state, crop rectangle, runtime dimensions, and use mapping: `assets/ui/observation/suc/asset_manifest.json`
-- All runtime textures use nearest-neighbor filtering.
+- Full SHA-256, source dimensions, alpha state, crop rectangle, runtime dimensions, and filename mapping: `assets/ui/observation/suc/asset_manifest.json`
+- Latest reticle mapping:
+  - `1.2.png` -> `processed/1.png` (Eye), SHA-256 `e4eb046e...7500f0`
+  - `2.png` -> `processed/2.png` (Finder), SHA-256 `8910587b...8b72ed`
+  - `3.1.png` -> `processed/3.png` (Scope), SHA-256 `8d57d2c9...e932a`
 
-The 14 individual controls were integrated: azimuth/altitude bars, pointers and knobs; Eye/Finder/Scope icons; approach/lock rings; focus knob; tracking knob; and tracking-enabled icon. The long `ChatGPT Image 2026...png` composite is archived only because it contains baked coordinates, Chinese instructions, a fixed reticle, and fixed values.
+`1.2.png` is a 1024x1024 RGBA image with native transparency, which is preserved directly. `2.png` and `3.1.png` are 1254x1254 RGB images with a baked checkerboard, so the importer reconstructs alpha for those two without modifying the originals. Every runtime texture uses nearest-neighbor filtering.
 
-## Scale implementation
+## Reticle processing
 
-- Top shell: `Rect2(80, 33, 630, 66)`
-- Live azimuth band: `Rect2(94, 42, 602, 42)`
-- Azimuth values: current aim `+/- FOV/2`, wrapped continuously through `0..360`.
-- Target pointer center range: screen X `118.08..671.92`.
-- Left shell: `Rect2(8, 103, 76, 560)`
-- Live altitude band: `Rect2(23, 120, 44, 530)`
-- Altitude values: current aim `+/- FOV/2`, clipped to `0..90`.
-- Target pointer center range: screen Y `141.2..628.8`.
+| Mode | Source crop | Runtime size | Screen rect |
+| --- | --- | --- | --- |
+| Eye | `(10, 0, 1007, 1016)` | `550x560` | `(198, 178, 410, 410)` |
+| Finder | `(82, 66, 1172, 1143)` | `560x553` | `(198, 178, 410, 410)` |
+| Scope | `(43, 0, 1209, 1208)` | `541x560` | `(198, 178, 410, 410)` |
 
-The supplied bars do not contain a central pointer, but they do contain fixed decorative ticks. Runtime shell derivatives remove those ticks. Major/minor tick glyphs are cropped from the supplied art and placed at live angle positions, so the texture marks and dynamic labels move together. The separate target pointers are used once per axis; no duplicate pointer is drawn.
+The screen rect is `VIEW_RECT (88, 103, 630, 560)` plus local `AIM_RETICLE_RECT (110, 75, 410, 410)`. Its center is `(403, 383)`, exactly matching the celestial projection center. All three centers are transparent; Scope also has no gray/black square or opaque optical disk. The reticles stop above the guidance band.
 
-## Cropping and resizing
+## Scales and pointers
 
-All 14 individual source controls were alpha-trimmed. RGB files had their baked neutral/checkerboard backgrounds recovered to transparency. Exact crop rectangles are in the manifest.
+- Top shell: screen `Rect2(80, 33, 630, 66)`.
+- Live azimuth band: screen `Rect2(94, 42, 602, 42)`.
+- Azimuth pointer center range: screen X `94..696` for `0..359.999` degrees; tip faces down.
+- Left shell: screen `Rect2(8, 103, 76, 560)`.
+- Live altitude band: screen `Rect2(23, 120, 44, 530)`.
+- Altitude pointer center range: screen Y `650..120` for `0..90` degrees; tip faces right.
+- Azimuth values span current aim `+/- FOV/2` and wrap continuously through 359/0.
+- Altitude values span current aim `+/- FOV/2` and are clipped to `0..90`.
 
-Derived scale files:
+The supplied bars are used as source art. Their fixed decorative ticks are removed for the runtime shells; major/minor tick glyphs are cropped from the same art and placed at live angle positions. The scale textures, labels, pointers, Az/Alt values, and knobs therefore move from the same current aim data. Only one independent pointer exists per axis.
 
-- `azimuth_scale_shell.png`: fixed ticks removed from processed bar.
-- `altitude_scale_shell.png`: fixed ticks removed from processed bar.
-- `azimuth_tick_major.png`: 2x9 source-art glyph.
-- `azimuth_tick_minor.png`: 1x6 source-art glyph.
-- `altitude_tick_major.png`: 9x2 source-art glyph.
-- `altitude_tick_minor.png`: 6x1 source-art glyph.
+## Runtime assets
 
-Runtime maximums after nearest-neighbor resizing:
+All 17 individual controls are integrated: three reticles; azimuth/altitude bars, pointers, and knobs; three mode icons; approach/lock rings; focus knob; tracking knob; and tracking-enabled icon. All were transparent-trimmed and size-limited with nearest-neighbor resizing. Exact values are in the manifest.
 
-- Azimuth/altitude scale bars: 760x80 and 92x680.
-- Pointers: 22x128 and 19x128.
-- Azimuth/altitude knobs: 160x149 and 113x160.
-- Focus/tracking knobs: 192x190 and 192x192.
-- Mode icons: Eye 192x111, Finder 192x174, Scope 177x192.
-- Target rings: approach 256x250, lock 255x256.
-- Tracking-enabled icon: 160x152.
+The long `ChatGPT Image 2026...png` composite remains archive-only because it contains baked coordinates, instructions, values, and a fixed reticle. No supplied cloud/seeing overlay exists, so the existing project cloud textures and turbulence shader remain in use; no placeholder was generated.
 
-## Modes and effects
+## Modes and state logic
 
-- Eye FOV: `120 x 70` degrees; smallest/dimmest target; faint open search reticle.
-- Finder FOV: `28 x 18` degrees; medium target; cyan finder ring/crosshair; installation and IJKL calibration gates retained.
-- Scope FOV: `6 x 4` degrees; largest target; circular aperture clipping and detailed scope reticle.
+- Eye FOV: `120x70` degrees; smallest/dimmest target; no focus control.
+- Finder FOV: `28x18` degrees; medium locating mark; installation and IJKL calibration gates retained.
+- Scope FOV: `6x4` degrees; largest target; focus, seeing, cloud, drift, tracking, light-pollution, and identification systems retained.
+- Target outside view: direction guidance, no strong target ring, Observe disabled.
+- Target near center: cyan approach ring follows the projected target, Observe disabled.
+- Target centered: approach ring is replaced by the gold lock ring, Observe enabled.
+- Tracking: Off, Matched 1x, Too slow, and Too fast are distinct; rates below/above 1x preserve forward/reverse residual drift.
+- Focus: target blur/ghosting and the focus knob use the same `focus_error` and tolerance used by quality evaluation.
 
-Clouds remain clipped to `VIEW_RECT (88, 103, 630, 560)` and cannot enter the right panel. No cloud or seeing art existed in `suc`, so the existing project cloud textures and turbulence mechanics remain in use. Focus and tracking knobs rotate with their real values.
+Layer order inside the clipped sky viewport is: sky -> celestial objects -> cloud/seeing effects -> target feedback ring -> one mode reticle -> dynamic readouts -> guidance. Mission/Selected panels and action buttons remain outside that viewport.
 
-At 1280x720, `canvas_items` uses aspect `keep`; the 1024x768 pixel canvas is scaled to 960x720 and centered with 160px side bars, avoiding non-uniform distortion.
+## Screenshots
+
+- `01_mode_naked_eye.png`
+- `01_mode_finder.png`
+- `01_mode_telescope.png`
+- `02_target_outside_view.png`
+- `03_target_approach.png`
+- `04_target_locked.png`
+- `05_azimuth_000.png`, `090`, `180`, `270`
+- `06_altitude_00.png`, `30`, `60`, `90`
+- `07_tracking_off.png`
+- `08_tracking_matched.png`
+- `09_tracking_too_fast.png`
+- `10_focus_defocused.png`
+- `11_focus_sharp.png`
+- `1280x720/sky_finder_1280x720.png`
 
 ## Verification
 
-- Godot headless editor/import: exit 0.
+- Godot 4.7 headless editor/import: pass, exit 0.
 - Observation UI acceptance: pass.
-- Sky view math/catalog: pass.
-- Newtonian observation parity: pass.
+- L25 reticle regression: pass.
+- Newtonian reticle regression: pass.
+- Identification quiz and scope layering: pass.
+- Coordinate approach/lock feedback: pass.
+- Animation feedback and reduced-motion behavior: pass.
 - Environmental focus effects: pass.
-- Identify quiz and scope layer: pass.
-- Focus novice guidance: pass.
-- Core task flow: pass.
-- Full flow test: pass.
-- Real save restored and re-read at level 37.
+- Nebula focus consistency: pass.
+- Telescope modal layering: pass.
+- Newtonian observation parity: pass.
+- Sky guidance: pass.
+- Story flow: pass.
+- Teaching flow: pass.
+- 1280x720 aspect-preserving window capture: pass; 1024x768 canvas is centered at 960x720 with 160px side bars.
 
-Screenshots:
-
-- `1024x768/ts_naked_eye.png`
-- `1024x768/ts_finder.png`
-- `1024x768/ts_telescope_centered.png`
-- `1280x720/sky_finder_1280x720.png`
-- `../chromatic_comparison/l27_newtonian_clean_vega.png` (focus knob and telescope view)
-
-No new observation UI asset must be generated for this integration. Optional future art would be dedicated cloud/seeing overlays; none were supplied, so no placeholder was created.
+No core level order, observation calculation, story condition, or save schema was changed. No additional observation UI asset is required for this integration.

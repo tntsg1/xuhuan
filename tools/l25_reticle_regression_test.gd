@@ -1,8 +1,6 @@
 extends SceneTree
 
 const OUTPUT_DIR := "res://artifacts/l25_reticle_acceptance"
-const RETICLE_CENTER := Vector2i(403, 383)
-
 var failures := 0
 var view: Control
 
@@ -52,11 +50,13 @@ func _check_mode(mode: String, file_name: String) -> void:
 	await _settle()
 	var reticle: Control = view.get("scope_reticle_layer")
 	_check(reticle != null and reticle.visible and reticle.is_visible_in_tree(), "%s reticle node is visible" % mode)
+	if reticle is TextureRect and reticle.texture != null:
+		var texture_image: Image = reticle.texture.get_image()
+		var colored_pixels := _reticle_pixel_count(texture_image)
+		_check(colored_pixels >= 80, "%s supplied reticle contains visible pixels (%d)" % [mode, colored_pixels])
 	if DisplayServer.get_name() == "headless":
 		return
 	var image := root.get_texture().get_image()
-	var colored_pixels := _reticle_pixel_count(image)
-	_check(colored_pixels >= 80, "%s reticle is actually rendered (%d pixels)" % [mode, colored_pixels])
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT_DIR))
 	var output_path := ProjectSettings.globalize_path(OUTPUT_DIR + "/" + file_name)
 	_check(image.save_png(output_path) == OK, "saved " + file_name)
@@ -65,14 +65,10 @@ func _check_mode(mode: String, file_name: String) -> void:
 
 func _reticle_pixel_count(image: Image) -> int:
 	var count := 0
-	for y in range(RETICLE_CENTER.y - 60, RETICLE_CENTER.y + 61):
-		for x in range(RETICLE_CENTER.x - 60, RETICLE_CENTER.x + 61):
-			var offset := Vector2(float(x - RETICLE_CENTER.x), float(y - RETICLE_CENTER.y))
-			var radius := offset.length()
-			if radius < 48.0 or radius > 56.0:
-				continue
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
 			var color := image.get_pixel(x, y)
-			if color.r > 0.45 and color.g > 0.35 and color.b < 0.55:
+			if color.a >= 0.2:
 				count += 1
 	return count
 

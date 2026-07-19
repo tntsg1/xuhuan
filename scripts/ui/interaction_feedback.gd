@@ -291,8 +291,19 @@ func tutorial_highlight_once(target: Control, key: String, text: String, parent:
 	overlay.add_child(frame)
 	var label := Label.new()
 	label.text = text
-	label.position = Vector2(clampf(frame.position.x, 30.0, 650.0), clampf(frame.position.y - 54.0, 24.0, 690.0))
-	label.size = Vector2(340, 44)
+	var parent_size := parent.size
+	var label_size := Vector2(minf(340.0, parent_size.x - 60.0), 52.0)
+	var label_x := frame.position.x + frame.size.x * 0.5 - label_size.x * 0.5
+	if frame.position.x > parent_size.x * 0.58:
+		label_x = frame.position.x - label_size.x - 18.0
+	elif frame.position.x + frame.size.x < parent_size.x * 0.42:
+		label_x = frame.position.x + frame.size.x + 18.0
+	label_x = clampf(label_x, 30.0, parent_size.x - label_size.x - 30.0)
+	var label_y := frame.position.y - label_size.y - 10.0
+	if label_y < 24.0:
+		label_y = frame.position.y + frame.size.y + 10.0
+	label.position = Vector2(label_x, clampf(label_y, 24.0, parent_size.y - label_size.y - 24.0))
+	label.size = label_size
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

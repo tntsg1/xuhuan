@@ -21,6 +21,7 @@ func _initialize() -> void:
 	await process_frame
 	_test_assets_and_layers()
 	_test_live_scales()
+	_test_pointer_extremes()
 	_test_modes()
 	_test_availability_and_environment()
 	_test_target_lock_alignment()
@@ -43,6 +44,7 @@ func _setup_level() -> void:
 func _test_assets_and_layers() -> void:
 	_check(str(ProjectSettings.get_setting("display/window/stretch/aspect", "")) == "keep", "window scaling preserves pixel-art aspect ratio")
 	var names := [
+		"1.png", "2.png", "3.png",
 		"azimuth_scale_shell.png", "altitude_scale_shell.png",
 		"azimuth_tick_major.png", "azimuth_tick_minor.png",
 		"altitude_tick_major.png", "altitude_tick_minor.png",
@@ -60,6 +62,20 @@ func _test_assets_and_layers() -> void:
 	_check(not alt_ticks.is_empty() and alt_ticks[0] is TextureRect, "altitude uses supplied texture ticks")
 	_check(view.get("az_target_pointer") is TextureRect, "one independent azimuth pointer exists")
 	_check(view.get("alt_target_pointer") is TextureRect, "one independent altitude pointer exists")
+	var reticle := view.get("scope_reticle_layer") as TextureRect
+	_check(reticle != null and reticle.get_rect().get_center().distance_to(Vector2(315.0, 280.0)) < 0.1, "reticle center matches the celestial projection center")
+	_check(reticle != null and reticle.position.y + reticle.size.y <= 486.0, "reticle stays above the bottom guidance band")
+	for file_name in ["1.png", "2.png", "3.png", "target_approach_ring.png", "target_lock_ring.png"]:
+		var image: Image = (load(ASSET_DIR + file_name) as Texture2D).get_image()
+		var center := Vector2i(image.get_width() / 2, image.get_height() / 2)
+		_check(image.get_pixelv(center).a < 0.15, "%s keeps the celestial target center transparent" % file_name)
+	var object_icons: Dictionary = view.get("object_icons")
+	if not object_icons.is_empty():
+		var first_icon := object_icons.values()[0] as TextureRect
+		_check(first_icon.z_index < (view.get("cloud_layer") as Control).z_index, "atmosphere is above celestial targets")
+	_check((view.get("cloud_layer") as Control).z_index < reticle.z_index, "atmosphere remains below aiming artwork")
+	_check(reticle.z_index < (view.get("az_readout") as Label).z_index, "dynamic readouts remain above aiming artwork")
+	_check((view.get("az_readout") as Label).z_index < (view.get("guidance_banner") as Label).z_index, "bottom guidance remains the top sky-viewport layer")
 
 
 func _first_visible_tick_position(property_name: String) -> Vector2:
@@ -101,6 +117,25 @@ func _test_live_scales() -> void:
 			_check(tick.position.y >= -1.0 and tick.position.y + tick.size.y <= 531.0, "altitude tick remains clipped to its band")
 
 
+func _test_pointer_extremes() -> void:
+	var az_pointer := view.get("az_target_pointer") as TextureRect
+	var alt_pointer := view.get("alt_target_pointer") as TextureRect
+	_check(az_pointer.flip_v, "azimuth pointer tip is oriented downward")
+	_check(is_equal_approx(alt_pointer.rotation, PI * 0.5), "altitude pointer tip is oriented toward the sky window")
+	var az_positions: Array[float] = []
+	for azimuth in [0.0, 90.0, 180.0, 270.0, 359.0]:
+		view.set("display_azimuth", azimuth)
+		view.call("_update_scale_asset_state")
+		az_positions.append(az_pointer.position.x)
+	_check(az_positions[0] < az_positions[1] and az_positions[1] < az_positions[2] and az_positions[2] < az_positions[3] and az_positions[3] < az_positions[4], "Az 0/90/180/270/359 move the pointer monotonically across the scale")
+	var alt_positions: Array[float] = []
+	for altitude in [0.0, 30.0, 60.0, 90.0]:
+		view.set("display_altitude", altitude)
+		view.call("_update_scale_asset_state")
+		alt_positions.append(alt_pointer.position.y)
+	_check(alt_positions[0] > alt_positions[1] and alt_positions[1] > alt_positions[2] and alt_positions[2] > alt_positions[3], "Alt 0/30/60/90 move upward without reversing")
+
+
 func _test_modes() -> void:
 	var fovs := []
 	var target_sizes := []
@@ -110,8 +145,9 @@ func _test_modes() -> void:
 		fovs.append(float(view.get("fov_x")))
 		var info: Dictionary = view.call("_object_visual_for_mode", target_object)
 		target_sizes.append(float(info.get("size_px", 0.0)))
-		var reticle: Control = view.get("scope_reticle_layer")
-		_check(reticle != null and str(reticle.get("mode")) == mode, "%s has its own reticle state" % mode)
+		var reticle := view.get("scope_reticle_layer") as TextureRect
+		var expected_path := "res://assets/ui/observation/suc/processed/%s.png" % ({"naked_eye": "1", "finder": "2", "telescope": "3"}[mode])
+		_check(reticle != null and reticle.texture != null and reticle.texture.resource_path == expected_path, "%s uses exactly one supplied reticle texture" % mode)
 	_check(fovs == [120.0, 28.0, 6.0], "Eye/Finder/Scope FOV values remain 120/28/6")
 	_check(target_sizes[0] < target_sizes[1] and target_sizes[1] < target_sizes[2], "target is smallest in Eye and largest in Scope")
 
@@ -135,6 +171,13 @@ func _test_target_lock_alignment() -> void:
 	view.set("telescope_azimuth", float(target.get("azimuth", 180.0)))
 	view.set("telescope_altitude", float(target.get("altitude", 45.0)))
 	view.call("_set_view_mode", "telescope")
+	view.set("telescope_azimuth", wrapf(float(target.get("azimuth", 180.0)) + 1.0, 0.0, 360.0))
+	view.call("_rebuild_view")
+	var approach_ring := view.get("target_state_ring") as TextureRect
+	_check(str(view.get("target_lock_state")) == "approach" and approach_ring != null and approach_ring.texture.resource_path.ends_with("target_approach_ring.png"), "near target shows only the approach ring")
+	_check((view.get("observe_button") as Button).disabled, "Observe stays disabled before target lock")
+
+	view.set("telescope_azimuth", float(target.get("azimuth", 180.0)))
 	view.call("_rebuild_view")
 	var icons: Dictionary = view.get("object_icons")
 	var ring: TextureRect = view.get("target_state_ring")
@@ -144,6 +187,8 @@ func _test_target_lock_alignment() -> void:
 		var icon_center := icon.position + icon.size * icon.scale * 0.5
 		var ring_center := ring.position + ring.size * 0.5
 		_check(icon_center.distance_to(ring_center) < 1.5, "target lock ring matches the projected celestial position")
+		_check(ring.texture.resource_path.ends_with("target_lock_ring.png"), "centered target replaces approach with the lock ring")
+	_check(not (view.get("observe_button") as Button).disabled, "Observe enables from the same centered-target condition")
 
 
 func _test_language_and_input_math() -> void:

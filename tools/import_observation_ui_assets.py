@@ -18,6 +18,9 @@ PROCESSED_DIR = ASSET_ROOT / "processed"
 # performs the final nearest-neighbour presentation without loading 1254px UI
 # icons into 50px controls.
 RUNTIME_LIMITS = {
+    "1.2.png": (560, 560),
+    "2.png": (560, 560),
+    "3.1.png": (560, 560),
     "azimuth_scale_bar.png": (760, 96),
     "altitude_scale_bar.png": (104, 680),
     "azimuth_pointer.png": (96, 128),
@@ -35,6 +38,9 @@ RUNTIME_LIMITS = {
 }
 
 USAGE = {
+    "1.2.png": "Naked Eye central transparent aiming overlay",
+    "2.png": "Finder Scope central transparent aiming overlay",
+    "3.1.png": "Main Telescope central transparent aiming overlay",
     "azimuth_scale_bar.png": "top azimuth scale shell",
     "altitude_scale_bar.png": "left altitude scale shell",
     "azimuth_pointer.png": "horizontal target-offset pointer",
@@ -50,6 +56,12 @@ USAGE = {
     "target_lock_ring.png": "centered/success gold ring",
     "tracking_enabled_icon.png": "tracking-enabled status icon",
     "ChatGPT Image 2026年7月18日 21_22_48.png": "layout reference only; contains baked values and text",
+}
+
+RETICLE_RUNTIME_NAMES = {
+    "1.2.png": "1.png",
+    "2.png": "2.png",
+    "3.1.png": "3.png",
 }
 
 DERIVED_USAGE = {
@@ -74,7 +86,12 @@ def alpha_bbox(alpha: Image.Image, threshold: int = 8):
     return alpha.point(lambda value: 255 if value >= threshold else 0).getbbox()
 
 
-def remove_baked_neutral_background(image: Image.Image) -> Image.Image:
+def remove_baked_neutral_background(
+    image: Image.Image,
+    saturation_threshold: int = 13,
+    dilation_size: int = 9,
+    clear_center_radius: int = 0,
+) -> Image.Image:
     """Recover transparency from generated RGB art with a gray/checkerboard background.
 
     The supplied foreground uses saturated navy, brass and cyan. We retain those
@@ -87,11 +104,22 @@ def remove_baked_neutral_background(image: Image.Image) -> Image.Image:
     maximum = ImageChops.lighter(ImageChops.lighter(red, green), blue)
     minimum = ImageChops.darker(ImageChops.darker(red, green), blue)
     saturation = ImageChops.subtract(maximum, minimum)
-    color_seed = saturation.point(lambda value: 255 if value >= 13 else 0)
+    color_seed = saturation.point(lambda value: 255 if value >= saturation_threshold else 0)
     # Preserve dark engraved/outlined pixels only when they are close to the
     # saturated foreground; neutral generated backgrounds remain transparent.
-    silhouette = color_seed.filter(ImageFilter.MaxFilter(9))
+    silhouette = color_seed.filter(ImageFilter.MaxFilter(dilation_size))
     alpha = ImageChops.lighter(color_seed, silhouette)
+
+    # Scope art needs an unobstructed optical center so a locked planet is
+    # never covered by the reticle's decorative hub.
+    if clear_center_radius > 0:
+        pixels = alpha.load()
+        center_x, center_y = image.width // 2, image.height // 2
+        radius_squared = clear_center_radius * clear_center_radius
+        for y in range(max(0, center_y - clear_center_radius), min(image.height, center_y + clear_center_radius + 1)):
+            for x in range(max(0, center_x - clear_center_radius), min(image.width, center_x + clear_center_radius + 1)):
+                if (x - center_x) ** 2 + (y - center_y) ** 2 <= radius_squared:
+                    pixels[x, y] = 0
     rgba = rgb.convert("RGBA")
     rgba.putalpha(alpha)
     return rgba
@@ -203,21 +231,37 @@ def main() -> None:
                 records.append(record)
                 continue
 
-            rgba = clean_alpha(opened) if has_alpha else remove_baked_neutral_background(opened)
+            # All three central reticles contain a generated neutral matte.
+            # Reconstruct alpha from the brass/cyan artwork so neither the
+            # light nor dark checkerboard reaches the game.
+            if source.name == "3.1.png":
+                rgba = remove_baked_neutral_background(opened, saturation_threshold=16, dilation_size=7, clear_center_radius=24)
+            elif source.name == "2.png":
+                rgba = remove_baked_neutral_background(opened)
+            else:
+                rgba = clean_alpha(opened) if has_alpha else remove_baked_neutral_background(opened)
             bbox = alpha_bbox(rgba.getchannel("A"))
             if bbox is None:
                 raise RuntimeError(f"No foreground recovered from {source.name}")
             cropped = rgba.crop(bbox)
             runtime = fit_nearest(cropped, RUNTIME_LIMITS[source.name])
-            runtime_path = PROCESSED_DIR / source.name
+            runtime_name = RETICLE_RUNTIME_NAMES.get(source.name, source.name)
+            runtime_path = PROCESSED_DIR / runtime_name
             runtime.save(runtime_path, optimize=True)
             record.update({
                 "runtime_asset": runtime_path.relative_to(PROJECT_DIR).as_posix(),
+                "runtime_name": runtime_name,
                 "crop_rect": list(bbox),
                 "cropped_size": list(cropped.size),
                 "runtime_size": list(runtime.size),
                 "runtime_has_alpha": True,
-                "processing": "alpha threshold + transparent trim" if has_alpha else "neutral background removal + transparent trim",
+                "processing": (
+                    "native alpha threshold + transparent trim"
+                    if source.name == "1.2.png"
+                    else "neutral matte removal + transparent trim"
+                    if source.name in RETICLE_RUNTIME_NAMES
+                    else ("alpha threshold + transparent trim" if has_alpha else "neutral background removal + transparent trim")
+                ),
                 "resize_filter": "nearest-neighbor",
             })
             records.append(record)
@@ -231,7 +275,7 @@ def main() -> None:
     }
     manifest_path = ASSET_ROOT / "asset_manifest.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Imported 15 source PNG files and {len(DERIVED_USAGE)} derived runtime files")
+    print(f"Imported {len(list(SOURCE_DIR.glob('*.png')))} source PNG files and {len(DERIVED_USAGE)} derived runtime files")
     print(manifest_path)
 
 

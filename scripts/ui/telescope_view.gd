@@ -109,6 +109,8 @@ const CONTENT_W := 194.0
 const FOCUS_ADJUST_SPEED := 0.22
 const OBS_UI_DIR := "res://assets/ui/observation/suc/processed/"
 const Z_MODAL_OVERLAY := 1000
+const EYE_RETICLE_TEXTURE := OBS_UI_DIR + "1.png"
+const SCOPE_RETICLE_TEXTURE := OBS_UI_DIR + "3.png"
 
 var feedback_label: Label
 var quality_label: Label
@@ -238,6 +240,8 @@ var hold_label: Label
 var hold_bar_fill: ColorRect
 var drift_label: Label
 var target_off_center := false
+var tracking_feedback_enabled := false
+var tracking_feedback_aligned := false
 
 
 func _ready() -> void:
@@ -469,7 +473,7 @@ func _handle_focus_input(delta: float) -> void:
 	if not allow_focus_input:
 		if focus_missing_feedback_cooldown <= 0.0:
 			focus_missing_feedback_cooldown = 0.7
-			feedback_label.text = GameManager.text("Focus knob required. Install it at the Assembly Table.", "闇€瑕佽皟鐒︽棆閽€傝鍏堝湪缁勮鍙板畨瑁呫€?")
+			feedback_label.text = GameManager.text("Focus knob required. Install it at the Assembly Table.", "需要调焦旋钮。请先在组装台安装。")
 			InteractionFeedback.error(focus_state_label if focus_state_label != null else feedback_label)
 		return
 	_set_focus_value(clampf(focus_value + direction * FOCUS_ADJUST_SPEED * delta, 0.0, 1.0))
@@ -1397,8 +1401,10 @@ func _tracking_state_label() -> Dictionary:
 	if rate < 0.05:
 		return {"en": "Off", "zh": "关"}
 	if absf(rate - 1.0) <= 0.1:
-		return {"en": "1x", "zh": "1倍"}
-	return {"en": "Misaligned", "zh": "未对准"}
+		return {"en": "Matched 1x", "zh": "匹配 1倍"}
+	if rate < 1.0:
+		return {"en": "Too slow", "zh": "过慢"}
+	return {"en": "Too fast", "zh": "过快"}
 
 
 func _refresh_drift_ui() -> void:
@@ -1423,8 +1429,16 @@ func _refresh_drift_ui() -> void:
 	if tracking_label != null:
 		tracking_label.text = "%.2fx" % GameManager.tracking_rate()
 	if tracking_enabled_status != null:
+		var enabled := GameManager.tracking_rate() >= 0.05
 		var aligned := absf(GameManager.tracking_rate() - 1.0) <= 0.1
-		tracking_enabled_status.modulate = Color(0.58, 1.0, 0.72, 1.0) if aligned else Color(0.72, 0.74, 0.78, 0.50)
+		tracking_enabled_status.visible = enabled
+		tracking_enabled_status.modulate = Color(0.58, 1.0, 0.72, 1.0) if aligned else Color(1.0, 0.76, 0.34, 0.78)
+		if enabled and not tracking_feedback_enabled:
+			InteractionFeedback.pulse(tracking_enabled_status, Color(0.70, 1.0, 0.78), 0.38)
+		elif aligned and not tracking_feedback_aligned:
+			InteractionFeedback.success(tracking_enabled_status, "tracking_rate_matched")
+		tracking_feedback_enabled = enabled
+		tracking_feedback_aligned = aligned
 
 
 func _refresh_focus_ui() -> void:
@@ -1454,7 +1468,7 @@ func _refresh_focus_ui() -> void:
 					focus_state_label.text = _quality_shortfall_text()
 					focus_state_label.add_theme_color_override("font_color", Color(1.0, 0.62, 0.30))
 			"slightly_blurry":
-				focus_state_label.text = GameManager.text("Slightly blurry.", "略有模糊。")
+				focus_state_label.text = GameManager.text("Almost sharp. Fine-tune Q/E a little more.", "已经接近清晰，请用 Q/E 再微调一点。")
 				focus_state_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.40))
 			"blurry":
 				focus_state_label.text = GameManager.text("Blurry. Keep adjusting.", "模糊，继续调整。")
@@ -1858,17 +1872,14 @@ func _scope_visual() -> Control:
 	cloud_cover_level = _cloud_cover() if observation_mode != "naked_eye" else 0.0
 	if observation_mode == "naked_eye":
 		# Open night sky, no telescope barrel.
-		_circle(root, center - Vector2(262, 262), Vector2(524, 524), Color(0.006, 0.012, 0.032), Color(0.10, 0.14, 0.26), 3)
+		_circle(root, center - Vector2(262, 262), Vector2(524, 524), Color(0.006, 0.012, 0.032), Color.TRANSPARENT, 0)
 	else:
-		_circle(root, center - Vector2(270, 270), Vector2(540, 540), Color(0.05, 0.036, 0.026), COL_GOLD_LIGHT, 8)
-		_circle(root, center - Vector2(252, 252), Vector2(504, 504), Color(0.012, 0.018, 0.052), Color(0.31, 0.23, 0.15), 6)
-		_circle(root, center - Vector2(218, 218), Vector2(436, 436), Color(0.0, 0.0, 0.0), Color(0.06, 0.08, 0.15), 5)
+		_circle(root, center - Vector2(218, 218), Vector2(436, 436), Color(0.0, 0.0, 0.0), Color.TRANSPARENT, 0)
 		_add_sky_background(root, center)
 	_add_scope_stars(root, center)
 	_add_target_visual(root, center)
 	if observation_mode != "naked_eye":
 		_add_cloud_layer(root, center)
-		_add_crosshair(root, center)
 	_add_quality_noise(root, center)
 	if observation_mode != "naked_eye":
 		# Ring occluder ABOVE all lens content: clips drifting sprites /
@@ -1890,7 +1901,20 @@ func _scope_visual() -> Control:
 		occluder.material = occluder_mat
 		clipper.add_child(occluder)
 		root.add_child(clipper)
+	_add_observation_reticle(root, center)
 	return root
+
+
+func _add_observation_reticle(parent: Control, center: Vector2) -> void:
+	var overlay := TextureRect.new()
+	overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.texture = load(EYE_RETICLE_TEXTURE if observation_mode == "naked_eye" else SCOPE_RETICLE_TEXTURE) as Texture2D
+	overlay.position = center - Vector2(280, 280)
+	overlay.size = Vector2(560, 560)
+	parent.add_child(overlay)
 
 
 func _add_sky_background(parent: Control, center: Vector2) -> void:

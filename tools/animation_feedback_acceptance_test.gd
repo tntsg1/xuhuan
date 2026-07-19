@@ -39,9 +39,15 @@ func _test_common_feedback_and_accessibility() -> void:
 	feedback.page_enter(host, Vector2(0, 20))
 	_check(host.position == start_position, "reduced motion removes page travel while preserving feedback")
 	feedback.set_reduced_motion(false)
-	var first: Variant = feedback.tutorial_highlight_once(button, "animation_acceptance_once", "Guide", host)
-	var second: Variant = feedback.tutorial_highlight_once(button, "animation_acceptance_once", "Guide", host)
+	var tutorial_key := "animation_acceptance_once_%d" % Time.get_ticks_usec()
+	var first: Variant = feedback.tutorial_highlight_once(button, tutorial_key, "Guide", host)
+	var second: Variant = feedback.tutorial_highlight_once(button, tutorial_key, "Guide", host)
 	_check(first != null and second == null, "tutorial highlights do not repeat")
+	if first is Control:
+		var tutorial := first as Control
+		var frame := tutorial.get_child(1) as Panel
+		var label := tutorial.get_child(2) as Label
+		_check(not frame.get_rect().intersects(label.get_rect()) and label.position.x >= 0.0 and label.position.x + label.size.x <= host.size.x, "tutorial copy stays on-screen without covering its highlighted control")
 	host.queue_free()
 	await process_frame
 

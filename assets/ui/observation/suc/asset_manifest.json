@@ -4,6 +4,110 @@
   "runtime_filter": "nearest-neighbor",
   "records": [
     {
+      "source_name": "1.2.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\1.2.png",
+      "project_original": "assets/ui/observation/suc/source/1.2.png",
+      "sha256": "e4eb046ead7378ba69222b892f43e0b99cfdd4a1ea6177a735361c9bef7500f0",
+      "original_size": [
+        1024,
+        1024
+      ],
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        10,
+        0,
+        1007,
+        1016
+      ],
+      "usage": "Naked Eye central transparent aiming overlay",
+      "runtime_asset": "assets/ui/observation/suc/processed/1.png",
+      "runtime_name": "1.png",
+      "crop_rect": [
+        10,
+        0,
+        1007,
+        1016
+      ],
+      "cropped_size": [
+        997,
+        1016
+      ],
+      "runtime_size": [
+        550,
+        560
+      ],
+      "runtime_has_alpha": true,
+      "processing": "native alpha threshold + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "2.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\2.png",
+      "project_original": "assets/ui/observation/suc/source/2.png",
+      "sha256": "8910587b08c6c46f3dddcfa589967c2dbd9bf1e48f24f5d8bafb05eb608b72ed",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "Finder Scope central transparent aiming overlay",
+      "runtime_asset": "assets/ui/observation/suc/processed/2.png",
+      "runtime_name": "2.png",
+      "crop_rect": [
+        82,
+        66,
+        1172,
+        1143
+      ],
+      "cropped_size": [
+        1090,
+        1077
+      ],
+      "runtime_size": [
+        560,
+        553
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral matte removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "3.1.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\3.1.png",
+      "project_original": "assets/ui/observation/suc/source/3.1.png",
+      "sha256": "8d57d2c98d984055bd3cf8fcce526041a398c40f1b63a74482fd812ee88c932a",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "Main Telescope central transparent aiming overlay",
+      "runtime_asset": "assets/ui/observation/suc/processed/3.png",
+      "runtime_name": "3.png",
+      "crop_rect": [
+        43,
+        0,
+        1209,
+        1208
+      ],
+      "cropped_size": [
+        1166,
+        1208
+      ],
+      "runtime_size": [
+        541,
+        560
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral matte removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
       "source_name": "altitude_knob.png",
       "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\altitude_knob.png",
       "project_original": "assets/ui/observation/suc/source/altitude_knob.png",
@@ -17,6 +121,7 @@
       "original_alpha_bbox_at_8": null,
       "usage": "live altitude status knob",
       "runtime_asset": "assets/ui/observation/suc/processed/altitude_knob.png",
+      "runtime_name": "altitude_knob.png",
       "crop_rect": [
         254,
         83,
@@ -49,6 +154,7 @@
       "original_alpha_bbox_at_8": null,
       "usage": "vertical target-offset pointer (rotated at runtime)",
       "runtime_asset": "assets/ui/observation/suc/processed/altitude_pointer.png",
+      "runtime_name": "altitude_pointer.png",
       "crop_rect": [
         549,
         98,
@@ -86,6 +192,7 @@
       ],
       "usage": "left altitude scale shell",
       "runtime_asset": "assets/ui/observation/suc/processed/altitude_scale_bar.png",
+      "runtime_name": "altitude_scale_bar.png",
       "crop_rect": [
         428,
         109,
@@ -123,6 +230,7 @@
       ],
       "usage": "live azimuth status knob",
       "runtime_asset": "assets/ui/observation/suc/processed/azimuth_knob.png",
+      "runtime_name": "azimuth_knob.png",
       "crop_rect": [
         238,
         243,
@@ -155,6 +263,7 @@
       "original_alpha_bbox_at_8": null,
       "usage": "horizontal target-offset pointer",
       "runtime_asset": "assets/ui/observation/suc/processed/azimuth_pointer.png",
+      "runtime_name": "azimuth_pointer.png",
       "crop_rect": [
         546,
         145,
@@ -192,6 +301,7 @@
       ],
       "usage": "top azimuth scale shell",
       "runtime_asset": "assets/ui/observation/suc/processed/azimuth_scale_bar.png",
+      "runtime_name": "azimuth_scale_bar.png",
       "crop_rect": [
         87,
         434,
@@ -241,6 +351,7 @@
       "original_alpha_bbox_at_8": null,
       "usage": "telescope focus status knob",
       "runtime_asset": "assets/ui/observation/suc/processed/focus_knob_ui.png",
+      "runtime_name": "focus_knob_ui.png",
       "crop_rect": [
         244,
         198,
@@ -273,6 +384,7 @@
       "original_alpha_bbox_at_8": null,
       "usage": "Eye mode button icon",
       "runtime_asset": "assets/ui/observation/suc/processed/mode_eye_icon.png",
+      "runtime_name": "mode_eye_icon.png",
       "crop_rect": [
         251,
         392,
@@ -305,6 +417,7 @@
       "original_alpha_bbox_at_8": null,
       "usage": "Finder mode button icon",
       "runtime_asset": "assets/ui/observation/suc/processed/mode_finder_icon.png",
+      "runtime_name": "mode_finder_icon.png",
       "crop_rect": [
         245,
         243,
@@ -337,6 +450,7 @@
       "original_alpha_bbox_at_8": null,
       "usage": "Scope mode button icon",
       "runtime_asset": "assets/ui/observation/suc/processed/mode_scope_icon.png",
+      "runtime_name": "mode_scope_icon.png",
       "crop_rect": [
         131,
         71,
@@ -374,6 +488,7 @@
       ],
       "usage": "near-target cyan ring",
       "runtime_asset": "assets/ui/observation/suc/processed/target_approach_ring.png",
+      "runtime_name": "target_approach_ring.png",
       "crop_rect": [
         200,
         188,
@@ -406,6 +521,7 @@
       "original_alpha_bbox_at_8": null,
       "usage": "centered/success gold ring",
       "runtime_asset": "assets/ui/observation/suc/processed/target_lock_ring.png",
+      "runtime_name": "target_lock_ring.png",
       "crop_rect": [
         167,
         110,
@@ -443,6 +559,7 @@
       ],
       "usage": "tracking-enabled status icon",
       "runtime_asset": "assets/ui/observation/suc/processed/tracking_enabled_icon.png",
+      "runtime_name": "tracking_enabled_icon.png",
       "crop_rect": [
         516,
         236,
@@ -475,6 +592,7 @@
       "original_alpha_bbox_at_8": null,
       "usage": "tracking-rate status knob",
       "runtime_asset": "assets/ui/observation/suc/processed/tracking_rate_knob.png",
+      "runtime_name": "tracking_rate_knob.png",
       "crop_rect": [
         81,
         64,
