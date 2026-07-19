@@ -1361,6 +1361,11 @@ func _build_panel_text() -> void:
 
 
 func _mission_hint(target: Dictionary) -> String:
+	var level := GameManager.current_level()
+	# Coordinate-navigation lessons hide the distant locator, so keep their
+	# explicit steering instructions instead of replacing them with object trivia.
+	if bool(level.get("hide_target_hint", false)) and level.has("hint_text_en"):
+		return GameManager.dict_text(level, "hint_text")
 	match str(target.get("id", "")):
 		"moon":
 			return GameManager.text("Look for the brightest round object.", "寻找最亮的圆形目标。")
@@ -1378,7 +1383,6 @@ func _mission_hint(target: Dictionary) -> String:
 			return GameManager.text("Find the purple cloud near Orion.", "寻找猎户座附近的紫色云雾。")
 		"andromeda":
 			return GameManager.text("Find a faint oval galaxy.", "寻找暗淡的椭圆形星系。")
-	var level := GameManager.current_level()
 	var fallback := GameManager.text("Rotate the view to find the mission target.", "转动视野寻找任务目标。")
 	return GameManager.dict_text(level, "hint_text") if level.has("hint_text_en") else fallback
 
@@ -1742,7 +1746,11 @@ func _update_marker_frames() -> void:
 	# Asset-backed target feedback stays centered on the same projected rect
 	# used by hit testing, so the ring cannot drift away from the real object.
 	var current_level_data: Dictionary = GameManager.current_level()
-	if in_view_targets.has(target_id) and not bool(current_level_data.get("hide_target_hint", false)):
+	var target_is_close := in_view_targets.has(target_id) and _center_offset(target_id) <= maxf(fov_x, fov_y) * 0.18
+	# hide_target_hint suppresses long-range help during coordinate navigation.
+	# Once the player has acquired the target, approach and lock feedback return.
+	var show_target_feedback := in_view_targets.has(target_id) and (not bool(current_level_data.get("hide_target_hint", false)) or target_is_close)
+	if show_target_feedback:
 		var target_info: Dictionary = in_view_targets[target_id]
 		var target_rect: Rect2 = target_info.get("rect", Rect2())
 		var offset := _center_offset(target_id)
@@ -1750,7 +1758,7 @@ func _update_marker_frames() -> void:
 		var centered := offset <= centered_limit
 		var ring_size := 38.0 if view_mode == "naked_eye" else (54.0 if view_mode == "finder" else 76.0)
 		var ring_path := LOCK_RING_TEXTURE if centered else APPROACH_RING_TEXTURE
-		var alpha := 1.0 if centered else (0.52 if view_mode == "finder" else (0.24 if view_mode == "naked_eye" else 0.64))
+		var alpha := 1.0 if centered else (0.52 if view_mode == "finder" else (0.40 if view_mode == "naked_eye" else 0.64))
 		next_state = "locked" if centered else ("approach" if offset <= maxf(fov_x, fov_y) * 0.22 else "search")
 		if target_state_ring == null or not is_instance_valid(target_state_ring):
 			target_state_ring = _target_ring(view_layer, ring_path, target_rect.get_center(), ring_size, 0.0)
@@ -2056,7 +2064,9 @@ func _guidance_for_target() -> String:
 				return GameManager.text("Target in sight. Observe with your eyes!", "目标就在眼前，直接观察吧！")
 			return GameManager.text("Target in view. Move it toward the center.", "目标在视野中，把它移向中心。")
 		if offset <= fov_x * 0.05:
-			return GameManager.text("Target lined up. Zoom in with the finder (2).", "目标已对准，按 2 用寻星镜细看。")
+			return GameManager.text("Target locked. Press 2 to zoom in with the finder.", "目标已金色锁定，按 2 用寻星镜放大。")
+		if bool(GameManager.current_level().get("hide_target_hint", false)) and offset <= fov_x * 0.18:
+			return GameManager.text("Target acquired. Follow the cyan ring to the center.", "已捕获目标。跟随青色环将它移到中心。")
 		return GameManager.text("Target in view. Move it toward the center.", "目标在视野中，把它移向中心。")
 
 	# Out of view: give exact DMS turn amounts.
