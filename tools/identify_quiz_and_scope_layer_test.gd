@@ -24,6 +24,10 @@ func _initialize() -> void:
 	var choices: VBoxContainer = telescope.get("choices_box")
 	var ids: Array[String] = telescope.get("identify_choice_ids")
 	_check(guide != null and guide.visible, "pre-quiz object guide appears before identification")
+	_check(guide != null and guide.z_index > 900, "object guide modal stays above shared tutorial and HUD layers")
+	telescope.call("_show_focus_tutorial")
+	await process_frame
+	_check(telescope.find_children("TutorialHighlight_*", "Control", true, false).is_empty(), "focus/weather/tracking tutorials wait until the object guide closes")
 	_check(choices != null and not choices.visible, "answer buttons remain hidden during the guide")
 	_check(ids.size() == 4, "quiz builds four unique candidates")
 	_check(_guide_covers_candidates(guide, ids), "guide teaches every candidate shown in the quiz")

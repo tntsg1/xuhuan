@@ -108,6 +108,7 @@ const CONTENT_X := 772.0
 const CONTENT_W := 194.0
 const FOCUS_ADJUST_SPEED := 0.22
 const OBS_UI_DIR := "res://assets/ui/observation/suc/processed/"
+const Z_MODAL_OVERLAY := 1000
 
 var feedback_label: Label
 var quality_label: Label
@@ -261,6 +262,10 @@ func _ready() -> void:
 
 
 func _show_focus_tutorial() -> void:
+	# The object guide is modal. Queue first-use focus/weather/tracking help
+	# until it closes so the shared tutorial layer cannot pierce the dialog.
+	if quiz_brief_overlay != null and is_instance_valid(quiz_brief_overlay):
+		return
 	if drift_enabled and not InteractionFeedback.was_tutorial_seen("first_earth_drift"):
 		var drift_target: Control = tracking_slider if tracking_slider != null else drift_label
 		InteractionFeedback.tutorial_highlight_once(drift_target, "first_earth_drift", GameManager.text(
@@ -277,7 +282,7 @@ func _show_focus_tutorial() -> void:
 	InteractionFeedback.tutorial_highlight_once(
 		focus_slider,
 		"first_focus_control",
-		GameManager.text("Turn the focus control until the image becomes sharp.", "璋冩暣鐒︾偣锛岀洿鍒板浘鍍忓彉寰楁竻鏅般€?"),
+		GameManager.text("Turn the focus control until the image becomes sharp.", "调整调焦旋钮，直到图像变得清晰。"),
 		self
 	)
 
@@ -1698,7 +1703,7 @@ func _show_pre_quiz_guide() -> void:
 	quiz_brief_overlay.name = "PreQuizObjectGuide"
 	quiz_brief_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	quiz_brief_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	quiz_brief_overlay.z_index = 200
+	quiz_brief_overlay.z_index = Z_MODAL_OVERLAY
 	add_child(quiz_brief_overlay)
 	InteractionFeedback.page_enter(quiz_brief_overlay, Vector2(0, 8))
 
@@ -1747,7 +1752,11 @@ func _dismiss_pre_quiz_guide() -> void:
 	if quiz_brief_overlay != null:
 		var overlay := quiz_brief_overlay
 		quiz_brief_overlay = null
-		InteractionFeedback.fade_then(overlay, overlay.queue_free)
+		InteractionFeedback.fade_then(overlay, func() -> void:
+			overlay.queue_free()
+			if requires_focus and focus_slider != null:
+				call_deferred("_show_focus_tutorial")
+		)
 	_set_identify_choices_visible(true)
 
 
