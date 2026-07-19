@@ -23,6 +23,7 @@ func _initialize() -> void:
 	_test_live_scales()
 	_test_pointer_extremes()
 	_test_modes()
+	_test_eye_lock_geometry()
 	_test_availability_and_environment()
 	_test_target_lock_alignment()
 	_test_language_and_input_math()
@@ -44,7 +45,7 @@ func _setup_level() -> void:
 func _test_assets_and_layers() -> void:
 	_check(str(ProjectSettings.get_setting("display/window/stretch/aspect", "")) == "keep", "window scaling preserves pixel-art aspect ratio")
 	var names := [
-		"1.png", "2.png", "3.png", "eye_large_center.png", "finder_second_ring.png", "scope_center_tolerance.png",
+		"1.png", "2.png", "3.png", "eye_large_center.png", "eye_precise_reticle.png", "finder_second_ring.png", "scope_center_tolerance.png",
 		"azimuth_scale_shell.png", "altitude_scale_shell.png",
 		"azimuth_tick_major.png", "azimuth_tick_minor.png",
 		"altitude_tick_major.png", "altitude_tick_minor.png",
@@ -65,14 +66,16 @@ func _test_assets_and_layers() -> void:
 	var reticle := view.get("scope_reticle_layer") as TextureRect
 	_check(reticle != null and reticle.get_rect().get_center().distance_to(Vector2(315.0, 280.0)) < 0.1, "reticle center matches the celestial projection center")
 	_check(reticle != null and reticle.position.y + reticle.size.y <= 486.0, "reticle stays above the bottom guidance band")
-	for file_name in ["eye_large_center.png", "finder_second_ring.png", "scope_center_tolerance.png", "target_approach_ring.png", "target_lock_ring.png"]:
+	for file_name in ["eye_precise_reticle.png", "finder_second_ring.png", "scope_center_tolerance.png", "target_approach_ring.png", "target_lock_ring.png"]:
 		var image: Image = (load(ASSET_DIR + file_name) as Texture2D).get_image()
 		var center := Vector2i(image.get_width() / 2, image.get_height() / 2)
 		_check(image.get_pixelv(center).a < 0.15, "%s keeps the celestial target center transparent" % file_name)
 	var finder_image: Image = (load(ASSET_DIR + "finder_second_ring.png") as Texture2D).get_image()
 	_check(_visible_pixels_outside_annulus(finder_image, 105.0, 122.0) == 0, "Finder artwork contains only the second circular ring")
-	var eye_image: Image = (load(ASSET_DIR + "eye_large_center.png") as Texture2D).get_image()
-	_check(_visible_pixels_in_annulus(eye_image, 31.0, 44.0) > 80, "Eye artwork contains the enlarged center aperture")
+	var eye_image: Image = (load(ASSET_DIR + "eye_precise_reticle.png") as Texture2D).get_image()
+	_check(eye_image.get_size() == Vector2i(410, 410), "Eye reticle maps one-to-one onto its 410 px screen rect")
+	_check(_visible_pixels_in_annulus(eye_image, 62.0, 66.0) > 200, "Eye center ring visibly marks the exact 64 px lock radius")
+	_check(_visible_pixels_in_annulus(eye_image, 194.0, 198.0) > 500, "Eye outer boundary maximizes the available naked-eye field")
 	var scope_image: Image = (load(ASSET_DIR + "scope_center_tolerance.png") as Texture2D).get_image()
 	var scope_center := Vector2i(scope_image.get_width() / 2, scope_image.get_height() / 2)
 	_check(scope_image.get_pixelv(scope_center + Vector2i(90, 0)).a < 0.15, "Scope circular frame contains the scaled horizontal lock tolerance")
@@ -156,7 +159,7 @@ func _test_modes() -> void:
 		var info: Dictionary = view.call("_object_visual_for_mode", target_object)
 		target_sizes.append(float(info.get("size_px", 0.0)))
 		var reticle := view.get("scope_reticle_layer") as TextureRect
-		var expected_path := "res://assets/ui/observation/suc/processed/%s.png" % ({"naked_eye": "eye_large_center", "finder": "finder_second_ring", "telescope": "scope_center_tolerance"}[mode])
+		var expected_path := "res://assets/ui/observation/suc/processed/%s.png" % ({"naked_eye": "eye_precise_reticle", "finder": "finder_second_ring", "telescope": "scope_center_tolerance"}[mode])
 		_check(reticle != null and reticle.texture != null and reticle.texture.resource_path == expected_path, "%s uses exactly one supplied reticle texture" % mode)
 	_check(fovs == [120.0, 28.0, 6.0], "Eye/Finder/Scope FOV values remain 120/28/6")
 	_check(target_sizes[0] < target_sizes[1] and target_sizes[1] < target_sizes[2], "target is smallest in Eye and largest in Scope")
@@ -165,6 +168,31 @@ func _test_modes() -> void:
 		view.set("view_mode", mode)
 		var star_ring: float = float(view.call("_target_feedback_ring_size", [2.0, 3.0, 6.0][index]))
 		_check(is_equal_approx(star_ring, [40.0, 44.0, 48.0][index]), "%s star marker stays readable without covering the view" % mode)
+
+
+func _test_eye_lock_geometry() -> void:
+	var target_id := str(view.get("target_id"))
+	var target: Dictionary = (view.get("sky_data") as Dictionary).get(target_id, {})
+	view.set("telescope_azimuth", float(target.get("azimuth", 180.0)))
+	view.set("telescope_altitude", float(target.get("altitude", 45.0)))
+	view.call("_set_view_mode", "naked_eye")
+	var targets: Dictionary = view.get("in_view_targets")
+	_check(targets.has(target_id), "Eye target is available for screen-space lock testing")
+	if not targets.has(target_id):
+		return
+	var info: Dictionary = targets[target_id].duplicate(true)
+	var rect: Rect2 = info.get("rect", Rect2())
+	var target_size := rect.size
+	var sky_center := Vector2(315.0, 280.0)
+	rect = Rect2(sky_center + Vector2(63.0, 0.0) - target_size * 0.5, target_size)
+	info["rect"] = rect
+	targets[target_id] = info
+	_check(bool(view.call("_is_target_centered", target_id)), "Eye target inside the visible 64 px center ring is centered")
+	rect.position = sky_center + Vector2(65.0, 0.0) - target_size * 0.5
+	info["rect"] = rect
+	targets[target_id] = info
+	_check(not bool(view.call("_is_target_centered", target_id)), "Eye target outside the visible 64 px center ring is not centered")
+	view.call("_set_view_mode", "telescope")
 
 
 func _test_availability_and_environment() -> void:
@@ -196,6 +224,7 @@ func _test_target_lock_alignment() -> void:
 	view.set("telescope_azimuth", float(target.get("azimuth", 180.0)))
 	view.call("_rebuild_view")
 	var icons: Dictionary = view.get("object_icons")
+	var buttons: Dictionary = view.get("object_buttons")
 	var ring: TextureRect = view.get("target_state_ring")
 	_check(icons.has(target_id) and ring != null, "centered target creates a lock ring")
 	if icons.has(target_id) and ring != null:
@@ -209,6 +238,8 @@ func _test_target_lock_alignment() -> void:
 		var expected_ring_size: float = float(view.call("_target_feedback_ring_size", rendered_diameter))
 		_check(is_equal_approx(ring.size.x, expected_ring_size), "Scope target lock ring uses the compact target-derived size")
 		_check(ring.size == approach_size, "approach and lock states keep one consistent target-derived frame size")
+		if buttons.has(target_id):
+			_check((buttons[target_id] as Button).size == ring.size, "visible target marker exactly matches the real pointer detection region")
 	_check(not (view.get("observe_button") as Button).disabled, "Observe enables from the same centered-target condition")
 
 

@@ -713,6 +713,19 @@
     },
     {
       "source_name": null,
+      "derived_from": "programmatic brass/cyan pixel art",
+      "runtime_asset": "assets/ui/observation/suc/processed/eye_precise_reticle.png",
+      "runtime_size": [
+        410,
+        410
+      ],
+      "runtime_has_alpha": true,
+      "processing": "generated edit + chroma removal + nearest-neighbor compositing",
+      "resize_filter": "nearest-neighbor",
+      "usage": "Eye overlay aligned one-to-one with the real screen lock radius"
+    },
+    {
+      "source_name": null,
       "derived_from": "generated crop from 2.png",
       "runtime_asset": "assets/ui/observation/suc/processed/finder_second_ring.png",
       "runtime_size": [

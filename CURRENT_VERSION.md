@@ -17,6 +17,7 @@
 - Refractor chromatic-aberration comparison, Vega art, Newtonian motivation/tutorial sequence, assembly, collimation, and observation progression.
 - Complete observation HUD integration from `C:/Users/tntsg/Downloads/tw/suc`, including native-alpha replacement assets.
 - Dynamic azimuth and altitude scales, 0/360-degree wrapping, live pointers, Eye/Finder/Scope mode art, focus and tracking controls.
+- One-to-one `410x410` naked-eye reticle with a `196 px` outer field boundary and a visible `64 px` center lock boundary.
 - Target approach and lock markers that follow the projected celestial object, remain transparent at center, and use compact target-derived sizing.
 - Focus, seeing, clouds, chromatic aberration, Earth-rotation drift, tracking-rate, hold-progress, and observation-quality feedback.
 - Shared interaction animations, first-use guidance, reduced-motion support, assembly snap feedback, collimation feedback, and observation success/failure feedback.
@@ -33,10 +34,12 @@
 ## Current Target Feedback Rules
 
 - Approach and lock rings use the same projected target center and size.
+- Eye mode uses screen-space centering: the visible `64 px` center ring is also the exact gameplay lock radius.
 - Ring diameter is `target diameter + max(12 px, 25%)`.
 - Minimum diameters are 40 px for Eye, 44 px for Finder, and 48 px for Scope.
 - Approach uses a subtle cyan alpha pulse; lock uses a high-contrast gold ring.
 - The ring center remains transparent and does not obscure the celestial texture.
+- The visible ring and the target's pointer/click detection rectangle are identical.
 
 ## Validation
 

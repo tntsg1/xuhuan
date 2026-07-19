@@ -26,7 +26,8 @@ func _initialize() -> void:
 	_check(target_id == "mars", "level 14 targets Mars")
 	_check(str(view.call("_mission_hint", gm.get_object(target_id))).contains("SELECTED"), "mission panel preserves the coordinate-navigation instruction")
 
-	view.set("telescope_azimuth", wrapf(float(target.get("azimuth", 0.0)) + 12.0, 0.0, 360.0))
+	# Fourteen degrees projects outside the Eye mode's visible 64 px center ring.
+	view.set("telescope_azimuth", wrapf(float(target.get("azimuth", 0.0)) + 14.0, 0.0, 360.0))
 	view.set("telescope_altitude", float(target.get("altitude", 45.0)))
 	view.call("_set_view_mode", "naked_eye")
 	view.call("_rebuild_view")
@@ -51,6 +52,8 @@ func _initialize() -> void:
 
 
 func _capture(file_name: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT_DIR))
 	await process_frame
 	var image := root.get_texture().get_image()

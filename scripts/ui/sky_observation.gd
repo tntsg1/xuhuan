@@ -30,7 +30,7 @@ const ALT_POINTER_TEXTURE := OBS_UI_DIR + "altitude_pointer.png"
 const APPROACH_RING_TEXTURE := OBS_UI_DIR + "target_approach_ring.png"
 const LOCK_RING_TEXTURE := OBS_UI_DIR + "target_lock_ring.png"
 const MODE_RETICLE_TEXTURES := {
-	"naked_eye": OBS_UI_DIR + "eye_large_center.png",
+	"naked_eye": OBS_UI_DIR + "eye_precise_reticle.png",
 	"finder": OBS_UI_DIR + "finder_second_ring.png",
 	"telescope": OBS_UI_DIR + "scope_center_tolerance.png"
 }
@@ -92,6 +92,7 @@ const ALT_LABEL_POOL := 12
 
 const CENTER_TOLERANCE_FINDER := 2.0
 const CENTER_TOLERANCE_TELESCOPE := 0.5
+const EYE_LOCK_RADIUS_PX := 64.0
 
 const CALIBRATE_STEP_DEGREES := 0.1
 const CALIBRATE_REPEAT_DELAY := 0.09
@@ -621,6 +622,22 @@ func _center_tolerance() -> float:
 	if view_mode == "telescope":
 		return CENTER_TOLERANCE_TELESCOPE
 	return CENTER_TOLERANCE_FINDER
+
+
+func _target_screen_distance(object_id: String) -> float:
+	if not in_view_targets.has(object_id):
+		return INF
+	var info: Dictionary = in_view_targets[object_id]
+	var rect: Rect2 = info.get("rect", Rect2())
+	return rect.get_center().distance_to(VIEW_RECT.size * 0.5)
+
+
+func _is_target_centered(object_id: String) -> bool:
+	if not in_view_targets.has(object_id):
+		return false
+	if view_mode == "naked_eye":
+		return _target_screen_distance(object_id) <= EYE_LOCK_RADIUS_PX
+	return _center_offset(object_id) <= _center_tolerance()
 
 
 # ------------------------------------------------------------- data
@@ -1556,13 +1573,17 @@ func _rebuild_view(sync_camera := true) -> void:
 			alpha *= 0.7
 		icon.set_meta("base_alpha", alpha)
 		icon.modulate = Color(1, 1, 1, alpha)
-		var hit_rect := rect.grow(8.0)
+		# The visible target marker and the real pointer/click detection region
+		# are deliberately identical.
+		var detection_diameter := _target_feedback_ring_size(maxf(icon_size.x, icon_size.y))
+		var hit_rect := Rect2(center_local - Vector2.ONE * detection_diameter * 0.5, Vector2.ONE * detection_diameter)
 		button.position = hit_rect.position
 		button.size = hit_rect.size
 		in_view_targets[object_id] = {
 			"delta_az": delta_az,
 			"delta_alt": delta_alt,
-			"rect": rect
+			"rect": rect,
+			"detection_rect": hit_rect
 		}
 
 	_update_ground()
@@ -1745,16 +1766,15 @@ func _update_marker_frames() -> void:
 		var target_info: Dictionary = in_view_targets[target_id]
 		var target_rect: Rect2 = target_info.get("rect", Rect2())
 		var offset := _center_offset(target_id)
-		var centered_limit := CENTER_TOLERANCE_TELESCOPE if view_mode == "telescope" else (CENTER_TOLERANCE_FINDER if view_mode == "finder" else fov_x * 0.05)
-		var centered := offset <= centered_limit
+		var centered := _is_target_centered(target_id)
 		# Approach and lock use the same target-derived footprint. The feedback
 		# ring must always surround the rendered object instead of shrinking
 		# inside large Moon/planet/deep-sky textures.
-		var target_diameter := maxf(target_rect.size.x, target_rect.size.y)
+		var detection_rect: Rect2 = target_info.get("detection_rect", target_rect)
 		# The moving marker belongs to the celestial object, not to the whole
 		# telescope aperture. Keep it close to small stars while allowing Moon
 		# and deep-sky textures to grow the ring just beyond their visible edge.
-		var ring_size := _target_feedback_ring_size(target_diameter)
+		var ring_size := maxf(detection_rect.size.x, detection_rect.size.y)
 		var ring_path := LOCK_RING_TEXTURE if centered else APPROACH_RING_TEXTURE
 		var alpha := 1.0 if centered else 0.82
 		next_state = "locked" if centered else ("approach" if offset <= maxf(fov_x, fov_y) * 0.22 else "search")
@@ -1928,7 +1948,7 @@ func _observe() -> void:
 	if not GameManager.current_requires_telescope():
 		if selected_object_id == "":
 			var nearest_id := _nearest_center_object()
-			if nearest_id != "" and _center_offset(nearest_id) < fov_x * 0.15:
+			if nearest_id != "" and _is_target_centered(nearest_id):
 				_select_object(nearest_id)
 		if selected_object_id != "":
 			GameManager.selected_object_id = selected_object_id
@@ -1953,13 +1973,13 @@ func _observe() -> void:
 
 	if selected_object_id == "":
 		var nearest_id := _nearest_center_object()
-		if nearest_id != "" and _center_offset(nearest_id) <= _center_tolerance():
+		if nearest_id != "" and _is_target_centered(nearest_id):
 			_select_object(nearest_id)
 	if selected_object_id == "":
 		guidance_label.text = GameManager.text("No target near the center.", "中心附近没有目标。")
 		return
 	var offset := _center_offset(selected_object_id)
-	if offset > _center_tolerance():
+	if not _is_target_centered(selected_object_id):
 		guidance_label.text = GameManager.text(
 			"Center the target first. Off by %s." % _format_dms(offset),
 			"请先把目标居中，还差 %s。" % _format_dms(offset)
@@ -2042,7 +2062,7 @@ func _observe_availability() -> Dictionary:
 		return {"ok": false, "reason": GameManager.text("Target is outside the current field.", "目标不在当前视野中。")}
 	var offset := _center_offset(target_id)
 	if not GameManager.current_requires_telescope():
-		var eye_ok := view_mode == "naked_eye" and offset <= fov_x * 0.15
+		var eye_ok := view_mode == "naked_eye" and _is_target_centered(target_id)
 		return {"ok": eye_ok, "reason": GameManager.text("Center the target for naked-eye observation.", "先把目标移到肉眼视野中央。")}
 	if view_mode == "naked_eye":
 		return {"ok": false, "reason": GameManager.text("Switch to Finder, then Scope, before observing.", "请先切换寻星镜，再进入主望远镜观测。")}
@@ -2081,21 +2101,21 @@ func _guidance_for_target() -> String:
 	if absf(delta_az) <= half_x and absf(delta_alt) <= half_y:
 		var offset := maxf(absf(delta_az), absf(delta_alt))
 		if view_mode == "telescope":
-			if offset <= CENTER_TOLERANCE_TELESCOPE:
+			if _is_target_centered(target_id):
 				return GameManager.text("Centered. Ready for telescope. Observe!", "已居中，可以观测了！")
 			return GameManager.text(
 				"In telescope view. Center within %s." % _format_dms(CENTER_TOLERANCE_TELESCOPE),
 				"目标在望远镜视野中，请居中到 %s 以内。" % _format_dms(CENTER_TOLERANCE_TELESCOPE)
 			)
 		if view_mode == "finder":
-			if offset <= CENTER_TOLERANCE_FINDER:
+			if _is_target_centered(target_id):
 				return GameManager.text("Centered enough for telescope. Press 3.", "已接近望远镜视野，按 3 切换主望远镜。")
 			return GameManager.text("Target in finder scope. Center it.", "目标已进入寻星镜视野，请居中。")
 		if not GameManager.current_requires_telescope():
-			if offset <= fov_x * 0.15:
+			if _is_target_centered(target_id):
 				return GameManager.text("Target in sight. Observe with your eyes!", "目标就在眼前，直接观察吧！")
 			return GameManager.text("Target in view. Move it toward the center.", "目标在视野中，把它移向中心。")
-		if offset <= fov_x * 0.05:
+		if _is_target_centered(target_id):
 			return GameManager.text("Target locked. Press 2 to zoom in with the finder.", "目标已金色锁定，按 2 用寻星镜放大。")
 		if bool(GameManager.current_level().get("hide_target_hint", false)) and offset <= fov_x * 0.18:
 			return GameManager.text("Target acquired. Follow the cyan ring to the center.", "已捕获目标。跟随青色环将它移到中心。")
@@ -2165,7 +2185,7 @@ func _update_workflow_discipline_timer(delta: float) -> void:
 		return
 	if view_mode != "telescope" or visited_modes.has("finder"):
 		return
-	var target_centered := in_view_targets.has(target_id) and _center_offset(target_id) <= _center_tolerance()
+	var target_centered := _is_target_centered(target_id)
 	if target_centered:
 		return
 	workflow_elapsed += delta

@@ -25,9 +25,9 @@ The screen rect is `VIEW_RECT (88, 103, 630, 560)` plus local `AIM_RETICLE_RECT 
 
 Final mode variants:
 
-- Eye uses `eye_large_center.png` (`550x560`): latest `1.2` artwork with only its center aperture enlarged to about 78 source pixels.
+- Eye uses `eye_precise_reticle.png` (`410x410`), drawn in the supplied brass/cyan observatory style and displayed one-to-one. Its `196 px` outer boundary maximizes the naked-eye field, while its `64 px` center ring is the exact screen-space lock radius.
 - Finder uses `finder_second_ring.png` (`560x560`): only the second circle remains; the outer circle, center gold circle, crosshair, ticks, dots, and ornaments are transparent.
-- Scope uses `scope_center_tolerance.png`, derived from `3.png` without overwriting it. Its center frame is a true circle with a `184 px` source inner diameter, displayed at approximately `135 px` inside the `410 px` reticle. This contains every projected `0.5 degree` lock position and is more than one third wider than the `52 px` Scope Moon. The moving target marker is independent and target-sized: `target diameter + max(12 px, 25%)`, with readable but compact mode minimums of `40/44/48 px` for Eye/Finder/Scope. Approach markers use a subtle `0.72..0.92` alpha pulse; locked markers remain high-contrast gold. The detailed `Telescope View` deliberately has no barrel/reticle overlay, crosshair, or center circle.
+- Scope uses `scope_center_tolerance.png`, derived from `3.png` without overwriting it. Its center frame is a true circle with a `184 px` source inner diameter, displayed at approximately `135 px` inside the `410 px` reticle. This contains every projected `0.5 degree` lock position and is more than one third wider than the `52 px` Scope Moon. The moving target marker is independent and target-sized: `target diameter + max(12 px, 25%)`, with readable but compact mode minimums of `40/44/48 px` for Eye/Finder/Scope. Its visible frame and pointer detection rectangle are identical. Approach markers use a subtle `0.72..0.92` alpha pulse; locked markers remain high-contrast gold. The detailed `Telescope View` deliberately has no barrel/reticle overlay, crosshair, or center circle.
 
 Latest native-alpha replacements copied without modifying the download originals:
 

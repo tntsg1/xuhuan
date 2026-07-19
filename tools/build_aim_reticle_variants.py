@@ -1,4 +1,5 @@
 from pathlib import Path
+from math import cos, pi, sin
 
 from PIL import Image, ImageDraw
 
@@ -47,6 +48,64 @@ def build_eye_large_center() -> None:
     base.save(PROCESSED_DIR / "eye_large_center.png", optimize=True)
 
 
+def build_eye_precise_reticle() -> None:
+    size = 410
+    center = size // 2
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(canvas)
+
+    dark_cyan = (28, 67, 75, 235)
+    pale_cyan = (154, 194, 184, 225)
+    dark_brass = (75, 51, 17, 240)
+    brass = (192, 137, 31, 245)
+    bright_brass = (246, 211, 126, 255)
+
+    def circle(radius: int, under_color, line_color) -> None:
+        box = (center - radius, center - radius, center + radius, center + radius)
+        draw.ellipse(box, outline=under_color, width=3)
+        draw.ellipse(box, outline=line_color, width=1)
+
+    # Wide naked-eye field boundary, a quieter navigation ring, and the
+    # exact 64 px lock boundary. All share the same pixel center as Godot.
+    circle(196, dark_cyan, pale_cyan)
+    circle(132, dark_brass, brass)
+    circle(64, dark_brass, bright_brass)
+
+    for angle_index in range(24):
+        angle = angle_index * pi / 12.0
+        is_cardinal = angle_index % 6 == 0
+        inner = 126 if is_cardinal else 129
+        outer = 139 if is_cardinal else 135
+        color = bright_brass if is_cardinal else brass
+        draw.line(
+            (
+                round(center + cos(angle) * inner),
+                round(center + sin(angle) * inner),
+                round(center + cos(angle) * outer),
+                round(center + sin(angle) * outer),
+            ),
+            fill=color,
+            width=2 if is_cardinal else 1,
+        )
+
+    for angle_index in range(4):
+        angle = angle_index * pi / 2.0
+        tick_inner = 57
+        tick_outer = 72
+        x1 = round(center + cos(angle) * tick_inner)
+        y1 = round(center + sin(angle) * tick_inner)
+        x2 = round(center + cos(angle) * tick_outer)
+        y2 = round(center + sin(angle) * tick_outer)
+        draw.line((x1, y1, x2, y2), fill=bright_brass, width=2)
+        # Small brass diamond gives the hand-built observatory style without
+        # filling or obscuring the optical center.
+        dx = round(center + cos(angle) * 68)
+        dy = round(center + sin(angle) * 68)
+        draw.polygon([(dx, dy - 3), (dx + 3, dy), (dx, dy + 3), (dx - 3, dy)], outline=bright_brass)
+
+    canvas.save(PROCESSED_DIR / "eye_precise_reticle.png", optimize=True)
+
+
 def build_scope_tolerance_center() -> None:
     base = Image.open(PROCESSED_DIR / "3.png").convert("RGBA")
     center_x = base.width // 2
@@ -81,7 +140,9 @@ def build_scope_tolerance_center() -> None:
 if __name__ == "__main__":
     build_finder_ring()
     build_eye_large_center()
+    build_eye_precise_reticle()
     build_scope_tolerance_center()
     print(PROCESSED_DIR / "finder_second_ring.png")
     print(PROCESSED_DIR / "eye_large_center.png")
+    print(PROCESSED_DIR / "eye_precise_reticle.png")
     print(PROCESSED_DIR / "scope_center_tolerance.png")

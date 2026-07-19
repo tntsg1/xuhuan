@@ -222,6 +222,7 @@ def create_reticle_variants(records: list[dict]) -> None:
     subprocess.run([sys.executable, str(PROJECT_DIR / "tools" / "build_aim_reticle_variants.py")], check=True)
     variants = {
         "eye_large_center.png": ("1.2.png + generated center-ring crop", "Eye overlay with enlarged transparent target aperture"),
+        "eye_precise_reticle.png": ("programmatic brass/cyan pixel art", "Eye overlay aligned one-to-one with the real screen lock radius"),
         "finder_second_ring.png": ("generated crop from 2.png", "Finder overlay retaining only the second circle"),
         "scope_center_tolerance.png": ("3.1.png", "Scope overlay with a center frame matching the real lock tolerance"),
     }
@@ -327,7 +328,7 @@ def main() -> None:
     }
     manifest_path = ASSET_ROOT / "asset_manifest.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Imported {len(list(SOURCE_DIR.glob('*.png')))} source PNG files and {len(DERIVED_USAGE) + 3} derived runtime files")
+    print(f"Imported {len(list(SOURCE_DIR.glob('*.png')))} source PNG files and {len(DERIVED_USAGE) + 4} derived runtime files")
     print(manifest_path)
 
 
