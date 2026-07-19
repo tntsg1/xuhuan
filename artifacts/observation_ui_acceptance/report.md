@@ -27,7 +27,16 @@ Final mode variants:
 
 - Eye uses `eye_large_center.png` (`550x560`): latest `1.2` artwork with only its center aperture enlarged to about 78 source pixels.
 - Finder uses `finder_second_ring.png` (`560x560`): only the second circle remains; the outer circle, center gold circle, crosshair, ticks, dots, and ornaments are transparent.
-- Scope uses `scope_center_tolerance.png`, derived from `3.png` without overwriting it. Its center frame is a true circle with a `184 px` source inner diameter, displayed at approximately `135 px` inside the `410 px` reticle. This contains every projected `0.5 degree` lock position and is more than one third wider than the `52 px` Scope Moon. The moving Scope target ring has a `200 px` minimum diameter, leaving a clear visible gap outside the approximately `141 px` displayed reference-frame outer diameter. The detailed `Telescope View` deliberately has no barrel/reticle overlay, crosshair, or center circle.
+- Scope uses `scope_center_tolerance.png`, derived from `3.png` without overwriting it. Its center frame is a true circle with a `184 px` source inner diameter, displayed at approximately `135 px` inside the `410 px` reticle. This contains every projected `0.5 degree` lock position and is more than one third wider than the `52 px` Scope Moon. The moving target marker is independent and target-sized: `target diameter + max(10 px, 35%)`, with mode minimums of `20/24/28 px` for Eye/Finder/Scope. The detailed `Telescope View` deliberately has no barrel/reticle overlay, crosshair, or center circle.
+
+Latest native-alpha replacements copied without modifying the download originals:
+
+- `azimuth_pointer-removebg-preview.png` -> `processed/azimuth_pointer.png`
+- `altitude_pointer-removebg-preview.png` -> `processed/altitude_pointer.png`
+- `mode_eye_icon-removebg-preview.png` -> `processed/mode_eye_icon.png`
+- `target_approach_ring-removebg-preview (1).png` -> `processed/target_approach_ring.png`
+- `target_lock_ring-removebg-preview.png` -> `processed/target_lock_ring.png`
+- `tracking_rate_knob-removebg-preview (1).png` -> `processed/tracking_rate_knob.png`
 
 ## Scales and pointers
 

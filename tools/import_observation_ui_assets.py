@@ -37,6 +37,21 @@ RUNTIME_LIMITS = {
     "target_approach_ring.png": (256, 256),
     "target_lock_ring.png": (256, 256),
     "tracking_enabled_icon.png": (160, 160),
+    "azimuth_pointer-removebg-preview.png": (96, 128),
+    "altitude_pointer-removebg-preview.png": (96, 128),
+    "mode_eye_icon-removebg-preview.png": (192, 192),
+    "target_approach_ring-removebg-preview (1).png": (256, 256),
+    "target_lock_ring-removebg-preview.png": (256, 256),
+    "tracking_rate_knob-removebg-preview (1).png": (192, 192),
+}
+
+SOURCE_RUNTIME_ALIASES = {
+    "azimuth_pointer-removebg-preview.png": "azimuth_pointer.png",
+    "altitude_pointer-removebg-preview.png": "altitude_pointer.png",
+    "mode_eye_icon-removebg-preview.png": "mode_eye_icon.png",
+    "target_approach_ring-removebg-preview (1).png": "target_approach_ring.png",
+    "target_lock_ring-removebg-preview.png": "target_lock_ring.png",
+    "tracking_rate_knob-removebg-preview (1).png": "tracking_rate_knob.png",
 }
 
 USAGE = {
@@ -57,6 +72,12 @@ USAGE = {
     "target_approach_ring.png": "near-target cyan ring",
     "target_lock_ring.png": "centered/success gold ring",
     "tracking_enabled_icon.png": "tracking-enabled status icon",
+    "azimuth_pointer-removebg-preview.png": "transparent replacement for horizontal target-offset pointer",
+    "altitude_pointer-removebg-preview.png": "transparent replacement for vertical target-offset pointer",
+    "mode_eye_icon-removebg-preview.png": "transparent replacement for Eye mode button icon",
+    "target_approach_ring-removebg-preview (1).png": "transparent replacement for near-target cyan ring",
+    "target_lock_ring-removebg-preview.png": "transparent replacement for centered/success gold ring",
+    "tracking_rate_knob-removebg-preview (1).png": "transparent replacement for tracking-rate status knob",
     "ChatGPT Image 2026年7月18日 21_22_48.png": "layout reference only; contains baked values and text",
 }
 
@@ -275,7 +296,7 @@ def main() -> None:
                 raise RuntimeError(f"No foreground recovered from {source.name}")
             cropped = rgba.crop(bbox)
             runtime = fit_nearest(cropped, RUNTIME_LIMITS[source.name])
-            runtime_name = RETICLE_RUNTIME_NAMES.get(source.name, source.name)
+            runtime_name = RETICLE_RUNTIME_NAMES.get(source.name, SOURCE_RUNTIME_ALIASES.get(source.name, source.name))
             runtime_path = PROCESSED_DIR / runtime_name
             runtime.save(runtime_path, optimize=True)
             record.update({
@@ -306,7 +327,7 @@ def main() -> None:
     }
     manifest_path = ASSET_ROOT / "asset_manifest.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Imported {len(list(SOURCE_DIR.glob('*.png')))} source PNG files and {len(DERIVED_USAGE) + 2} derived runtime files")
+    print(f"Imported {len(list(SOURCE_DIR.glob('*.png')))} source PNG files and {len(DERIVED_USAGE) + 3} derived runtime files")
     print(manifest_path)
 
 

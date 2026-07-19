@@ -103,36 +103,41 @@
       "resize_filter": "nearest-neighbor"
     },
     {
-      "source_name": "altitude_pointer.png",
-      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\altitude_pointer.png",
-      "project_original": "assets/ui/observation/suc/source/altitude_pointer.png",
-      "sha256": "e661ede35fd3ea55fe68d0ca9c8ea58c6eebd5806ff9fbdfb88da4faba68d7a5",
+      "source_name": "altitude_pointer-removebg-preview.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\altitude_pointer-removebg-preview.png",
+      "project_original": "assets/ui/observation/suc/source/altitude_pointer-removebg-preview.png",
+      "sha256": "0f152c0fa35c3a48342b580da7661c7487e25a7334ef0788d007180dc6e31692",
       "original_size": [
-        1254,
-        1254
+        500,
+        500
       ],
-      "original_mode": "RGB",
-      "original_has_alpha": false,
-      "original_alpha_bbox_at_8": null,
-      "usage": "vertical target-offset pointer (rotated at runtime)",
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        220,
+        40,
+        280,
+        454
+      ],
+      "usage": "transparent replacement for vertical target-offset pointer",
       "runtime_asset": "assets/ui/observation/suc/processed/altitude_pointer.png",
       "runtime_name": "altitude_pointer.png",
       "crop_rect": [
-        549,
-        98,
-        706,
-        1140
+        220,
+        40,
+        280,
+        454
       ],
       "cropped_size": [
-        157,
-        1042
+        60,
+        414
       ],
       "runtime_size": [
         19,
         128
       ],
       "runtime_has_alpha": true,
-      "processing": "neutral background removal + transparent trim",
+      "processing": "alpha threshold + transparent trim",
       "resize_filter": "nearest-neighbor"
     },
     {
@@ -212,36 +217,41 @@
       "resize_filter": "nearest-neighbor"
     },
     {
-      "source_name": "azimuth_pointer.png",
-      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\azimuth_pointer.png",
-      "project_original": "assets/ui/observation/suc/source/azimuth_pointer.png",
-      "sha256": "61109010b34e31b4946aadf8cd314c83465bcbeb3ba63a91155aa958b1ce317c",
+      "source_name": "azimuth_pointer-removebg-preview.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\azimuth_pointer-removebg-preview.png",
+      "project_original": "assets/ui/observation/suc/source/azimuth_pointer-removebg-preview.png",
+      "sha256": "583a5d2e3cfc6a5608054d6bec9a8cf5c22d957f073520b5892ce3512bcede4b",
       "original_size": [
-        1254,
-        1254
+        500,
+        500
       ],
-      "original_mode": "RGB",
-      "original_has_alpha": false,
-      "original_alpha_bbox_at_8": null,
-      "usage": "horizontal target-offset pointer",
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        219,
+        59,
+        281,
+        443
+      ],
+      "usage": "transparent replacement for horizontal target-offset pointer",
       "runtime_asset": "assets/ui/observation/suc/processed/azimuth_pointer.png",
       "runtime_name": "azimuth_pointer.png",
       "crop_rect": [
-        546,
-        145,
-        709,
-        1115
+        219,
+        59,
+        281,
+        443
       ],
       "cropped_size": [
-        163,
-        970
+        62,
+        384
       ],
       "runtime_size": [
-        22,
+        21,
         128
       ],
       "runtime_has_alpha": true,
-      "processing": "neutral background removal + transparent trim",
+      "processing": "alpha threshold + transparent trim",
       "resize_filter": "nearest-neighbor"
     },
     {
@@ -303,14 +313,19 @@
       "source_name": "ChatGPT Image 2026年7月19日 08_24_02.png",
       "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\ChatGPT Image 2026年7月19日 08_24_02.png",
       "project_original": "assets/ui/observation/suc/source/ChatGPT Image 2026年7月19日 08_24_02.png",
-      "sha256": "7c93403705a39538372fab781f671373c651ae1b02c146824fe0d1ad0d82a5af",
+      "sha256": "723bccd266d5098fe884a9335490470471ab1601d5d2d815909d1dcadb6d39e4",
       "original_size": [
         1254,
         1254
       ],
-      "original_mode": "RGB",
-      "original_has_alpha": false,
-      "original_alpha_bbox_at_8": null,
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        0,
+        0,
+        1254,
+        1254
+      ],
       "usage": "layout reference only; contains baked values and text",
       "runtime_asset": null,
       "processing": "source archive only",
@@ -350,36 +365,41 @@
       "resize_filter": "nearest-neighbor"
     },
     {
-      "source_name": "mode_eye_icon.png",
-      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\mode_eye_icon.png",
-      "project_original": "assets/ui/observation/suc/source/mode_eye_icon.png",
-      "sha256": "403978681c30531a49f1bd17a6049a1c4b7815676c530bd42b5a058cc190ca35",
+      "source_name": "mode_eye_icon-removebg-preview.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\mode_eye_icon-removebg-preview.png",
+      "project_original": "assets/ui/observation/suc/source/mode_eye_icon-removebg-preview.png",
+      "sha256": "b65ca3226c1f8d4facbf3f2b1ed8474020e264913424e386cf8c61e0ba68088a",
       "original_size": [
-        1254,
-        1254
+        500,
+        500
       ],
-      "original_mode": "RGB",
-      "original_has_alpha": false,
-      "original_alpha_bbox_at_8": null,
-      "usage": "Eye mode button icon",
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        99,
+        157,
+        402,
+        331
+      ],
+      "usage": "transparent replacement for Eye mode button icon",
       "runtime_asset": "assets/ui/observation/suc/processed/mode_eye_icon.png",
       "runtime_name": "mode_eye_icon.png",
       "crop_rect": [
-        251,
-        392,
-        1010,
-        829
+        99,
+        157,
+        402,
+        331
       ],
       "cropped_size": [
-        759,
-        437
+        303,
+        174
       ],
       "runtime_size": [
         192,
-        111
+        110
       ],
       "runtime_has_alpha": true,
-      "processing": "neutral background removal + transparent trim",
+      "processing": "alpha threshold + transparent trim",
       "resize_filter": "nearest-neighbor"
     },
     {
@@ -449,34 +469,34 @@
       "resize_filter": "nearest-neighbor"
     },
     {
-      "source_name": "target_approach_ring.png",
-      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\target_approach_ring.png",
-      "project_original": "assets/ui/observation/suc/source/target_approach_ring.png",
-      "sha256": "ca1e66546a788267cb82b5af352f5ff6527d2b2b2d77ac1c0ea990f483fad36f",
+      "source_name": "target_approach_ring-removebg-preview (1).png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\target_approach_ring-removebg-preview (1).png",
+      "project_original": "assets/ui/observation/suc/source/target_approach_ring-removebg-preview (1).png",
+      "sha256": "0f372c2848624250a46a515b248c923c50f2af0cfd52bdefd6e220d93a1e0a78",
       "original_size": [
-        1024,
-        1024
+        500,
+        500
       ],
       "original_mode": "RGBA",
       "original_has_alpha": true,
       "original_alpha_bbox_at_8": [
-        200,
-        188,
-        823,
-        796
+        98,
+        92,
+        402,
+        389
       ],
-      "usage": "near-target cyan ring",
+      "usage": "transparent replacement for near-target cyan ring",
       "runtime_asset": "assets/ui/observation/suc/processed/target_approach_ring.png",
       "runtime_name": "target_approach_ring.png",
       "crop_rect": [
-        200,
-        188,
-        823,
-        796
+        98,
+        92,
+        402,
+        389
       ],
       "cropped_size": [
-        623,
-        608
+        304,
+        297
       ],
       "runtime_size": [
         256,
@@ -487,36 +507,41 @@
       "resize_filter": "nearest-neighbor"
     },
     {
-      "source_name": "target_lock_ring.png",
-      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\target_lock_ring.png",
-      "project_original": "assets/ui/observation/suc/source/target_lock_ring.png",
-      "sha256": "aa10bf719cf157aad5b5d974b3ef2c97deb6fccfe1d58b21799de099e792220e",
+      "source_name": "target_lock_ring-removebg-preview.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\target_lock_ring-removebg-preview.png",
+      "project_original": "assets/ui/observation/suc/source/target_lock_ring-removebg-preview.png",
+      "sha256": "2bdd23c62b110270f5a42e9a5b564d345c4753ba65585f05ea6d5eb64a6d28ac",
       "original_size": [
-        1254,
-        1254
+        500,
+        500
       ],
-      "original_mode": "RGB",
-      "original_has_alpha": false,
-      "original_alpha_bbox_at_8": null,
-      "usage": "centered/success gold ring",
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        67,
+        44,
+        432,
+        411
+      ],
+      "usage": "transparent replacement for centered/success gold ring",
       "runtime_asset": "assets/ui/observation/suc/processed/target_lock_ring.png",
       "runtime_name": "target_lock_ring.png",
       "crop_rect": [
-        167,
-        110,
-        1085,
-        1032
+        67,
+        44,
+        432,
+        411
       ],
       "cropped_size": [
-        918,
-        922
+        365,
+        367
       ],
       "runtime_size": [
         255,
         256
       ],
       "runtime_has_alpha": true,
-      "processing": "neutral background removal + transparent trim",
+      "processing": "alpha threshold + transparent trim",
       "resize_filter": "nearest-neighbor"
     },
     {
@@ -558,36 +583,41 @@
       "resize_filter": "nearest-neighbor"
     },
     {
-      "source_name": "tracking_rate_knob.png",
-      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\tracking_rate_knob.png",
-      "project_original": "assets/ui/observation/suc/source/tracking_rate_knob.png",
-      "sha256": "b46f2817d13942101e4d6903925645ef7c9bab985eb39cd4455e48d4faeb3f83",
+      "source_name": "tracking_rate_knob-removebg-preview (1).png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\tracking_rate_knob-removebg-preview (1).png",
+      "project_original": "assets/ui/observation/suc/source/tracking_rate_knob-removebg-preview (1).png",
+      "sha256": "1ef8afb389e213fa556d752f4cc16a89ff4fbd5f506be90ed72ab3bb2f8ca32b",
       "original_size": [
-        1254,
-        1254
+        500,
+        500
       ],
-      "original_mode": "RGB",
-      "original_has_alpha": false,
-      "original_alpha_bbox_at_8": null,
-      "usage": "tracking-rate status knob",
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        32,
+        26,
+        469,
+        462
+      ],
+      "usage": "transparent replacement for tracking-rate status knob",
       "runtime_asset": "assets/ui/observation/suc/processed/tracking_rate_knob.png",
       "runtime_name": "tracking_rate_knob.png",
       "crop_rect": [
-        81,
-        64,
-        1174,
-        1157
+        32,
+        26,
+        469,
+        462
       ],
       "cropped_size": [
-        1093,
-        1093
+        437,
+        436
       ],
       "runtime_size": [
         192,
         192
       ],
       "runtime_has_alpha": true,
-      "processing": "neutral background removal + transparent trim",
+      "processing": "alpha threshold + transparent trim",
       "resize_filter": "nearest-neighbor"
     },
     {

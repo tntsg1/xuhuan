@@ -1751,12 +1751,10 @@ func _update_marker_frames() -> void:
 		# ring must always surround the rendered object instead of shrinking
 		# inside large Moon/planet/deep-sky textures.
 		var target_diameter := maxf(target_rect.size.x, target_rect.size.y)
-		# Keep the moving target marker visibly outside each mode's central
-		# aiming reference. This prevents two near-equal rings from reading as
-		# a broken or undersized lock state.
-		var ring_minimum := 96.0 if view_mode == "naked_eye" else (120.0 if view_mode == "finder" else 200.0)
-		var ring_padding := 28.0 if view_mode == "naked_eye" else (36.0 if view_mode == "finder" else 44.0)
-		var ring_size := maxf(ring_minimum, target_diameter + ring_padding)
+		# The moving marker belongs to the celestial object, not to the whole
+		# telescope aperture. Keep it close to small stars while allowing Moon
+		# and deep-sky textures to grow the ring just beyond their visible edge.
+		var ring_size := _target_feedback_ring_size(target_diameter)
 		var ring_path := LOCK_RING_TEXTURE if centered else APPROACH_RING_TEXTURE
 		var alpha := 1.0 if centered else (0.52 if view_mode == "finder" else (0.40 if view_mode == "naked_eye" else 0.64))
 		next_state = "locked" if centered else ("approach" if offset <= maxf(fov_x, fov_y) * 0.22 else "search")
@@ -1795,6 +1793,12 @@ func _update_marker_frames() -> void:
 			target_state_ring = null
 			assist_frame = null
 	target_lock_state = next_state
+
+
+func _target_feedback_ring_size(target_diameter: float) -> float:
+	var ring_minimum := 20.0 if view_mode == "naked_eye" else (24.0 if view_mode == "finder" else 28.0)
+	var ring_padding := maxf(10.0, target_diameter * 0.35)
+	return maxf(ring_minimum, target_diameter + ring_padding)
 
 	if selected_object_id != "" and selected_object_id != target_id and in_view_targets.has(selected_object_id):
 		var info: Dictionary = in_view_targets[selected_object_id]

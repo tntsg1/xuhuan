@@ -160,6 +160,11 @@ func _test_modes() -> void:
 		_check(reticle != null and reticle.texture != null and reticle.texture.resource_path == expected_path, "%s uses exactly one supplied reticle texture" % mode)
 	_check(fovs == [120.0, 28.0, 6.0], "Eye/Finder/Scope FOV values remain 120/28/6")
 	_check(target_sizes[0] < target_sizes[1] and target_sizes[1] < target_sizes[2], "target is smallest in Eye and largest in Scope")
+	for index in range(3):
+		var mode: String = ["naked_eye", "finder", "telescope"][index]
+		view.set("view_mode", mode)
+		var star_ring: float = float(view.call("_target_feedback_ring_size", [2.0, 3.0, 6.0][index]))
+		_check(is_equal_approx(star_ring, [20.0, 24.0, 28.0][index]), "%s star marker stays compact" % mode)
 
 
 func _test_availability_and_environment() -> void:
@@ -200,7 +205,8 @@ func _test_target_lock_alignment() -> void:
 		_check(icon_center.distance_to(ring_center) < 1.5, "target lock ring matches the projected celestial position")
 		_check(ring.texture.resource_path.ends_with("target_lock_ring.png"), "centered target replaces approach with the lock ring")
 		_check(ring.size.x > maxf(icon.size.x * icon.scale.x, icon.size.y * icon.scale.y), "lock ring remains larger than the rendered celestial target")
-		_check(ring.size.x >= 200.0, "Scope target lock ring remains clearly larger than the circular center frame")
+		var rendered_diameter := maxf(icon.size.x * icon.scale.x, icon.size.y * icon.scale.y)
+		_check(ring.size.x <= rendered_diameter + 20.0, "Scope target lock ring stays close to the celestial target")
 		_check(ring.size == approach_size, "approach and lock states keep one consistent target-derived frame size")
 	_check(not (view.get("observe_button") as Button).disabled, "Observe enables from the same centered-target condition")
 
