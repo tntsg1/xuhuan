@@ -164,7 +164,7 @@ func _test_modes() -> void:
 		var mode: String = ["naked_eye", "finder", "telescope"][index]
 		view.set("view_mode", mode)
 		var star_ring: float = float(view.call("_target_feedback_ring_size", [2.0, 3.0, 6.0][index]))
-		_check(is_equal_approx(star_ring, [20.0, 24.0, 28.0][index]), "%s star marker stays compact" % mode)
+		_check(is_equal_approx(star_ring, [40.0, 44.0, 48.0][index]), "%s star marker stays readable without covering the view" % mode)
 
 
 func _test_availability_and_environment() -> void:
@@ -206,7 +206,8 @@ func _test_target_lock_alignment() -> void:
 		_check(ring.texture.resource_path.ends_with("target_lock_ring.png"), "centered target replaces approach with the lock ring")
 		_check(ring.size.x > maxf(icon.size.x * icon.scale.x, icon.size.y * icon.scale.y), "lock ring remains larger than the rendered celestial target")
 		var rendered_diameter := maxf(icon.size.x * icon.scale.x, icon.size.y * icon.scale.y)
-		_check(ring.size.x <= rendered_diameter + 20.0, "Scope target lock ring stays close to the celestial target")
+		var expected_ring_size: float = float(view.call("_target_feedback_ring_size", rendered_diameter))
+		_check(is_equal_approx(ring.size.x, expected_ring_size), "Scope target lock ring uses the compact target-derived size")
 		_check(ring.size == approach_size, "approach and lock states keep one consistent target-derived frame size")
 	_check(not (view.get("observe_button") as Button).disabled, "Observe enables from the same centered-target condition")
 

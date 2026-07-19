@@ -1756,7 +1756,7 @@ func _update_marker_frames() -> void:
 		# and deep-sky textures to grow the ring just beyond their visible edge.
 		var ring_size := _target_feedback_ring_size(target_diameter)
 		var ring_path := LOCK_RING_TEXTURE if centered else APPROACH_RING_TEXTURE
-		var alpha := 1.0 if centered else (0.52 if view_mode == "finder" else (0.40 if view_mode == "naked_eye" else 0.64))
+		var alpha := 1.0 if centered else 0.82
 		next_state = "locked" if centered else ("approach" if offset <= maxf(fov_x, fov_y) * 0.22 else "search")
 		if target_state_ring == null or not is_instance_valid(target_state_ring):
 			target_state_ring = _target_ring(view_layer, ring_path, target_rect.get_center(), ring_size, 0.0)
@@ -1794,16 +1794,16 @@ func _update_marker_frames() -> void:
 			assist_frame = null
 	target_lock_state = next_state
 
-
-func _target_feedback_ring_size(target_diameter: float) -> float:
-	var ring_minimum := 20.0 if view_mode == "naked_eye" else (24.0 if view_mode == "finder" else 28.0)
-	var ring_padding := maxf(10.0, target_diameter * 0.35)
-	return maxf(ring_minimum, target_diameter + ring_padding)
-
 	if selected_object_id != "" and selected_object_id != target_id and in_view_targets.has(selected_object_id):
 		var info: Dictionary = in_view_targets[selected_object_id]
 		var rect: Rect2 = info.get("rect", Rect2())
 		selection_frame = _make_frame(view_layer, rect.grow(7.0), GOLD, 3)
+
+
+func _target_feedback_ring_size(target_diameter: float) -> float:
+	var ring_minimum := 40.0 if view_mode == "naked_eye" else (44.0 if view_mode == "finder" else 48.0)
+	var ring_padding := maxf(12.0, target_diameter * 0.25)
+	return maxf(ring_minimum, target_diameter + ring_padding)
 
 
 func _target_ring(parent: Control, texture_path: String, center: Vector2, diameter: float, alpha: float) -> TextureRect:
@@ -1816,14 +1816,14 @@ func _target_ring(parent: Control, texture_path: String, center: Vector2, diamet
 func _update_lock_ring_pulse() -> void:
 	if target_state_ring == null or not is_instance_valid(target_state_ring):
 		return
-	if target_lock_state != "locked" and target_lock_state != "success":
+	if target_lock_state != "approach" and target_lock_state != "locked" and target_lock_state != "success":
 		return
 	if InteractionFeedback.is_reduced_motion():
-		target_state_ring.modulate.a = 1.0 if target_lock_state == "success" else 0.88
+		target_state_ring.modulate.a = 1.0 if target_lock_state == "success" else (0.82 if target_lock_state == "approach" else 0.88)
 		return
 	var phase := Time.get_ticks_msec() / 1000.0
-	var base := 1.0 if target_lock_state == "success" else 0.82
-	var amplitude := 0.0 if target_lock_state == "success" else 0.16
+	var base := 1.0 if target_lock_state == "success" else (0.82 if target_lock_state == "approach" else 0.90)
+	var amplitude := 0.0 if target_lock_state == "success" else (0.10 if target_lock_state == "approach" else 0.08)
 	target_state_ring.modulate.a = clampf(base + sin(phase * 3.2) * amplitude, 0.55, 1.0)
 
 
