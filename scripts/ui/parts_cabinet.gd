@@ -82,6 +82,7 @@ const UNIVERSAL_COMPAT := ["refractor", "newtonian", "dobsonian"]
 func _ready() -> void:
 	GameManager.language_changed.connect(_on_language_changed)
 	_build()
+	InteractionFeedback.page_enter(self)
 	call_deferred("_scroll_to_next_step")
 
 

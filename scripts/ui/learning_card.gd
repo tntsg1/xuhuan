@@ -27,6 +27,7 @@ const MISSION_CREDIT := "res://assets/mission_complete/credit_coin_64_clean.png"
 func _ready() -> void:
 	GameManager.language_changed.connect(_on_language_changed)
 	_build()
+	InteractionFeedback.page_enter(self)
 
 
 func _build() -> void:

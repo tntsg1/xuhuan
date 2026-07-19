@@ -101,12 +101,16 @@ var inspector_body: Label
 var feedback_label: Label
 var stats_list: Control
 var ready_dot: Panel
+var part_card_controls: Dictionary = {}
+var slot_controls: Dictionary = {}
+var install_animation_active := false
 
 
 func _ready() -> void:
 	GameManager.language_changed.connect(_on_language_changed)
 	_load_wrong_attempts()
 	_build()
+	InteractionFeedback.page_enter(self)
 
 
 func _load_wrong_attempts() -> void:
@@ -351,6 +355,7 @@ func _refresh_all() -> void:
 
 func _refresh_parts() -> void:
 	_clear(parts_list)
+	part_card_controls.clear()
 	var y := 0.0
 	var selected_y := -1.0
 	var next_part := _next_installable_part() if GameManager.assembly_hints_enabled() else ""
@@ -382,7 +387,7 @@ func _scroll_parts_to(value: int) -> void:
 func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selected: bool, pos: Vector2) -> void:
 	var shared_texture_path := str(PART_TEXTURES.get(str(part.get("id", "")), part.get("icon_path", "")))
 	var shared_texture := load(shared_texture_path) as Texture2D if shared_texture_path != "" and ResourceLoader.exists(shared_texture_path) else null
-	AssemblyUITemplate.add_part_card(
+	var template_card := AssemblyUITemplate.add_part_card(
 		parts_list,
 		pos,
 		GameManager.dict_text(part, "name"),
@@ -393,6 +398,7 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 		selected,
 		_select_part.bind(part_type)
 	)
+	part_card_controls[part_type] = template_card
 	return
 	var bg_color := Color(0.155, 0.172, 0.180)
 	if installed:
@@ -528,6 +534,7 @@ func _refresh_blueprint() -> void:
 	# slot, shows installed parts, and carries the click hotspots. The dashed
 	# slot outlines and telescope drawing come from the background image.
 	_clear(blueprint_layer)
+	slot_controls.clear()
 	var next_part := _next_installable_part() if GameManager.assembly_hints_enabled() else ""
 	for part_type in PART_ORDER:
 		if OPTIONAL_PARTS.has(part_type) and GameManager.unlocked_parts_by_type(part_type).is_empty():
@@ -619,7 +626,8 @@ func _draw_slot(part_type: String, next_part: String) -> void:
 		elif selected_part_type == "" and next:
 			_draw_glow_frame(rect.grow(2.0), Color(0.55, 0.82, 0.98, 0.85))
 
-	AssemblyUITemplate.add_slot_hit_target(blueprint_layer, rect, _try_install.bind(part_type))
+	var hit := AssemblyUITemplate.add_slot_hit_target(blueprint_layer, rect, _try_install.bind(part_type))
+	slot_controls[part_type] = hit
 
 
 func _draw_glow_frame(rect: Rect2, color: Color) -> void:
@@ -867,6 +875,9 @@ func _select_part(part_type: String) -> void:
 
 
 func _try_install(slot_type: String) -> void:
+	if install_animation_active:
+		return
+	call_deferred("_animate_install_error_if_idle", slot_type)
 	if selected_part_type == "":
 		feedback_label.text = GameManager.text("Select a part card from the left first.", "请先从左侧选择零件卡。")
 		return
@@ -886,10 +897,51 @@ func _try_install(slot_type: String) -> void:
 		_refresh_all()
 		return
 
+	install_animation_active = true
+	var animation := _capture_part_animation(slot_type)
 	var score: int = GameManager.install_part(slot_type, int(wrong_attempts.get(slot_type, 0)))
 	feedback_label.text = GameManager.text("Installed " + str(_part_label(slot_type, "short")) + ". Alignment " + str(score) + ".", "已安装 " + str(_part_label(slot_type, "short")) + "，对齐 " + str(score) + "。")
 	selected_part_type = ""
+	install_animation_active = false
 	_refresh_all()
+	_play_part_animation(animation)
+	call_deferred("_finish_install_feedback", slot_type)
+
+
+func _capture_part_animation(part_type: String) -> Dictionary:
+	var part := _part_for_type(part_type)
+	var part_id := str(part.get("id", ""))
+	var path := str(PART_TEXTURES.get(part_id, part.get("icon_path", "")))
+	var source := part_card_controls.get(part_type) as Control
+	var target := slot_controls.get(part_type) as Control
+	if source == null or target == null or path == "" or not ResourceLoader.exists(path):
+		return {}
+	var texture := load(path) as Texture2D
+	if texture == null:
+		return {}
+	var source_rect := source.get_global_rect()
+	source_rect.position += Vector2(10, 10)
+	source_rect.size = Vector2(minf(54.0, source_rect.size.x), minf(54.0, source_rect.size.y))
+	return {"texture": texture, "source": source_rect, "target": target.get_global_rect()}
+
+
+func _play_part_animation(animation: Dictionary) -> void:
+	if animation.is_empty():
+		return
+	InteractionFeedback.fly_texture(animation["texture"], animation["source"], animation["target"], self)
+
+
+func _finish_install_feedback(part_type: String) -> void:
+	var target := slot_controls.get(part_type) as Control
+	if target != null:
+		InteractionFeedback.success(target, "assembly_part_installed")
+
+
+func _animate_install_error_if_idle(part_type: String) -> void:
+	if install_animation_active or not is_inside_tree():
+		return
+	var source := part_card_controls.get(part_type) as Control
+	InteractionFeedback.error(source if source != null else feedback_label)
 
 
 func _finish() -> void:

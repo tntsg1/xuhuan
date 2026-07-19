@@ -424,6 +424,7 @@
       "finder_scope"
     ],
     "required_part_ids": [
+      "basic_mount",
       "newtonian_reflector_tube",
       "newtonian_mirror_cell",
       "newtonian_primary_mirror",

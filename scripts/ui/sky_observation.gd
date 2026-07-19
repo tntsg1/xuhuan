@@ -150,6 +150,10 @@ var telescope_altitude := 45.0
 var view_mode := "naked_eye"
 var fov_x := 120.0
 var fov_y := 70.0
+var display_azimuth := 180.0
+var display_altitude := 45.0
+var display_fov_x := 120.0
+var display_fov_y := 70.0
 var observation_mode := "telescope"
 var selected_object_id := ""
 var target_id := ""
@@ -187,6 +191,10 @@ var alt_knob_icon: TextureRect
 var target_state_ring: TextureRect
 var target_lock_state := "search"
 var mouse_aim_dragging := false
+var observe_button: Button
+var observe_transition_active := false
+var calibration_success_played := false
+var previous_calibration_percent := -1.0
 
 # --- E3 sky-realism: background lift, cloud drift, star twinkle. All
 # purely visual; the star magnitude filter is the only thing that changes
@@ -219,6 +227,7 @@ var visited_modes: Dictionary = {}
 var calibration_panel: Control
 var calibration_pct_label: Label
 var calibration_hint_label: Label
+var calibration_progress_fill: ColorRect
 var calibrate_repeat_timer := 0.0
 
 var workflow_elapsed := 0.0
@@ -246,11 +255,16 @@ func _ready() -> void:
 			view_mode = saved_mode
 	visited_modes[view_mode] = true
 	_apply_view_mode()
+	display_azimuth = telescope_azimuth
+	display_altitude = telescope_altitude
+	display_fov_x = fov_x
+	display_fov_y = fov_y
 	sky_service = SkyPositionServiceScript.new()
 	sky_data = sky_service.get_sky_positions(VIEW_RECT)
 	_ensure_target_observable()
 	_load_real_star_points()
 	_build()
+	InteractionFeedback.page_enter(self)
 	sky_service.request_online_planet_data(self, VIEW_RECT, _apply_online_sky_data)
 
 
@@ -258,6 +272,7 @@ func _process(delta: float) -> void:
 	_ensure_scope_reticle_visible()
 	_update_lock_ring_pulse()
 	_handle_aim_input(delta)
+	_advance_visual_camera(delta)
 	_handle_calibration_input(delta)
 	_update_workflow_discipline_timer(delta)
 	_advance_sky_conditions(delta)
@@ -391,7 +406,29 @@ func _apply_aim_delta(azimuth_delta: float, altitude_delta: float) -> void:
 	telescope_azimuth = wrapf(telescope_azimuth + azimuth_delta, 0.0, 360.0)
 	telescope_altitude = clampf(telescope_altitude + altitude_delta, 0.0, 90.0)
 	_count_workflow_move()
-	_rebuild_view()
+	_advance_visual_camera(1.0 / 30.0)
+
+
+func _advance_visual_camera(delta: float) -> void:
+	var response := 40.0 if InteractionFeedback.is_reduced_motion() else 14.0
+	var blend := 1.0 - exp(-response * delta)
+	var az_delta := shortest_angle_degrees(display_azimuth, telescope_azimuth)
+	var old_values := Vector4(display_azimuth, display_altitude, display_fov_x, display_fov_y)
+	display_azimuth = wrapf(display_azimuth + az_delta * blend, 0.0, 360.0)
+	display_altitude = lerpf(display_altitude, telescope_altitude, blend)
+	display_fov_x = lerpf(display_fov_x, fov_x, blend)
+	display_fov_y = lerpf(display_fov_y, fov_y, blend)
+	if absf(az_delta) < 0.0005:
+		display_azimuth = telescope_azimuth
+	if absf(display_altitude - telescope_altitude) < 0.0005:
+		display_altitude = telescope_altitude
+	if absf(display_fov_x - fov_x) < 0.001:
+		display_fov_x = fov_x
+	if absf(display_fov_y - fov_y) < 0.001:
+		display_fov_y = fov_y
+	var current_values := Vector4(display_azimuth, display_altitude, display_fov_x, display_fov_y)
+	if old_values.distance_to(current_values) > 0.0001:
+		_rebuild_view(false)
 
 
 func _count_workflow_move() -> void:
@@ -450,10 +487,23 @@ func _update_calibration_panel() -> void:
 		return
 	var aligned := GameManager.is_finder_aligned()
 	var pct := GameManager.finder_alignment_percent()
+	var prior_pct := previous_calibration_percent
+	if calibration_progress_fill != null:
+		InteractionFeedback.tween_size(calibration_progress_fill, Vector2((CALIBRATE_RECT.size.x - 24.0) * pct / 100.0, 5.0), 0.14)
+		if prior_pct >= 0.0 and pct > prior_pct + 0.05:
+			InteractionFeedback.pulse(calibration_progress_fill, Color(0.62, 1.0, 0.92), 0.28)
+	previous_calibration_percent = pct
 	if aligned:
 		calibration_pct_label.text = GameManager.text("Aligned!", "校准完成！")
 		calibration_pct_label.add_theme_color_override("font_color", GREEN)
 		calibration_hint_label.text = GameManager.text("Finder now matches the telescope.", "寻星镜现在与主镜一致了。")
+		if not calibration_success_played:
+			calibration_success_played = true
+			InteractionFeedback.success(calibration_panel, "finder_aligned")
+			if scope_reticle_layer != null:
+				InteractionFeedback.pulse(scope_reticle_layer, GOLD, 0.48)
+			if target_state_ring != null:
+				InteractionFeedback.success(target_state_ring, "finder_lock")
 	else:
 		# Single-line inline bilingual (GameManager.text stacks EN+ZH and
 		# overflows this 46px panel) + a live signed readout so the player
@@ -461,6 +511,8 @@ func _update_calibration_panel() -> void:
 		var offset: Dictionary = GameManager.finder_offset()
 		var az := float(offset.get("az", 0.0))
 		var alt := float(offset.get("alt", 0.0))
+		if absf(az) < 0.35 and absf(alt) < 0.35 and pct > prior_pct:
+			InteractionFeedback.pulse(calibration_panel, CYAN, 0.34)
 		calibration_pct_label.text = GameManager.text(
 			"Finder alignment %d%%   Δaz %+.1f°  Δalt %+.1f°",
 			"寻星镜校准 %d%%   方位差 %+.1f°  高度差 %+.1f°"
@@ -519,6 +571,9 @@ func _set_view_mode(mode: String) -> void:
 	if not bool(check.get("ok", false)):
 		if guidance_label != null:
 			guidance_label.text = GameManager.text(str(check.get("en", "")), str(check.get("zh", "")))
+			InteractionFeedback.error(guidance_label)
+		if mode_buttons.has(mode):
+			InteractionFeedback.error((mode_buttons[mode] as Dictionary).get("button") as Control)
 		return
 	view_mode = mode
 	visited_modes[view_mode] = true
@@ -531,6 +586,24 @@ func _set_view_mode(mode: String) -> void:
 			cloud.queue_free()
 		_build_cloud_layer()
 	_rebuild_view()
+	_animate_mode_transition(mode)
+
+
+func _animate_mode_transition(mode: String) -> void:
+	if view_layer == null:
+		return
+	view_layer.pivot_offset = view_layer.size * 0.5
+	if not InteractionFeedback.is_reduced_motion():
+		view_layer.scale = Vector2.ONE * (0.96 if mode == "naked_eye" else (1.035 if mode == "finder" else 1.07))
+	view_layer.modulate.a = 0.72
+	var tween := create_tween().bind_node(view_layer).set_parallel(true)
+	tween.tween_property(view_layer, "scale", Vector2.ONE, 0.28 if not InteractionFeedback.is_reduced_motion() else 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(view_layer, "modulate:a", 1.0, 0.22 if not InteractionFeedback.is_reduced_motion() else 0.08)
+	if scope_reticle_layer != null:
+		scope_reticle_layer.modulate.a = 0.0
+		create_tween().bind_node(scope_reticle_layer).tween_property(scope_reticle_layer, "modulate:a", 1.0 if mode != "naked_eye" else 0.55, 0.24)
+	if mode_buttons.has(mode):
+		InteractionFeedback.success((mode_buttons[mode] as Dictionary).get("button") as Control, "mode_switch")
 
 
 func _apply_view_mode() -> void:
@@ -584,6 +657,16 @@ func _ensure_target_observable() -> void:
 		push_warning("Mission target '%s' is missing from celestial_catalog.json; using a temporary sky position." % target_id)
 	var item: Dictionary = sky_data[target_id]
 	var seed_value: int = absi(target_id.hash())
+	# L25 is a controlled chromatic-aberration lesson. Keep Vega west of
+	# the prescribed 142-degree starting aim so the A-key guidance and the
+	# visual demonstration remain deterministic across dates and machines.
+	if int(GameManager.current_level().get("level_number", 0)) == 25 and target_id == "vega":
+		item["azimuth"] = 90.0
+		item["altitude"] = 56.0
+		item["visible"] = true
+		item["direction_text"] = _direction_text_for_azimuth(90.0)
+		item["source"] = "fallback"
+		sky_data[target_id] = item
 	var altitude_bias := _target_altitude_bias()
 	if altitude_bias == "low":
 		# The mission deliberately wants a low-altitude target (seeing lesson):
@@ -763,8 +846,8 @@ func _advance_clouds(delta: float) -> void:
 func _position_cloud(index: int) -> void:
 	var cloud := cloud_nodes[index]
 	var anchor := cloud_sky_anchors[index]
-	var d_az := shortest_angle_degrees(telescope_azimuth, anchor.x)
-	var d_alt := anchor.y - telescope_altitude
+	var d_az := shortest_angle_degrees(display_azimuth, anchor.x)
+	var d_alt := anchor.y - display_altitude
 	cloud.position = _fov_to_local(d_az, d_alt) - cloud.size * cloud.scale * 0.5
 
 
@@ -902,8 +985,10 @@ func _build_calibration_panel() -> void:
 	calibration_panel.visible = false
 	add_child(calibration_panel)
 	_rect(calibration_panel, Vector2.ZERO, CALIBRATE_RECT.size, Color(0.02, 0.03, 0.05, 0.72))
-	calibration_pct_label = _label(calibration_panel, "", Vector2(10, 4), Vector2(CALIBRATE_RECT.size.x - 20, 20), 13, WARNING, HORIZONTAL_ALIGNMENT_CENTER)
-	calibration_hint_label = _label(calibration_panel, GameManager.text("IJKL to adjust", "IJKL 微调"), Vector2(10, 24), Vector2(CALIBRATE_RECT.size.x - 20, 18), 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	calibration_pct_label = _label(calibration_panel, "", Vector2(10, 2), Vector2(CALIBRATE_RECT.size.x - 20, 18), 12, WARNING, HORIZONTAL_ALIGNMENT_CENTER)
+	_rect(calibration_panel, Vector2(12, 21), Vector2(CALIBRATE_RECT.size.x - 24, 5), Color(0.08, 0.13, 0.20, 0.9))
+	calibration_progress_fill = _rect(calibration_panel, Vector2(12, 21), Vector2(0, 5), CYAN)
+	calibration_hint_label = _label(calibration_panel, GameManager.text("IJKL to adjust", "IJKL 微调"), Vector2(10, 27), Vector2(CALIBRATE_RECT.size.x - 20, 17), 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	_update_calibration_panel()
 
 
@@ -1309,9 +1394,9 @@ func _wrapped_mission_hint(target: Dictionary) -> String:
 
 
 func _draw_action_hitboxes() -> void:
-	var observe := _transparent_button(OBSERVE_RECT, "Observe")
-	observe.pressed.connect(_observe)
-	add_child(observe)
+	observe_button = _transparent_button(OBSERVE_RECT, "Observe")
+	observe_button.pressed.connect(_observe)
+	add_child(observe_button)
 
 	var back := _transparent_button(BACK_RECT, GameManager.text("Back", "返回"))
 	back.pressed.connect(func() -> void:
@@ -1326,8 +1411,8 @@ func _draw_action_hitboxes() -> void:
 
 func _fov_to_local(delta_az: float, delta_alt: float) -> Vector2:
 	return Vector2(
-		VIEW_RECT.size.x * 0.5 + (delta_az / (fov_x * 0.5)) * (VIEW_RECT.size.x * 0.48),
-		VIEW_RECT.size.y * 0.5 - (delta_alt / (fov_y * 0.5)) * (VIEW_RECT.size.y * 0.48)
+		VIEW_RECT.size.x * 0.5 + (delta_az / (display_fov_x * 0.5)) * (VIEW_RECT.size.x * 0.48),
+		VIEW_RECT.size.y * 0.5 - (delta_alt / (display_fov_y * 0.5)) * (VIEW_RECT.size.y * 0.48)
 	)
 
 
@@ -1377,10 +1462,16 @@ func _object_visual_for_mode(obj: Dictionary) -> Dictionary:
 	return {"shown": shown, "alpha": alpha, "size_px": size_px}
 
 
-func _rebuild_view() -> void:
+func _rebuild_view(sync_camera := true) -> void:
+	# Direct rebuilds are used by level jumps, tests and catalog refreshes.
+	# Those are camera teleports, not player steering, so the visual camera
+	# must start at the new real aim. The per-frame chase opts out above.
+	if sync_camera:
+		display_azimuth = telescope_azimuth
+		display_altitude = telescope_altitude
 	in_view_targets.clear()
-	var half_x := fov_x * 0.5
-	var half_y := fov_y * 0.5
+	var half_x := display_fov_x * 0.5
+	var half_y := display_fov_y * 0.5
 	var offset_az := 0.0
 	var offset_alt := 0.0
 	if view_mode == "finder":
@@ -1393,8 +1484,8 @@ func _rebuild_view() -> void:
 
 	var pool_index := 0
 	for point in star_points:
-		var star_delta_az := shortest_angle_degrees(telescope_azimuth, point.x) + offset_az
-		var star_delta_alt := point.y - telescope_altitude + offset_alt
+		var star_delta_az := shortest_angle_degrees(display_azimuth, point.x) + offset_az
+		var star_delta_alt := point.y - display_altitude + offset_alt
 		if absf(star_delta_az) > half_x or absf(star_delta_alt) > half_y:
 			continue
 		if pool_index >= star_pool.size():
@@ -1420,8 +1511,8 @@ func _rebuild_view() -> void:
 		var item: Dictionary = sky_data[object_id]
 		var obj: Dictionary = GameManager.get_object(object_id)
 		var altitude: float = float(item.get("altitude", 0.0))
-		var delta_az := shortest_angle_degrees(telescope_azimuth, float(item.get("azimuth", 0.0))) + offset_az
-		var delta_alt := altitude - telescope_altitude + offset_alt
+		var delta_az := shortest_angle_degrees(display_azimuth, float(item.get("azimuth", 0.0))) + offset_az
+		var delta_alt := altitude - display_altitude + offset_alt
 		var visual := _object_visual_for_mode(obj)
 		var in_view: bool = altitude > 0.0 and absf(delta_az) <= half_x and absf(delta_alt) <= half_y and bool(visual.get("shown", true))
 		var center_local := _fov_to_local(delta_az, delta_alt)
@@ -1461,7 +1552,7 @@ func _rebuild_view() -> void:
 
 
 func _update_ground() -> void:
-	var horizon_y := _fov_to_local(0.0, -telescope_altitude).y
+	var horizon_y := _fov_to_local(0.0, -display_altitude).y
 	if horizon_y >= VIEW_RECT.size.y:
 		ground_rect.visible = false
 		horizon_line.visible = false
@@ -1487,16 +1578,16 @@ func _scale_steps(fov: float) -> Vector3:
 func _update_scales() -> void:
 	_update_az_scale()
 	_update_alt_scale()
-	az_readout.text = "Az " + _format_dms(telescope_azimuth) + " " + _direction_text_for_azimuth(telescope_azimuth)
-	alt_readout.text = "Alt " + _format_dms(telescope_altitude)
+	az_readout.text = "Az " + _format_dms(display_azimuth) + " " + _direction_text_for_azimuth(display_azimuth)
+	alt_readout.text = "Alt " + _format_dms(display_altitude)
 	_update_scale_asset_state()
 
 
 func _update_scale_asset_state() -> void:
 	if az_knob_icon != null:
-		az_knob_icon.rotation = deg_to_rad(telescope_azimuth)
+		az_knob_icon.rotation = deg_to_rad(display_azimuth)
 	if alt_knob_icon != null:
-		alt_knob_icon.rotation = deg_to_rad(telescope_altitude - 45.0)
+		alt_knob_icon.rotation = deg_to_rad(display_altitude - 45.0)
 	var target := _sky_item(target_id)
 	if target.is_empty():
 		if az_target_pointer != null:
@@ -1504,10 +1595,10 @@ func _update_scale_asset_state() -> void:
 		if alt_target_pointer != null:
 			alt_target_pointer.visible = false
 		return
-	var delta_az := shortest_angle_degrees(telescope_azimuth, float(target.get("azimuth", 0.0)))
-	var delta_alt := float(target.get("altitude", 0.0)) - telescope_altitude
-	var az_half := fov_x * 0.5
-	var alt_half := fov_y * 0.5
+	var delta_az := shortest_angle_degrees(display_azimuth, float(target.get("azimuth", 0.0)))
+	var delta_alt := float(target.get("altitude", 0.0)) - display_altitude
+	var az_half := display_fov_x * 0.5
+	var alt_half := display_fov_y * 0.5
 	if az_target_pointer != null:
 		var x_ratio := clampf(delta_az / maxf(az_half, 0.001), -1.0, 1.0)
 		var pointer_x := AZ_BAND.position.x + AZ_BAND.size.x * 0.5 + x_ratio * AZ_BAND.size.x * 0.46
@@ -1527,18 +1618,18 @@ func _update_az_scale() -> void:
 		tick.visible = false
 	for label in az_labels:
 		label.visible = false
-	var steps := _scale_steps(fov_x)
+	var steps := _scale_steps(display_fov_x)
 	var minor := steps.x
 	var mid := steps.y
 	var major := steps.z
-	var half := fov_x * 0.5
+	var half := display_fov_x * 0.5
 	var tick_index := 0
 	var label_index := 0
-	var start_index := int(ceil((telescope_azimuth - half) / minor))
-	var end_index := int(floor((telescope_azimuth + half) / minor))
+	var start_index := int(ceil((display_azimuth - half) / minor))
+	var end_index := int(floor((display_azimuth + half) / minor))
 	for i in range(start_index, end_index + 1):
 		var azimuth := float(i) * minor
-		var delta := shortest_angle_degrees(telescope_azimuth, azimuth)
+		var delta := shortest_angle_degrees(display_azimuth, azimuth)
 		var x := VIEW_RECT.size.x * 0.5 + (delta / half) * (VIEW_RECT.size.x * 0.48)
 		if x < 2.0 or x > AZ_BAND.size.x - 2.0:
 			continue
@@ -1588,20 +1679,20 @@ func _update_alt_scale() -> void:
 		tick.visible = false
 	for label in alt_labels:
 		label.visible = false
-	var steps := _scale_steps(fov_y)
+	var steps := _scale_steps(display_fov_y)
 	var minor := steps.x
 	var mid := steps.y
 	var major := steps.z
-	var half := fov_y * 0.5
+	var half := display_fov_y * 0.5
 	var tick_index := 0
 	var label_index := 0
-	var start_index := int(ceil((telescope_altitude - half) / minor))
-	var end_index := int(floor((telescope_altitude + half) / minor))
+	var start_index := int(ceil((display_altitude - half) / minor))
+	var end_index := int(floor((display_altitude + half) / minor))
 	for i in range(start_index, end_index + 1):
 		var altitude := float(i) * minor
 		if altitude < 0.0 or altitude > 90.0:
 			continue
-		var delta := altitude - telescope_altitude
+		var delta := altitude - display_altitude
 		var y := ALT_BAND.size.y * 0.5 - (delta / half) * (VIEW_RECT.size.y * 0.48)
 		if y < 2.0 or y > ALT_BAND.size.y - 2.0:
 			continue
@@ -1629,11 +1720,8 @@ func _update_marker_frames() -> void:
 	if selection_frame != null:
 		selection_frame.queue_free()
 		selection_frame = null
-	if assist_frame != null:
-		assist_frame.queue_free()
-		assist_frame = null
-	target_state_ring = null
-	target_lock_state = "search"
+	var previous_state := target_lock_state
+	var next_state := "search"
 
 	# Asset-backed target feedback stays centered on the same projected rect
 	# used by hit testing, so the ring cannot drift away from the real object.
@@ -1647,9 +1735,42 @@ func _update_marker_frames() -> void:
 		var ring_size := 38.0 if view_mode == "naked_eye" else (54.0 if view_mode == "finder" else 76.0)
 		var ring_path := LOCK_RING_TEXTURE if centered else APPROACH_RING_TEXTURE
 		var alpha := 1.0 if centered else (0.52 if view_mode == "finder" else (0.24 if view_mode == "naked_eye" else 0.64))
-		assist_frame = _target_ring(view_layer, ring_path, target_rect.get_center(), ring_size, alpha)
-		target_state_ring = assist_frame as TextureRect
-		target_lock_state = "locked" if centered else ("approach" if offset <= maxf(fov_x, fov_y) * 0.22 else "search")
+		next_state = "locked" if centered else ("approach" if offset <= maxf(fov_x, fov_y) * 0.22 else "search")
+		if target_state_ring == null or not is_instance_valid(target_state_ring):
+			target_state_ring = _target_ring(view_layer, ring_path, target_rect.get_center(), ring_size, 0.0)
+			assist_frame = target_state_ring
+		else:
+			target_state_ring.texture = _load_png_texture(ring_path)
+		target_state_ring.set_meta("fading", false)
+		target_state_ring.position = target_rect.get_center() - Vector2.ONE * ring_size * 0.5
+		target_state_ring.size = Vector2.ONE * ring_size
+		target_state_ring.pivot_offset = target_state_ring.size * 0.5
+		var proximity := clampf(1.0 - offset / maxf(maxf(fov_x, fov_y) * 0.22, 0.001), 0.0, 1.0)
+		var approach_tint := CYAN.lerp(GOLD, proximity * 0.78)
+		target_state_ring.modulate = Color.WHITE if centered else Color(approach_tint.r, approach_tint.g, approach_tint.b, alpha)
+		if previous_state != next_state:
+			if next_state == "locked":
+				target_state_ring.scale = Vector2.ONE * (0.70 if not InteractionFeedback.is_reduced_motion() else 1.0)
+				var lock_tween := create_tween().bind_node(target_state_ring).set_parallel(true)
+				lock_tween.tween_property(target_state_ring, "scale", Vector2.ONE, 0.30 if not InteractionFeedback.is_reduced_motion() else 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+				lock_tween.tween_property(target_state_ring, "modulate:a", 1.0, 0.22)
+				if observe_button != null:
+					InteractionFeedback.success(observe_button, "target_locked")
+			else:
+				create_tween().bind_node(target_state_ring).tween_property(target_state_ring, "modulate:a", alpha, 0.18)
+	else:
+		if target_state_ring != null and is_instance_valid(target_state_ring) and not bool(target_state_ring.get_meta("fading", false)):
+			target_state_ring.set_meta("fading", true)
+			var fading_ring := target_state_ring
+			var fade := create_tween().bind_node(fading_ring)
+			fade.tween_property(fading_ring, "modulate:a", 0.0, 0.18 if not InteractionFeedback.is_reduced_motion() else 0.05)
+			fade.tween_callback(func() -> void:
+				if is_instance_valid(fading_ring):
+					fading_ring.queue_free()
+			)
+			target_state_ring = null
+			assist_frame = null
+	target_lock_state = next_state
 
 	if selected_object_id != "" and selected_object_id != target_id and in_view_targets.has(selected_object_id):
 		var info: Dictionary = in_view_targets[selected_object_id]
@@ -1668,6 +1789,9 @@ func _update_lock_ring_pulse() -> void:
 	if target_state_ring == null or not is_instance_valid(target_state_ring):
 		return
 	if target_lock_state != "locked" and target_lock_state != "success":
+		return
+	if InteractionFeedback.is_reduced_motion():
+		target_state_ring.modulate.a = 1.0 if target_lock_state == "success" else 0.88
 		return
 	var phase := Time.get_ticks_msec() / 1000.0
 	var base := 1.0 if target_lock_state == "success" else 0.82
@@ -1694,11 +1818,11 @@ func _update_aim_text() -> void:
 	var config: Dictionary = VIEW_MODES[view_mode]
 	var mode_name := _single(str(config.get("en", view_mode)), str(config.get("zh", view_mode)))
 	aim_label.text = "Az: %s (%s)\nAlt: %s\nFOV: %s x %s\n%s · %s" % [
-		_format_dms(telescope_azimuth),
-		_direction_text_for_azimuth(telescope_azimuth),
-		_format_dms(telescope_altitude),
-		_format_dms(fov_x),
-		_format_dms(fov_y),
+		_format_dms(display_azimuth),
+		_direction_text_for_azimuth(display_azimuth),
+		_format_dms(display_altitude),
+		_format_dms(display_fov_x),
+		_format_dms(display_fov_y),
 		mode_name,
 		_source_text()
 	]
@@ -1749,8 +1873,11 @@ func _center_offset(object_id: String) -> float:
 	# Largest axis offset from the view center, in degrees.
 	if not in_view_targets.has(object_id):
 		return 99999.0
-	var info: Dictionary = in_view_targets[object_id]
-	return maxf(absf(float(info.get("delta_az", 999.0))), absf(float(info.get("delta_alt", 999.0))))
+	var item := _sky_item(object_id)
+	return maxf(
+		absf(shortest_angle_degrees(telescope_azimuth, float(item.get("azimuth", 999.0)))),
+		absf(float(item.get("altitude", 999.0)) - telescope_altitude)
+	)
 
 
 func _nearest_center_object() -> String:
@@ -1766,6 +1893,9 @@ func _nearest_center_object() -> String:
 
 
 func _observe() -> void:
+	if observe_transition_active:
+		return
+	call_deferred("_animate_observe_failure_if_needed")
 	# Naked-eye levels (L1/L2): the eyes ARE the instrument.
 	if not GameManager.current_requires_telescope():
 		if selected_object_id == "":
@@ -1818,15 +1948,27 @@ func _observe() -> void:
 
 
 func _go_to_telescope_with_lock_feedback() -> void:
+	observe_transition_active = true
 	target_lock_state = "success"
+	InteractionFeedback.success(observe_button, "target_observed")
 	if target_state_ring != null and is_instance_valid(target_state_ring):
 		target_state_ring.texture = _load_png_texture(LOCK_RING_TEXTURE)
 		target_state_ring.modulate = Color(1.15, 1.08, 0.72, 1.0)
 		var start_size := target_state_ring.size
-		target_state_ring.position -= start_size * 0.06
-		target_state_ring.size = start_size * 1.12
-		await get_tree().create_timer(0.18).timeout
+		if not InteractionFeedback.is_reduced_motion():
+			target_state_ring.pivot_offset = start_size * 0.5
+			target_state_ring.scale = Vector2.ONE * 0.82
+			var tween := create_tween().bind_node(target_state_ring)
+			tween.tween_property(target_state_ring, "scale", Vector2.ONE * 1.08, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tween.tween_property(target_state_ring, "scale", Vector2.ONE, 0.14)
+	await get_tree().create_timer(0.38 if not InteractionFeedback.is_reduced_motion() else 0.10).timeout
 	GameManager.go("telescope")
+
+
+func _animate_observe_failure_if_needed() -> void:
+	if observe_transition_active or not is_inside_tree():
+		return
+	InteractionFeedback.error(observe_button if observe_button != null else guidance_label)
 
 
 func _update_selected_text() -> void:
@@ -1877,6 +2019,8 @@ func _guidance_for_target() -> String:
 	var delta_alt := altitude - telescope_altitude
 	var half_x := fov_x * 0.5
 	var half_y := fov_y * 0.5
+	if int(GameManager.current_level().get("level_number", 0)) == 25 and maxf(absf(delta_az), absf(delta_alt)) > fov_x * 0.05:
+		return _movement_guidance(delta_az, delta_alt)
 
 	if absf(delta_az) <= half_x and absf(delta_alt) <= half_y:
 		var offset := maxf(absf(delta_az), absf(delta_alt))
@@ -1916,6 +2060,24 @@ func _guidance_for_target() -> String:
 		zh_parts.append("按住 S：降低 %s。" % _format_dms(absf(delta_alt)))
 	if en_parts.is_empty():
 		return GameManager.text("Target just outside view. Nudge slightly.", "目标就在视野边缘，微调一下。")
+	return GameManager.text(" ".join(en_parts), "".join(zh_parts))
+
+
+func _movement_guidance(delta_az: float, delta_alt: float) -> String:
+	var en_parts: Array[String] = []
+	var zh_parts: Array[String] = []
+	if delta_az > 0.25:
+		en_parts.append("Hold D: move east %s." % _format_dms(absf(delta_az)))
+		zh_parts.append("按住 D：向东移动 %s。" % _format_dms(absf(delta_az)))
+	elif delta_az < -0.25:
+		en_parts.append("Hold A: move west %s." % _format_dms(absf(delta_az)))
+		zh_parts.append("按住 A：向西移动 %s。" % _format_dms(absf(delta_az)))
+	if delta_alt > 0.25:
+		en_parts.append("Hold W: raise %s." % _format_dms(absf(delta_alt)))
+		zh_parts.append("按住 W：抬高 %s。" % _format_dms(absf(delta_alt)))
+	elif delta_alt < -0.25:
+		en_parts.append("Hold S: lower %s." % _format_dms(absf(delta_alt)))
+		zh_parts.append("按住 S：降低 %s。" % _format_dms(absf(delta_alt)))
 	return GameManager.text(" ".join(en_parts), "".join(zh_parts))
 
 

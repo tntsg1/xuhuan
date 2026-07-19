@@ -24,6 +24,7 @@ StoryManager="*res://scripts/systems/story_manager.gd"
 GameManager="*res://scripts/systems/game_manager.gd"
 AudioManager="*res://scripts/audio_manager.gd"
 BulletManager="*res://scripts/systems/bullet_manager.gd"
+InteractionFeedback="*res://scripts/ui/interaction_feedback.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [display]

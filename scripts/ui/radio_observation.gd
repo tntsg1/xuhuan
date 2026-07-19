@@ -17,6 +17,7 @@ var status_label: Label
 func _ready() -> void:
 	GameManager.language_changed.connect(_build)
 	_build()
+	InteractionFeedback.page_enter(self)
 
 
 func _build() -> void:

@@ -15,11 +15,13 @@ const BUTTON_RECTS := {
 
 var feedback_label: Label
 var button_visuals: Dictionary = {}
+var settings_panel: Panel
 
 
 func _ready() -> void:
 	GameManager.language_changed.connect(_on_language_changed)
 	_build()
+	InteractionFeedback.page_enter(self)
 
 
 func _build() -> void:
@@ -114,7 +116,50 @@ func _on_continue() -> void:
 
 
 func _on_settings() -> void:
-	_show_feedback(GameManager.text("Settings coming soon.", "设置功能即将推出。"))
+	if settings_panel != null and is_instance_valid(settings_panel):
+		settings_panel.queue_free()
+		settings_panel = null
+		return
+	settings_panel = Panel.new()
+	settings_panel.position = Vector2(322, 436)
+	settings_panel.size = Vector2(380, 176)
+	settings_panel.z_index = 100
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.025, 0.040, 0.070, 0.98)
+	style.border_color = Color(0.96, 0.72, 0.30)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(5)
+	settings_panel.add_theme_stylebox_override("panel", style)
+	add_child(settings_panel)
+	var title := Label.new()
+	title.text = GameManager.text("ACCESSIBILITY", "辅助功能")
+	title.position = Vector2(20, 14)
+	title.size = Vector2(340, 28)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", Color(1.0, 0.86, 0.54))
+	settings_panel.add_child(title)
+	var reduced := CheckButton.new()
+	reduced.text = GameManager.text("Reduce motion", "减少动画")
+	reduced.position = Vector2(28, 58)
+	reduced.size = Vector2(324, 38)
+	reduced.button_pressed = InteractionFeedback.is_reduced_motion()
+	reduced.toggled.connect(func(enabled: bool) -> void:
+		InteractionFeedback.set_reduced_motion(enabled)
+		_show_feedback(GameManager.text("Reduced motion updated.", "减少动画设置已更新。"))
+	)
+	settings_panel.add_child(reduced)
+	var close := Button.new()
+	close.text = GameManager.text("Close", "关闭")
+	close.position = Vector2(110, 118)
+	close.size = Vector2(160, 36)
+	close.pressed.connect(func() -> void:
+		if settings_panel != null:
+			settings_panel.queue_free()
+			settings_panel = null
+	)
+	settings_panel.add_child(close)
+	InteractionFeedback.page_enter(settings_panel, Vector2(0, 6))
 
 
 func _on_language() -> void:

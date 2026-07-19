@@ -41,16 +41,22 @@ var template_feedback: Label
 var template_stats: Control
 var template_ready_dot: Panel
 var template_finish: Button
+var part_card_controls: Dictionary = {}
+var slot_controls: Dictionary = {}
+var install_animation_active := false
 
 
 func _ready() -> void:
 	GameManager.language_changed.connect(_on_language_changed)
 	_build()
+	InteractionFeedback.page_enter(self)
 
 
 func _build() -> void:
 	for child in get_children():
 		child.queue_free()
+	part_card_controls.clear()
+	slot_controls.clear()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	if _family() in ["newtonian", "dobsonian"]:
 		_build_newtonian_template_main()
@@ -239,7 +245,7 @@ func _add_newtonian_main_card(part_type: String, position: Vector2) -> void:
 	var selected := selected_type == part_type
 	var texture_path := str(part.get("icon_path", ""))
 	var texture := load(texture_path) as Texture2D if texture_path != "" and ResourceLoader.exists(texture_path) else null
-	AssemblyUITemplate.add_part_card(
+	var card := AssemblyUITemplate.add_part_card(
 		template_parts_list,
 		position,
 		GameManager.dict_text(part, "name"),
@@ -250,6 +256,7 @@ func _add_newtonian_main_card(part_type: String, position: Vector2) -> void:
 		selected,
 		_select_newtonian_main_part.bind(part_type)
 	)
+	part_card_controls[part_type] = card
 
 
 func _tube_installed_count() -> int:
@@ -618,6 +625,7 @@ func _newtonian_reference_slot(parent: Control, part_type: String, rect: Rect2) 
 	slot.clip_contents = true
 	slot.mouse_filter = Control.MOUSE_FILTER_PASS
 	parent.add_child(slot)
+	slot_controls[part_type] = slot
 
 	# Layer order: installed PNG, state frame, OK badge, click target.
 	if installed:
@@ -827,6 +835,9 @@ func _draw_main_slot(part_type: String, rect: Rect2) -> void:
 
 
 func _install_main_part(part_type: String) -> void:
+	if install_animation_active:
+		return
+	call_deferred("_animate_install_error_if_idle", part_type)
 	if _installed(part_type):
 		status_label.text = GameManager.text("This main component is already installed.", "该主组件已经安装。")
 		return
@@ -840,10 +851,14 @@ func _install_main_part(part_type: String) -> void:
 	if part_type == "optical_tube_assembly" and not GameManager.advanced_tube_completed():
 		status_label.text = GameManager.text("Complete the Optical Tube Assembly first.", "请先完成光学镜筒组件。")
 		return
+	install_animation_active = true
+	var animation := _capture_part_animation(part_type)
 	GameManager.install_part(part_type, 0)
 	GameManager.sync_newtonian_installed_equipment()
 	selected_type = ""
+	install_animation_active = false
 	_build()
+	_play_part_animation(animation)
 
 
 func _main_status_text() -> String:
@@ -905,6 +920,7 @@ func _part_card(part_type: String) -> Control:
 		_draw_specialized_blueprint()
 	)
 	card.add_child(choose)
+	part_card_controls[part_type] = card
 	return card
 
 
@@ -978,6 +994,7 @@ func _draw_slot(part_type: String, rect: Rect2) -> void:
 	slot.size = rect.size
 	slot.add_theme_stylebox_override("panel", _style(Color(0.06, 0.09, 0.13, 0.92), color, 2))
 	blueprint.add_child(slot)
+	slot_controls[part_type] = slot
 	var part := _part_for_type(part_type)
 	var label := _label(GameManager.dict_text(part, "name") if installed else _short_type(part_type), Vector2(3, 3), rect.size - Vector2(6, 6), 10, color, HORIZONTAL_ALIGNMENT_CENTER)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -992,6 +1009,9 @@ func _draw_slot(part_type: String, rect: Rect2) -> void:
 
 
 func _install_at_slot(slot_type: String) -> void:
+	if install_animation_active:
+		return
+	call_deferred("_animate_install_error_if_idle", slot_type)
 	if selected_type == "":
 		status_label.text = GameManager.text("Select a reflector part first.", "请先选择一个反射镜零件。")
 		return
@@ -1002,10 +1022,43 @@ func _install_at_slot(slot_type: String) -> void:
 	if index > 0 and not _installed(order[index - 1]):
 		status_label.text = GameManager.text("Install " + _short_type(order[index - 1]) + " first.", "请先安装" + _short_type(order[index - 1]) + "。")
 		return
+	install_animation_active = true
+	var animation := _capture_part_animation(slot_type)
 	GameManager.install_part(slot_type, 0)
 	selected_type = ""
+	install_animation_active = false
 	status_label.text = GameManager.text("Installed. The reflected light path is taking shape.", "已安装，反射光路正在成形。")
 	_build()
+	_play_part_animation(animation)
+
+
+func _capture_part_animation(part_type: String) -> Dictionary:
+	var part := _main_template_part(part_type) if _family() in ["newtonian", "dobsonian"] else _part_for_type(part_type)
+	var path := str(part.get("icon_path", ""))
+	var source := part_card_controls.get(part_type) as Control
+	var target := slot_controls.get(part_type) as Control
+	if source == null or target == null or path == "" or not ResourceLoader.exists(path):
+		return {}
+	var texture := load(path) as Texture2D
+	if texture == null:
+		return {}
+	var source_rect := source.get_global_rect()
+	source_rect.position += Vector2(8, 8)
+	source_rect.size = Vector2(minf(54.0, source_rect.size.x), minf(54.0, source_rect.size.y))
+	return {"texture": texture, "source": source_rect, "target": target.get_global_rect()}
+
+
+func _play_part_animation(animation: Dictionary) -> void:
+	if animation.is_empty():
+		return
+	InteractionFeedback.fly_texture(animation["texture"], animation["source"], animation["target"], self)
+
+
+func _animate_install_error_if_idle(part_type: String) -> void:
+	if install_animation_active or not is_inside_tree():
+		return
+	var source := part_card_controls.get(part_type) as Control
+	InteractionFeedback.error(source if source != null else status_label)
 
 
 func _finish() -> void:

@@ -53,6 +53,9 @@ var template_feedback: Label
 var template_stats: Control
 var template_ready_dot: Panel
 var template_finish: Button
+var part_card_controls: Dictionary = {}
+var slot_controls: Dictionary = {}
+var install_animation_active := false
 
 
 func _ready() -> void:
@@ -61,11 +64,14 @@ func _ready() -> void:
 	var saved: Dictionary = GameManager.tube_assembly()
 	installed = saved.get("installed_subparts", saved.get("tube_assembly_state", {})).duplicate()
 	_build()
+	InteractionFeedback.page_enter(self)
 
 
 func _build() -> void:
 	for child in get_children():
 		child.queue_free()
+	part_card_controls.clear()
+	slot_controls.clear()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	if str(config.get("family", "")) in ["newtonian", "dobsonian"]:
 		_build_newtonian_template()
@@ -196,7 +202,7 @@ func _add_newtonian_tube_card(subpart: String, position: Vector2) -> void:
 	var selected := selected_subpart == subpart
 	var texture_path := str(part.get("icon_path", ""))
 	var texture := load(texture_path) as Texture2D if texture_path != "" and ResourceLoader.exists(texture_path) else null
-	AssemblyUITemplate.add_part_card(
+	var card := AssemblyUITemplate.add_part_card(
 		template_parts_list,
 		position,
 		GameManager.dict_text(part, "name"),
@@ -207,6 +213,7 @@ func _add_newtonian_tube_card(subpart: String, position: Vector2) -> void:
 		selected,
 		_select_newtonian_tube_part.bind(subpart)
 	)
+	part_card_controls[subpart] = card
 
 
 func _newtonian_tube_part_role(subpart: String) -> String:
@@ -321,6 +328,7 @@ func _part_card(subpart: String) -> Control:
 		_draw_blueprint()
 	)
 	card.add_child(use_button)
+	part_card_controls[subpart] = card
 	return card
 
 
@@ -389,6 +397,7 @@ func _draw_slot(subpart: String, rect: Rect2) -> void:
 		var color := GREEN if installed_now else (GOLD if selected or next else Color(0.35, 0.66, 0.90, 0.75))
 		slot.add_theme_stylebox_override("panel", _style(Color(0.06, 0.09, 0.13, 0.05), color, 2))
 	blueprint.add_child(slot)
+	slot_controls[subpart] = slot
 	if installed_now:
 		var installed_icon := _part_texture_control(_part_for_subpart(subpart), Rect2(4, 3, rect.size.x - 8, rect.size.y - 6))
 		if installed_icon != null:
@@ -424,6 +433,7 @@ func _draw_newtonian_slot(subpart: String, rect: Rect2, installed_now: bool, nex
 	else:
 		state_frame.add_theme_stylebox_override("panel", _style(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
 	blueprint.add_child(state_frame)
+	slot_controls[subpart] = state_frame
 
 	if installed_now:
 		var ok_badge := Label.new()
@@ -469,6 +479,9 @@ func _newtonian_installed_texture(subpart: String, final_rect: Rect2) -> Texture
 
 
 func _install_subpart(slot_subpart: String) -> void:
+	if install_animation_active:
+		return
+	call_deferred("_animate_install_error_if_idle", slot_subpart)
 	if bool(installed.get(slot_subpart, false)):
 		status_label.text = GameManager.text("This subpart is already installed.", "该子零件已经安装。")
 		return
@@ -482,11 +495,51 @@ func _install_subpart(slot_subpart: String) -> void:
 	if slot_subpart != next:
 		status_label.text = GameManager.text("Install " + _short_name(next) + " first.", "请先安装" + _short_name(next) + "。")
 		return
+	install_animation_active = true
+	var animation := _capture_part_animation(slot_subpart)
 	installed[slot_subpart] = true
 	selected_subpart = ""
 	GameManager.update_tube_subassembly_progress(installed)
 	status_label.text = GameManager.text("Installed. The tube optical path is taking shape.", "安装完成。镜筒光路正在成形。")
+	install_animation_active = false
 	_build()
+	_play_part_animation(animation)
+	call_deferred("_finish_install_feedback", slot_subpart)
+
+
+func _capture_part_animation(subpart: String) -> Dictionary:
+	var part := _part_for_subpart(subpart)
+	var path := str(part.get("icon_path", ""))
+	var source := part_card_controls.get(subpart) as Control
+	var target := slot_controls.get(subpart) as Control
+	if source == null or target == null or path == "" or not ResourceLoader.exists(path):
+		return {}
+	var texture := load(path) as Texture2D
+	if texture == null:
+		return {}
+	var source_rect := source.get_global_rect()
+	source_rect.position += Vector2(7, 7)
+	source_rect.size = Vector2(minf(48.0, source_rect.size.x), minf(48.0, source_rect.size.y))
+	return {"texture": texture, "source": source_rect, "target": target.get_global_rect()}
+
+
+func _play_part_animation(animation: Dictionary) -> void:
+	if animation.is_empty():
+		return
+	InteractionFeedback.fly_texture(animation["texture"], animation["source"], animation["target"], self)
+
+
+func _finish_install_feedback(subpart: String) -> void:
+	var target := slot_controls.get(subpart) as Control
+	if target != null:
+		InteractionFeedback.success(target, "tube_part_installed")
+
+
+func _animate_install_error_if_idle(subpart: String) -> void:
+	if install_animation_active or not is_inside_tree():
+		return
+	var source := part_card_controls.get(subpart) as Control
+	InteractionFeedback.error(source if source != null else status_label)
 
 
 func _mismatch_reason(selected: String, slot: String) -> String:
@@ -548,13 +601,20 @@ func _save_assembly() -> void:
 	var next := _next_required_subpart()
 	if next != "":
 		status_label.text = GameManager.text("Tube assembly is incomplete. Install " + _short_name(next) + " first.", "镜筒组装未完成。请先安装" + _short_name(next) + "。")
+		InteractionFeedback.error(template_finish if template_finish != null else status_label)
 		return
 	var score := 100.0
 	var alignment := 100.0
 	var uses_placeholder_assets := not str(config.get("family", "")) in ["newtonian", "dobsonian"]
 	if not GameManager.save_tube_assembly(installed, score, alignment, uses_placeholder_assets):
 		status_label.text = GameManager.text("Tube assembly could not be saved.", "镜筒组件无法保存。")
+		InteractionFeedback.error(template_finish if template_finish != null else status_label)
 		return
+	for slot_value in slot_controls.values():
+		var slot := slot_value as Control
+		if slot != null:
+			InteractionFeedback.pulse(slot, Color(0.58, 1.0, 0.68, 1.0), 0.34)
+	InteractionFeedback.success(blueprint, "tube_assembly_saved")
 	if str(config.get("family", "")) in ["newtonian", "dobsonian"]:
 		GameManager.install_part("optical_tube_assembly", 0)
 	GameManager.go("advanced_assembly")

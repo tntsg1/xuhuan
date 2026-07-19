@@ -145,6 +145,10 @@ var focus_direction_changes := 0
 var last_focus_adjust_direction := 0
 var best_focus_error := 1.0
 var last_focus_improvement_adjustment := 0
+var focus_lock_feedback_played := false
+var focus_missing_feedback_cooldown := 0.0
+var identify_transition_active := false
+var stat_bar_fills: Array[ColorRect] = []
 
 var lens_center := Vector2.ZERO
 var target_center := Vector2.ZERO
@@ -251,6 +255,18 @@ func _ready() -> void:
 	observation = _evaluate()
 	_check_mission_step_progress()
 	_build()
+	InteractionFeedback.page_enter(self)
+	if requires_focus and focus_slider != null:
+		call_deferred("_show_focus_tutorial")
+
+
+func _show_focus_tutorial() -> void:
+	InteractionFeedback.tutorial_highlight_once(
+		focus_slider,
+		"first_focus_control",
+		GameManager.text("Turn the focus control until the image becomes sharp.", "璋冩暣鐒︾偣锛岀洿鍒板浘鍍忓彉寰楁竻鏅般€?"),
+		self
+	)
 
 
 func _init_drift() -> void:
@@ -400,6 +416,7 @@ func cloud_tier_index() -> int:
 
 
 func _process(delta: float) -> void:
+	focus_missing_feedback_cooldown = maxf(0.0, focus_missing_feedback_cooldown - delta)
 	if _is_dark_adaptation_target():
 		_advance_dark_adaptation(delta)
 	if requires_focus or drift_enabled:
@@ -415,7 +432,7 @@ func _process(delta: float) -> void:
 
 
 func _handle_focus_input(delta: float) -> void:
-	if not requires_focus or focus_locked or not allow_focus_input or quiz_brief_overlay != null:
+	if not requires_focus or focus_locked or quiz_brief_overlay != null:
 		return
 	var direction := 0.0
 	if Input.is_key_pressed(KEY_Q):
@@ -430,6 +447,12 @@ func _handle_focus_input(delta: float) -> void:
 		if Input.is_key_pressed(KEY_D) or Input.is_action_pressed("move_right"):
 			direction += 1.0
 	if direction == 0.0:
+		return
+	if not allow_focus_input:
+		if focus_missing_feedback_cooldown <= 0.0:
+			focus_missing_feedback_cooldown = 0.7
+			feedback_label.text = GameManager.text("Focus knob required. Install it at the Assembly Table.", "闇€瑕佽皟鐒︽棆閽€傝鍏堝湪缁勮鍙板畨瑁呫€?")
+			InteractionFeedback.error(focus_state_label if focus_state_label != null else feedback_label)
 		return
 	_set_focus_value(clampf(focus_value + direction * FOCUS_ADJUST_SPEED * delta, 0.0, 1.0))
 
@@ -986,6 +1009,7 @@ func _build() -> void:
 	focus_knob_status = null
 	tracking_knob_status = null
 	tracking_enabled_status = null
+	stat_bar_fills.clear()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_rect(self, Vector2.ZERO, Vector2(1024, 768), COL_BG)
 	_pixel_frame(self, Vector2(12, 10), Vector2(1000, 744), Color(0.006, 0.008, 0.018), COL_BLUE_BORDER, COL_GOLD)
@@ -1009,6 +1033,7 @@ func _build() -> void:
 		_build_focus_novice_guide()
 	if requires_focus:
 		_refresh_focus_ui()
+	call_deferred("_animate_stat_bars")
 
 
 const SKY_BG_TEXTURE := "res://assets/reference/sky_observation_ui_bg_v2_1024.png"
@@ -1194,13 +1219,19 @@ func _build_focus_block() -> void:
 
 func _set_focus_value(value: float) -> void:
 	var old_value := focus_value
+	var was_acceptable := is_focus_acceptable()
 	focus_value = clampf(value, 0.0, 1.0)
 	if focus_knob_status != null:
-		focus_knob_status.rotation = lerpf(-PI * 0.72, PI * 0.72, focus_value)
+		InteractionFeedback.tween_rotation(focus_knob_status, lerpf(-PI * 0.72, PI * 0.72, focus_value), 0.11)
 	focus_error = absf(focus_value - target_focus_value)
 	_track_focus_attempt(old_value)
 	observation = _evaluate()
 	_refresh_focus_ui()
+	if not was_acceptable and is_focus_acceptable() and not focus_lock_feedback_played:
+		focus_lock_feedback_played = true
+		InteractionFeedback.success(focus_slider, "focus_locked")
+		if main_sprite != null:
+			InteractionFeedback.pulse(main_sprite, Color(1.08, 1.06, 0.88, 1.0), 0.46)
 
 
 func _track_focus_attempt(old_value: float) -> void:
@@ -1327,7 +1358,7 @@ func _build_drift_panel() -> void:
 		tracking_slider.value_changed.connect(func(value: float) -> void:
 			GameManager.set_tracking_rate(value)
 			if tracking_knob_status != null:
-				tracking_knob_status.rotation = lerpf(-PI * 0.72, PI * 0.72, clampf(value / 2.0, 0.0, 1.0))
+				InteractionFeedback.tween_rotation(tracking_knob_status, lerpf(-PI * 0.72, PI * 0.72, clampf(value / 2.0, 0.0, 1.0)), 0.11)
 			_refresh_drift_ui()
 		)
 		add_child(tracking_slider)
@@ -1373,8 +1404,6 @@ func _refresh_drift_ui() -> void:
 		)
 	if tracking_label != null:
 		tracking_label.text = "%.2fx" % GameManager.tracking_rate()
-	if tracking_knob_status != null:
-		tracking_knob_status.rotation = lerpf(-PI * 0.72, PI * 0.72, clampf(GameManager.tracking_rate() / 2.0, 0.0, 1.0))
 	if tracking_enabled_status != null:
 		var aligned := absf(GameManager.tracking_rate() - 1.0) <= 0.1
 		tracking_enabled_status.modulate = Color(0.58, 1.0, 0.72, 1.0) if aligned else Color(0.72, 0.74, 0.78, 0.50)
@@ -1388,8 +1417,6 @@ func _refresh_focus_ui() -> void:
 		updating_slider = true
 		focus_slider.value = focus_value
 		updating_slider = false
-	if focus_knob_status != null:
-		focus_knob_status.rotation = lerpf(-PI * 0.72, PI * 0.72, focus_value)
 	if focus_pct_label != null:
 		focus_pct_label.text = "%d%%  (Q/E)" % int(round(focus_value * 100.0))
 	if focus_state_label != null and allow_focus_input:
@@ -1477,7 +1504,20 @@ func _add_stat_bars() -> void:
 		_plabel("%s %s" % [str(row.get("name", "")), snapped(value, 0.1)], Vector2(CONTENT_X, y), Vector2(96, 15), 10, Color(0.78, 0.86, 0.90))
 		_rect(self, Vector2(CONTENT_X + 100, y + 3), Vector2(94, 8), Color(0.10, 0.14, 0.22))
 		var fill_width := clampf(value, 0.0, 100.0) * 0.94
-		_rect(self, Vector2(CONTENT_X + 100, y + 3), Vector2(fill_width, 8), Color(0.45, 0.75, 0.50))
+		var fill := _rect(self, Vector2(CONTENT_X + 100, y + 3), Vector2(0, 8), Color(0.45, 0.75, 0.50))
+		fill.set_meta("result_width", fill_width)
+		stat_bar_fills.append(fill)
+
+
+func _animate_stat_bars() -> void:
+	if stat_bar_fills.is_empty():
+		return
+	await get_tree().process_frame
+	for fill in stat_bar_fills:
+		if fill == null or not is_instance_valid(fill):
+			continue
+		InteractionFeedback.tween_size(fill, Vector2(float(fill.get_meta("result_width", 0.0)), 8), 0.28)
+		await get_tree().create_timer(0.08 if not InteractionFeedback.is_reduced_motion() else 0.02).timeout
 
 
 # Dynamic condition-row slots (spec: UI 条件行重构). Slot 1 (equipment) is
@@ -1647,6 +1687,7 @@ func _show_pre_quiz_guide() -> void:
 	quiz_brief_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	quiz_brief_overlay.z_index = 200
 	add_child(quiz_brief_overlay)
+	InteractionFeedback.page_enter(quiz_brief_overlay, Vector2(0, 8))
 
 	_rect(quiz_brief_overlay, Vector2.ZERO, Vector2(1024, 768), Color(0.0, 0.0, 0.0, 0.78))
 	_styled_panel(quiz_brief_overlay, Vector2(154, 72), Vector2(716, 624), Color(0.025, 0.040, 0.072, 0.99), COL_GOLD, 3, 5, true)
@@ -1691,12 +1732,16 @@ func _object_guide_text(obj: Dictionary) -> String:
 func _dismiss_pre_quiz_guide() -> void:
 	quiz_brief_dismissed = true
 	if quiz_brief_overlay != null:
-		quiz_brief_overlay.queue_free()
+		var overlay := quiz_brief_overlay
 		quiz_brief_overlay = null
+		InteractionFeedback.fade_then(overlay, overlay.queue_free)
 	_set_identify_choices_visible(true)
 
 
 func _identify(choice_id: String) -> void:
+	if identify_transition_active:
+		return
+	call_deferred("_animate_identify_failure_if_needed")
 	# Reset any lingering milestone-green from _announce_step_complete.
 	feedback_label.add_theme_color_override("font_color", Color(0.86, 0.90, 0.88))
 	# Concept brief tied to the identification moment (e.g. chromatic
@@ -1743,15 +1788,40 @@ func _identify(choice_id: String) -> void:
 			"还没完成：" + GameManager.dict_text(pending_step, "label")
 		)
 		return
+	# Observation confirmation is visual only; mission conditions and the
+	# completion call remain unchanged.
+	identify_transition_active = true
+	feedback_label.text = GameManager.text("Observation confirmed...", "观测已确认...")
+	feedback_label.add_theme_color_override("font_color", Color(0.55, 1.0, 0.68))
+	InteractionFeedback.success(choices_box, "observation_confirmed")
+	if main_sprite != null:
+		InteractionFeedback.pulse(main_sprite, Color(1.10, 1.06, 0.82, 1.0), 0.42)
+	await get_tree().create_timer(0.38 if not InteractionFeedback.is_reduced_motion() else 0.10).timeout
 	# On success GameManager routes to the Mission Complete card itself.
 	var completed := GameManager.complete_current_mission(choice_id, observation)
 	if completed:
 		return
+	identify_transition_active = false
 	var target := GameManager.current_target()
 	if choice_id != str(target.get("id", "")):
 		feedback_label.text = GameManager.text("Correct, but not the mission target.", "识别正确，但不是当前任务目标。")
 	else:
 		feedback_label.text = GameManager.text("Identified, but quality is too low.", "识别正确，但观测质量不足。")
+
+
+func _animate_identify_failure_if_needed() -> void:
+	if identify_transition_active or not is_inside_tree():
+		return
+	var control: Control = choices_box
+	if requires_focus and not allow_focus_input:
+		control = focus_state_label if focus_state_label != null else feedback_label
+	elif drift_enabled and not is_hold_satisfied():
+		control = tracking_slider if tracking_slider != null else drift_label
+	elif not is_focus_acceptable():
+		control = focus_slider if focus_slider != null else focus_state_label
+	elif not is_quality_acceptable():
+		control = cloud_veil if cond_cloud_atten > 0.35 and cloud_veil != null else quality_label
+	InteractionFeedback.error(control if control != null else feedback_label)
 
 
 # ------------------------------------------------------------- scope visual

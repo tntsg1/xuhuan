@@ -67,8 +67,22 @@ func _ready() -> void:
 		active_guidance = "room_guidance"
 	player_pos = _spawn_position(GameManager.take_observatory_spawn())
 	_build()
+	InteractionFeedback.page_enter(self)
 	set_process(true)
 	call_deferred("_maybe_show_unlock_popup")
+	call_deferred("_show_room_tutorial")
+
+
+func _show_room_tutorial() -> void:
+	if guidance_panel == null:
+		return
+	var family := str(GameManager.current_level().get("telescope_family", "refractor"))
+	InteractionFeedback.tutorial_highlight_once(
+		guidance_panel,
+		"first_observatory_%s" % family,
+		GameManager.text("Follow the highlighted destination, then press E to interact.", "前往高亮目标，然后按 E 互动。"),
+		self
+	)
 
 
 func _process(delta: float) -> void:
@@ -545,6 +559,7 @@ func _open_mission_board() -> void:
 	mission_board_popup.set_anchors_preset(Control.PRESET_FULL_RECT)
 	mission_board_popup.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(mission_board_popup)
+	InteractionFeedback.page_enter(mission_board_popup, Vector2(0, 8))
 
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.68)
@@ -586,12 +601,17 @@ func _open_mission_board() -> void:
 	log_button.pressed.connect(_open_logbook_from_mission_board)
 	var close_button := _board_button(panel, GameManager.text("Close", "关闭"), Vector2(700, 582), Vector2(126, 42), Color(0.12, 0.15, 0.22), Color(0.54, 0.62, 0.74))
 	close_button.pressed.connect(func() -> void: _close_mission_board(true))
+	InteractionFeedback.tutorial_highlight_once(panel, "first_mission_board", GameManager.text(
+		"Review the route, required equipment, and next action before leaving.",
+		"离开前先查看任务路线、所需装备和下一步操作。"
+	), mission_board_popup)
 
 
 func _close_mission_board(show_guidance: bool) -> void:
 	if mission_board_popup != null:
-		mission_board_popup.queue_free()
+		var popup := mission_board_popup
 		mission_board_popup = null
+		InteractionFeedback.fade_then(popup, popup.queue_free)
 	if show_guidance:
 		var route := _mission_board_route()
 		GameManager.set_room_guidance(str(route.get("target", "")), str(route.get("title", "")), str(route.get("hint", "")))

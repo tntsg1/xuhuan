@@ -45,6 +45,7 @@ func _ready() -> void:
 		return
 	_build()
 	_show_line()
+	InteractionFeedback.page_enter(self)
 
 
 func _input(event: InputEvent) -> void:
