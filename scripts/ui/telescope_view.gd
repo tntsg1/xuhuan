@@ -3,6 +3,7 @@ extends Control
 const TURBULENCE_SHADER := preload("res://shaders/turbulence.gdshader")
 const GRAIN_SHADER := preload("res://shaders/grain.gdshader")
 const LENS_RING_OCCLUDER_SHADER := preload("res://shaders/lens_ring_occluder.gdshader")
+const NAKED_EYE_OUTER_RING_SHADER := preload("res://shaders/naked_eye_outer_ring.gdshader")
 
 const COL_BG := Color(0.004, 0.006, 0.014)
 const COL_NAVY := Color(0.030, 0.045, 0.085, 0.96)
@@ -1945,6 +1946,11 @@ func _add_observation_reticle(parent: Control, center: Vector2) -> void:
 	overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.texture = load(EYE_RETICLE_TEXTURE) as Texture2D
+	# The open-sky observation stage needs one quiet perimeter reference, not
+	# the focusing rings baked into the source artwork.
+	var outer_ring_material := ShaderMaterial.new()
+	outer_ring_material.shader = NAKED_EYE_OUTER_RING_SHADER
+	overlay.material = outer_ring_material
 	overlay.position = center - Vector2(280, 280)
 	overlay.size = Vector2(560, 560)
 	parent.add_child(overlay)

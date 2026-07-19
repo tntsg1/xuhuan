@@ -35,7 +35,9 @@ export default {
 			headers.set("Content-Type", large_game_files[url.pathname]);
 			headers.set("Content-Length", String(asset.size));
 			headers.set("ETag", asset.httpEtag);
-			headers.set("Cache-Control", "public, max-age=31536000, immutable");
+			// The pack changes on each game release. Revalidate it so returning
+			// players never remain on an old mission/UI build.
+			headers.set("Cache-Control", "no-cache");
 			return with_isolation_headers(new Response(asset.body, { headers }));
 		}
 
