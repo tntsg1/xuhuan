@@ -1,342 +1,481 @@
-# Pixel Observatory Version History
+# Pixel Observatory 版本历史
 
-本文档记录 Pixel Observatory / Starlight Observatory 从早期测试项目到当前可玩教学版本的主要进度。它不是严格的发布日志，而是面向 GitHub 读者的项目演进说明。
+本文档记录 Pixel Observatory / Starlight Observatory 从早期原型到当前教学版本的主要演进。所有版本统一使用“目标、功能与内容、修复与调整、验证”四个部分；历史版本没有独立验收记录时会明确注明，不补写无法确认的结果。
 
 ## v0.1 - 项目替换与 MVP 基础
 
-目标：把原来的射击测试项目替换成 2D 像素天文观测教学游戏。
+**目标**
 
-完成内容：
+将原射击测试项目替换为 2D 像素天文观测教学游戏，并建立可运行的最小主循环。
 
-- 项目名称改为 Pixel Observatory。
-- 主入口切换为 `main_menu.tscn`。
-- 新增核心管理器：
-  - `GameManager`
-  - `SaveManager`
-  - `MissionManager`
-  - `AssemblyManager`
-  - `TelescopeMath`
-  - `ObservationSystem`
-- 新增基础数据：
-  - `telescope_parts.json`
-  - `celestial_objects.json`
-  - `levels.json`
-  - `localization.json`
-- 搭出第一版主循环：
-  - Main Menu
-  - Observatory Room
-  - Telescope Assembly
-  - Sky Observation
-  - Telescope View
-  - Learning Card
-  - Learning Journal
+**功能与内容**
 
-问题：
+- 项目更名为 Pixel Observatory，主入口切换为 `main_menu.tscn`。
+- 建立 `GameManager`、`SaveManager`、`MissionManager`、`AssemblyManager`、`TelescopeMath` 和 `ObservationSystem`。
+- 建立 `telescope_parts.json`、`celestial_objects.json`、`levels.json` 和 `localization.json`。
+- 跑通 Main Menu、Observatory Room、Telescope Assembly、Sky Observation、Telescope View、Learning Card 和 Learning Journal。
 
-- 早期界面太像文字工具页。
-- 主观测室空间感不足。
-- 交互点和任务流程不清楚。
+**修复与调整**
+
+- 明确早期界面过度文字化、主观测室空间感不足、交互点和任务流程不清楚等后续改造方向。
+
+**验证**
+
+- 历史原型版本，当时未保存独立自动化验收报告。
 
 ## v0.2 - Observatory Room 初版
 
-目标：把纯 UI 流程改成玩家可以走动的 2D 主基地。
+**目标**
 
-完成内容：
+将纯 UI 流程改造成玩家可以实际走动和探索的 2D 主基地。
 
-- 新增可移动玩家角色。
-- 增加主观测室交互点：
-  - Mission Board
-  - Parts Cabinet
-  - Assembly Table
-  - Observatory Door
-  - Telescope Pad
-  - Learning Journal
-  - Stats Terminal
-- 支持 WASD / Arrow 移动。
-- 支持靠近后按 E 交互。
+**功能与内容**
+
+- 新增可移动玩家角色，支持 WASD、方向键和靠近后按 E 交互。
+- 增加 Mission Board、Parts Cabinet、Assembly Table、Observatory Door、Telescope Pad、Learning Journal 和 Stats Terminal。
 - 支持鼠标点击交互点。
-- 顶部 HUD 显示 Level、Credits、Telescope Status、Mission。
-- 底部提示区根据附近物体动态变化。
+- 顶部 HUD 显示 Level、Credits、Telescope Status 和 Mission，底部提示随附近物体变化。
 
-问题：
+**修复与调整**
 
-- 使用农场和工坊素材硬拼，主题不统一。
-- 地板边缘和标签显示混乱。
-- 玩家不知道该先去哪里。
+- 记录农场/工坊素材拼接导致主题不统一、地板边缘混乱和路线不明确的问题，作为后续主观测室重做依据。
+
+**验证**
+
+- 历史原型版本，当时未保存独立自动化验收报告。
 
 ## v0.3 - 主观测室重做
 
-目标：从户外拼贴改成可信的学校天文社 / 小型天文台基地。
+**目标**
 
-完成内容：
+将户外拼贴场景改造成可信的学校天文社和小型天文台基地。
 
-- Observatory Room 改成天文社基地布局。
-- Observatory Door 可以进入内部控制室。
-- 新增 `observatory_interior.tscn`。
-- Telescope Pad 和 Observatory Door 都可以作为观星入口。
-- 未组装望远镜时会提示玩家先去 Assembly Table。
-- 完成组装后大厅提示玩家去 Telescope Pad 或 Observatory Door。
+**功能与内容**
 
-问题：
+- Observatory Room 改为天文社基地布局，新增 `observatory_interior.tscn`。
+- Observatory Door 与 Telescope Pad 均可作为观星入口。
+- 未组装望远镜时引导玩家前往 Assembly Table；完成组装后引导前往观测入口。
 
-- 用切片素材重拼家具时透视关系容易错乱。
-- 后续改成完整背景图 + 透明交互层。
+**修复与调整**
+
+- 减少切片家具重新拼接造成的透视错误，为“完整背景图 + 透明交互层”方案做准备。
+
+**验证**
+
+- 历史场景版本，当时未保存独立自动化验收报告。
 
 ## v0.4 - Assembly Table 可玩化
 
-目标：让望远镜组装台从调试按钮界面变成清楚的核心玩法界面。
+**目标**
 
-完成内容：
+将望远镜组装台从调试按钮页改造成清晰的核心玩法界面。
 
-- 左侧改成 Parts Tray / 可用零件。
-- 中间改成 Assembly Blueprint / 蓝图。
-- 右侧改成 Inspector / Stats。
-- 每个零件卡片显示图标、英文名、中文名、安装状态。
-- 已安装零件显示 Installed / 已安装。
-- 未安装零件显示 Not Installed / 未安装。
-- 点击零件，再点击蓝图安装位完成安装。
-- 顺序错误会提示先安装底部支撑结构。
-- 错误位置会增加 wrong attempts 并显示反馈。
-- Finish Assembly 会检查核心部件是否完整。
+**功能与内容**
 
-问题：
+- 形成左侧 Parts Tray、中间 Assembly Blueprint、右侧 Inspector / Stats 的三栏结构。
+- 零件卡片显示图标、双语名称和安装状态。
+- 支持“选择零件 -> 点击蓝图槽位 -> 完成安装”的交互。
+- 增加安装顺序、错误槽位、wrong attempts 和 Finish Assembly 完整性检查。
 
-- 早期零件图标溢出卡片。
-- installed 状态曾错误地从 unlocked 判断。
-- 后续已改为读取 `GameManager.progress["assembly_state"]`。
+**修复与调整**
+
+- 修复早期零件图标溢出卡片的问题。
+- 安装状态改为读取 `GameManager.progress["assembly_state"]`，不再错误地使用 unlocked 状态。
+
+**验证**
+
+- 历史组装版本，当时未保存独立自动化验收报告。
 
 ## v0.5 - 第一关完整流程
 
-目标：跑通 New Game -> Moon mission -> Learning Journal。
+**目标**
 
-完成内容：
+跑通 New Game、月球任务、观测识别、学习卡和日志记录的完整闭环。
 
-- New Game 初始状态为 `telescope_ready = false`。
-- 完成 5 个核心部件后设置 `telescope_ready = true`。
-- Mission Board 显示 Level 1 Moon 任务。
-- Moon 在 Sky Observation 中明显可找。
-- 选中 Moon 后进入 Telescope View。
-- Identify Moon 后完成任务。
-- Learning Card 显示 Moon 学习内容。
-- Learning Journal 写入 Moon 记录。
-- 完成 L1 后 credits 增加，current level 推进。
+**功能与内容**
 
-问题：
+- New Game 默认 `telescope_ready = false`，完成五个核心部件后设为 true。
+- Mission Board 显示 L1 Moon 任务，Sky Observation 可查找并选择 Moon。
+- Identify Moon 后完成任务，Learning Card 显示知识内容，Learning Journal 写入记录。
+- 完成 L1 后增加 credits 并推进 current level。
 
-- 早期星图按钮像普通 UI 控件。
-- Telescope View 在识别前曾直接显示目标名称，后续已移除。
+**修复与调整**
+
+- 移除识别前直接暴露目标真实名称的行为。
+- 减少星图目标看起来像普通按钮的视觉问题。
+
+**验证**
+
+- 首条完整手动流程通过；当时未保存独立自动化验收报告。
 
 ## v0.6 - Sky Observation 视觉升级
 
-目标：让观星界面更像教学型 2D 像素星空，而不是普通按钮列表。
+**目标**
 
-完成内容：
+让观星界面成为教学型像素星空，而不是普通按钮列表。
 
-- 不同天体使用不同视觉：
-  - Moon：大淡黄色月球。
-  - Polaris：小白星。
-  - Sirius：蓝白亮星。
-  - Betelgeuse：红橙星。
-  - Mars：红橙行星。
-  - Jupiter：条纹行星。
-  - Orion Nebula：紫色雾团。
-  - Andromeda：蓝色椭圆星系。
-- 透明 Button 只作为点击热区。
-- 选中目标显示金色细框。
-- 识别前不在星图上直接暴露真实名称。
-- 右侧面板显示任务提示、选择状态和 Observe / Back。
+**功能与内容**
+
+- Moon、Polaris、Sirius、Betelgeuse、Mars、Jupiter、Orion Nebula 和 Andromeda 使用不同视觉表现。
+- 透明 Button 仅作为点击热区，选中目标显示金色细框。
+- 右侧面板显示任务提示、选择状态、Observe 和 Back。
+
+**修复与调整**
+
+- 识别前不在星图上显示真实名称，避免提前泄题。
+
+**验证**
+
+- 历史视觉版本，当时未保存独立自动化验收报告。
 
 ## v0.7 - Telescope View 视觉升级
 
-目标：让望远镜视野像真实通过镜筒观察。
+**目标**
 
-完成内容：
+让正式观测阶段更接近通过真实镜筒观察天体的体验。
 
-- 中间改成圆形望远镜视野。
-- 圆外使用深色遮罩。
-- 镜头有金色 / 铜色外环。
-- 不同天体在望远镜中显示不同图像。
-- 观测质量影响视觉：
-  - Excellent / Good：清楚。
-  - Fair：略模糊。
-  - Poor：暗、噪点多。
-  - Failed：几乎看不清。
-- Identify choices 保留真实名称，用作识别环节。
-- 选错目标不会完成当前任务。
+**功能与内容**
+
+- 中央改为圆形望远镜视场，外部使用深色遮罩和金属镜筒边缘。
+- 不同天体使用不同图像。
+- Excellent、Good、Fair、Poor 和 Failed 质量影响清晰度、亮度与噪点。
+- Identify 保留真实名称作为答题选项，选错不会完成任务。
+
+**修复与调整**
+
+- 将“观察到什么”和“识别出什么”拆分为两个阶段。
+
+**验证**
+
+- 历史视觉版本，当时未保存独立自动化验收报告。
 
 ## v0.8 - Parts Cabinet 与 Assembly Table 分离
 
-目标：修正信息架构，让零件柜和组装台不再混成同一个界面。
+**目标**
 
-完成内容：
+修正信息架构，避免零件仓库和组装操作混在同一个界面。
 
-- Parts Cabinet 只用于查看零件库存、说明和状态。
-- Assembly Table 才进入 `telescope_assembly.tscn`。
-- GameManager 新增 `parts` 场景映射。
-- 组装台左侧从 Parts Cabinet 改名为 Parts Tray / Available Parts。
-- 组装完成后设置下一步引导：
-  - Go to Telescope Pad or Observatory Door to begin sky observation.
+**功能与内容**
+
+- Parts Cabinet 仅查看库存、说明和状态。
+- Assembly Table 负责进入 `telescope_assembly.tscn` 并执行安装。
+- `GameManager` 增加 parts 场景映射。
+- 组装完成后明确引导玩家前往 Telescope Pad 或 Observatory Door。
+
+**修复与调整**
+
+- 组装台左栏统一命名为 Parts Tray / Available Parts。
+
+**验证**
+
+- 历史信息架构版本，当时未保存独立自动化验收报告。
 
 ## v0.9 - 主观测室完整背景图方案
 
-目标：停止拆家具重拼，改为完整背景图 + 透明交互层。
+**目标**
 
-完成内容：
+停止拆分家具素材重拼，使用完整背景图承载稳定的空间关系。
 
-- 使用完整 observatory room 背景图。
-- 不再用切片家具拼主房间。
-- 交互 hitbox 完全透明。
-- 靠近时只显示细边框。
-- 玩家、交互层、HUD 叠在背景上。
-- 保留返回位置逻辑。
-- 修正 Telescope Pad、Stats Terminal、Learning Journal 等交互框尺寸。
+**功能与内容**
 
-问题：
+- 使用完整 Observatory Room 背景图。
+- 玩家、透明交互层和 HUD 叠加在背景上。
+- 靠近交互点时只显示细边框，并保留返回位置逻辑。
 
-- 早期玩家角色比例过小 / 过大。
-- 后续重做 spritesheet 并保持脚底锚点。
+**修复与调整**
+
+- 修正 Telescope Pad、Stats Terminal 和 Learning Journal 等交互框尺寸。
+- 调整玩家 spritesheet、显示比例和脚底锚点。
+
+**验证**
+
+- 历史场景版本，当时未保存独立自动化验收报告。
 
 ## v1.0 - 玩家角色动画规范化
 
-目标：解决角色方向错误、串帧、头皮残影、脚底锚点漂移。
+**目标**
 
-完成内容：
+解决方向错误、串帧、头部残影和脚底锚点漂移。
 
-- 生成 `player_observer_4dir_clean.png`。
-- 4 columns x 4 rows。
-- 行方向：
-  - row 0 = down
-  - row 1 = left
-  - row 2 = right
-  - row 3 = up
-- 每行 4 帧：
-  - column 0 = idle
-  - column 1-3 = walk
-- 角色脚底锚点固定。
-- 视觉尺寸和碰撞尺寸分离。
-- Observatory Room 交互检测改用脚底位置。
+**功能与内容**
+
+- 新增 `player_observer_4dir_clean.png`，采用 4 列 x 4 行布局。
+- 行顺序统一为 down、left、right、up；每行第一帧 idle，后三帧 walk。
+- 视觉尺寸和碰撞尺寸分离，交互检测改用脚底位置。
+
+**修复与调整**
+
+- 固定角色脚底锚点，消除不同方向动画的位移跳动。
+
+**验证**
+
+- 历史角色版本，当时未保存独立自动化验收报告。
 
 ## v1.1 - 真实星体位置系统
 
-目标：让 Sky Observation 根据今晚真实星体位置摆放像素星体。
+**目标**
 
-完成内容：
+让 Sky Observation 根据当前观测时间和地点计算天体方位。
 
-- 新增 `SkyPositionService.gd`。
-- 新增 `celestial_catalog.json`。
-- 新增 `observing_config.json`。
+**功能与内容**
+
+- 新增 `SkyPositionService.gd`、`celestial_catalog.json` 和 `observing_config.json`。
 - Moon、Mars、Jupiter 支持 AstronomyAPI 在线位置。
-- Polaris、Sirius、Betelgeuse、Orion Nebula、Andromeda 使用本地 RA/Dec 计算。
-- 如果 API key 缺失或请求失败，自动 fallback。
-- 所有目标即使低于地平线也保留可点击，不阻断主线。
+- Polaris、Sirius、Betelgeuse、Orion Nebula 和 Andromeda 使用本地 RA/Dec 计算。
+- 在线请求失败时自动使用离线 fallback，目标低于地平线时也不会阻断主线。
 
-安全处理：
+**修复与调整**
 
-- API secret 只读取本地 `data/local_api_keys.json`。
-- `data/local_api_keys.json` 已加入 `.gitignore`。
-- 不把 secret 写死进脚本。
+- API secret 仅从本地 `data/local_api_keys.json` 读取，该文件加入 `.gitignore`。
+- 禁止在脚本中写死密钥。
+
+**验证**
+
+- 在线与离线回退路径完成手动验证；当时未保存独立自动化报告。
 
 ## v1.2 - 教学节奏调整
 
-目标：让原理讲解出现在实际操作之前，而不是只在任务完成后出现。
+**目标**
 
-完成内容：
+让原理讲解出现在第一次实际操作之前，而不是只在任务完成后出现。
 
-- 新增 / 强化 `TeachingFlowManager`。
-- 增加 Concept Brief。
-- 区分：
-  - seen teaching steps
-  - seen concept briefs
-  - completed concept cards
-- 在 Assembly、Sky Observation、Telescope View 前触发不同教学提示。
-- 完成任务后仍显示 Mission Complete 和学习卡总结。
+**功能与内容**
+
+- 新增并强化 `TeachingFlowManager` 与 Concept Brief。
+- 分离 seen teaching steps、seen concept briefs 和 completed concept cards。
+- Assembly、Sky Observation 和 Telescope View 可触发不同的操作前教学。
+- 任务完成后仍保留 Mission Complete 和学习卡总结。
+
+**修复与调整**
+
+- 避免教学提示与任务完成状态混用。
+
+**验证**
+
+- 历史教学版本，当时未保存独立自动化验收报告。
 
 ## v1.3 - Focus Knob 成为真实部件
 
-目标：让调焦不是凭空出现的 UI，而是望远镜系统中的真实零件。
+**目标**
 
-完成内容：
+让调焦能力来自实际安装的部件，而不是无条件出现的 UI。
 
-- 新增 Basic Focus Knob。
-- Assembly Table 支持安装 Focus Knob。
+**功能与内容**
+
+- 新增 Basic Focus Knob，Assembly Table 支持安装。
 - `TelescopeMath` 新增 `focus_control_score`。
-- Telescope View 如果未安装 Focus Knob，会提示无法完成精确调焦。
-- Sky Observation / Telescope View 显示方位角和俯仰角 DMS 提示。
+- Sky Observation 与 Telescope View 显示方位角、俯仰角和 DMS 信息。
+
+**修复与调整**
+
+- 未安装 Focus Knob 时明确提示无法完成精确调焦。
+
+**验证**
+
+- 历史调焦版本，当时未保存独立自动化验收报告。
 
 ## v1.4 - Learning Card 图解放大
 
-目标：让学习卡里的教学图成为主要学习内容，而不是小缩略图。
+**目标**
 
-完成内容：
+让学习图解成为主要教学内容，而不是难以阅读的缩略图。
+
+**功能与内容**
 
 - Concept Brief 图解放大到页面主视觉区域。
-- Mission Complete 中的 Concept learned 图不再过小。
-- TextureRect 使用 `STRETCH_KEEP_ASPECT_CENTERED`。
-- 保持原图比例。
-- 为光路、焦平面、调焦等图解预留足够阅读面积。
+- Mission Complete 中的 Concept learned 图获得更大阅读面积。
+- 光路、焦平面和调焦图解统一使用 `STRETCH_KEEP_ASPECT_CENTERED`。
+
+**修复与调整**
+
+- 保持原图比例，避免图解拉伸和裁切。
+
+**验证**
+
+- 历史学习卡版本，当时未保存独立自动化验收报告。
 
 ## v1.5 - Orion Nebula 通关体验修正
 
-目标：解决玩家感觉“怎么调焦都没用”的问题。
+**目标**
 
-完成内容：
+解决玩家在早期深空关卡中感觉“怎么调焦都没有用”的问题。
 
-- L7 Orion Nebula 允许 Fair 质量通关。
-- L8 再要求 Good，用来教学大口径集光。
-- UI 文案区分：
-  - 焦点没对准：继续调焦。
-  - 焦点已对准但设备不够：提示 aperture / stability 不足。
-  - 焦点已对准且可完成：提示可以识别。
-- `focus_nebula_test`、`flow_test`、`v2_progression_test` 随之更新。
+**功能与内容**
+
+- L7 Orion Nebula 允许 Fair 质量通关，L8 再要求 Good 以教学大口径集光。
+- UI 区分焦点未对准、焦点正确但设备不足、已经可以识别三种状态。
+
+**修复与调整**
+
+- 更新 `focus_nebula_test`、`flow_test` 和 `v2_progression_test`。
+- 避免将设备能力不足错误描述成调焦失败。
+
+**验证**
+
+- 对应调焦和流程测试通过。
 
 ## v1.6 - Main Menu 正式化
 
-目标：把简陋按钮菜单改成完整、沉浸的 Starlight Observatory 首页。
+**目标**
 
-完成内容：
+将简陋按钮菜单改造成完整的 Starlight Observatory 首页。
 
-- 使用用户提供的完整主菜单图作为背景。
-- 不再重画标题、面板或按钮。
-- 背景缩放为 1024x768。
-- New Game / Continue / Settings / Language / Quit 使用透明按钮热区。
-- 鼠标 hover 时显示轻微金色高亮和描边。
-- 鼠标 pressed 时轻微变暗。
-- Continue 无存档时点击只提示 No save found yet，不再用黑色遮罩破坏按钮颜色。
+**功能与内容**
+
+- 使用完整主菜单背景，统一为 1024x768。
+- New Game、Continue、Settings、Language 和 Quit 使用透明按钮热区。
+- Hover 显示轻微金色高亮，Pressed 状态轻微变暗。
+
+**修复与调整**
+
+- Continue 无存档时仅提示 No save found yet，不再用黑色遮罩破坏按钮颜色。
+
+**验证**
+
+- 历史主菜单版本，当时未保存独立自动化验收报告。
 
 ## v1.7 - Sky Observation 模式按钮统一
 
-目标：修复 Eye / Finder / Scope 三个按钮颜色不一致。
+**目标**
 
-完成内容：
+统一 Eye、Finder、Scope 三个模式按钮的视觉和状态。
 
-- 使用用户提供的统一按钮图片。
-- 预缩放为 `sky_view_mode_buttons_uniform_250x76.png`。
-- 覆盖原背景里旧的三按钮区域。
-- 保留透明热区。
-- 当前模式只显示细金色框。
-- 不再把 unavailable / inactive 状态染成不同底色。
+**功能与内容**
+
+- 接入统一按钮素材并预处理为 `sky_view_mode_buttons_uniform_250x76.png`。
+- 使用透明点击热区，当前模式显示细金色边框。
+
+**修复与调整**
+
+- 不再用互相冲突的底色表示 unavailable 和 inactive。
+
+**验证**
+
+- 历史模式按钮版本，当时未保存独立自动化验收报告。
 
 ## v1.8 - Jupiter 观测贴图升级
 
-目标：让 Jupiter 的望远镜画面更接近真实观测质量变化。
+**目标**
 
-完成内容：
+让 Jupiter 的正式观测画面能够体现观测质量变化。
 
-- 新增三张 Jupiter 状态贴图：
-  - `jupiter_clear.png`
-  - `jupiter_blurry.png`
-  - `jupiter_dim.png`
-- Telescope View 根据质量和 visual_effect 自动选择：
-  - Excellent / Good / clear -> clear
-  - Fair / blurry -> blurry
-  - Poor / Failed / dim -> dim
-- 保留原 `jupiter_large.png` 作为 fallback。
+**功能与内容**
 
-## 当前仍需处理
+- 新增 `jupiter_clear.png`、`jupiter_blurry.png` 和 `jupiter_dim.png`。
+- Excellent / Good 使用 clear，Fair 使用 blurry，Poor / Failed 使用 dim。
+- 保留 `jupiter_large.png` 作为 fallback。
 
-- 清理旧 shooter / BulletUpHell / Starfall 残留资源和插件报错。
-- 继续修复中文编码乱码。
-- 为更多天体补齐 clear / blurry / dim 贴图。
-- 继续平衡 L10-L24 的任务难度。
-- 优化 Godot 导出配置。
-- 整理最终素材授权和 Credits。
+**修复与调整**
+
+- 统一质量结果与 `visual_effect` 对贴图状态的选择逻辑。
+
+**验证**
+
+- Jupiter 三状态截图与对应观测流程完成验证。
+
+## v1.9 - 高级望远镜、交互动画与完整观测 HUD
+
+**日期**
+
+- 2026-07-19
+- 功能提交范围：`cb9f5c8..c254d56`
+
+**目标**
+
+将 45 关教学框架、牛顿式望远镜流程、装配反馈、调焦与环境效果、观测 HUD 和首次教学整合成可连续调试的版本，并解决近期截图中出现的图层、瞄准框、锁定反馈、乱码和素材背景问题。
+
+**功能与内容**
+
+- 关卡与开发调试扩展到当前 45 关数据，等号键开发者面板可跳转和调整已实现关卡。
+- 扩展牛顿式、多布森式、卡塞格林/格里高利式、红外、射电和多波段观测框架。
+- 牛顿式流程增加折射镜色差动机、反射原理讲解、镜筒子装配、准直、正式装配和后续观测。
+- L22-L25 使用折射镜展示织女星等远距离目标的色差，后续牛顿镜流程展示无色差对比。
+- 接入织女星正式观测贴图，并保留 clear、blurry、dim 和色差演示状态。
+- Advanced Assembly 主装配与镜筒子装配显示真实透明零件 PNG；安装槽位、贴图、完成边框、OK 标志和点击区域按正确层级排列。
+- Tripod、Mount、Finder Scope 复用折射式正式贴图，Newtonian OTA 使用 `newtonian_tube_complete.png`。
+- 零件安装增加卡片高亮、移动、吸附、成功、错误返回和具体原因反馈。
+- 准直界面增加光轴变化、分数反馈、阈值提示和完成状态动画。
+- 新增统一 `InteractionFeedback`，为重要按钮提供 hover、press、success、error 和页面切换反馈。
+- Eye、Finder、Scope 切换增加克制的缩放、淡入和目标尺寸过渡，不改变真实坐标。
+- 调焦旋钮、追踪旋钮、寻星镜校准、目标锁定、云层、视宁度和地球自转漂移增加连续视觉反馈。
+- 增加“减少动画”设置，关闭大幅移动和呼吸效果时仍保留必要状态反馈。
+- 第一次进入观测、组装、镜筒子装配、准直、寻星镜、调焦、云层、漂移和新望远镜家族时提供一次性高亮教学。
+- 识别题在答题前显示天体特征指南，A-D 正确答案随机分布，不再固定为 A。
+- 调焦接近最佳值但多次失败时触发新手引导，说明继续微调的方法和当前差距。
+
+**观测 HUD 与素材接入**
+
+- 正式接入 `C:/Users/tntsg/Downloads/tw/suc` 的深蓝、黄铜、像素拟真观测 UI。
+- 原始素材不覆盖，完整复制到 `assets/ui/observation/suc/source/`。
+- 运行时素材位于 `assets/ui/observation/suc/processed/`，使用 nearest-neighbor、透明裁切和尺寸上限。
+- `asset_manifest.json` 记录源文件名、SHA-256、原始尺寸、透明通道、裁切范围、运行时名称和尺寸。
+- 顶部方位角刻度与左侧俯仰角刻度由素材外壳、动态刻度纹理和 Godot 实时数字共同组成。
+- 方位角支持 359/0 度连续循环；俯仰角限制在合法范围；指针与 Az/Alt、键盘和鼠标输入同步。
+- Eye 使用 `eye_large_center.png`，扩大中心透明感应区域。
+- Finder 使用 `finder_second_ring.png`，只保留从外向内第二个圆圈，移除中心金色区域、小十字和其他圆圈。
+- Scope 使用 `scope_center_tolerance.png`，中央参考框为正圆，不再出现纵向椭圆。
+- 详细 Telescope View 移除外部镜筒装饰框、中央十字和中心小圈，保留天体、云层、视宁度、漂移和调焦效果。
+- 重新接入透明版 azimuth/altitude pointer、Eye icon、tracking knob、target approach ring 和 target lock ring。
+
+**目标反馈最终规则**
+
+- Target approach ring 和 target lock ring 跟随天体实际投影位置，不固定在屏幕中心。
+- 两种环使用相同的目标派生尺寸，切换状态时不跳变。
+- 环尺寸为 `target diameter + max(12 px, 25%)`。
+- Eye、Finder、Scope 的最小直径分别为 40、44、48 px，保证可见但不覆盖主视野。
+- 接近状态使用透明中心青色细环和 0.72-0.92 的轻微亮度呼吸。
+- 锁定状态使用高对比金色细环；中心始终透明，不遮挡星体。
+- Observe 的可用状态、方向提示、目标环位置和真实锁定判定使用同一套目标数据。
+
+**修复与调整**
+
+- 修复 `InteractionFeedback` 未声明导致 `advanced_assembly.gd` 编译失败。
+- 修复装配槽位显示错误零件贴图和已安装槽位只显示 OK、不显示零件的问题。
+- 修复牛顿式观测选项无法选择、错误要求 Basic Mount 和调焦部件识别不一致的问题。
+- 修复 Eye/Finder/Scope 瞄准 UI 在部分关卡消失，以及 Scope 框位于行星下层的问题。
+- 修复 Coordinate Navigation 中目标进入视野后没有接近/锁定提示的问题。
+- 修复 Telescope View 教学弹窗、识别指南、调焦控件和其他 Modal 互相覆盖的问题。
+- 修复英文模式混入中文、乱码双语文本和底部操作提示缺失的问题。
+- 修复云层、视宁度、大气扰动、色差、漂移和追踪视觉与关卡数据不同步的问题。
+- 修复选择框代码在尺寸辅助函数 `return` 后不可达的回归。
+- 保持旧存档结构、核心关卡顺序、剧情条件和真实观测计算不变。
+
+**验证**
+
+- Godot 4.7 headless editor/import：通过，退出码 0。
+- Observation UI acceptance：通过。
+- L25 reticle regression：通过。
+- Newtonian reticle regression：通过。
+- Newtonian observation parity：通过。
+- Identification quiz and scope layering：通过。
+- Telescope modal layer regression：通过。
+- Coordinate lock feedback：通过。
+- Animation feedback and reduced-motion acceptance：通过。
+- Environmental focus effects：通过。
+- Focus novice guidance：通过。
+- Assembly texture regression：通过。
+- Advanced Newtonian、nested tube assembly 和 slot texture checks：通过。
+- Story、teaching、core task 和 full flow 回归：通过。
+- 1024x768 与 1280x720 截图验收完成；完整报告位于 `artifacts/observation_ui_acceptance/report.md`。
+
+## 当前待办
+
+**目标**
+
+继续提高内容完整度、发布稳定性和素材可追溯性。
+
+**功能与内容**
+
+- 为更多天体补齐 clear、blurry、dim 和更精细的专用贴图。
+- 继续平衡 L10-L45 的任务难度、设备门槛和教学节奏。
+- 完善高级望远镜家族的非占位素材和独立玩法。
+
+**修复与调整**
+
+- 清理旧 shooter / BulletUpHell / Starfall 残留资源和无关插件报错。
+- 继续排查中文编码与历史文本质量。
+- 优化 Godot 导出配置、最终素材授权和 `CREDITS.md`。
+
+**验证**
+
+- 每次发布前继续执行 headless 编译、核心流程、观测、装配、教学和旧存档回归。
