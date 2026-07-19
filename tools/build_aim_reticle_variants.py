@@ -52,27 +52,26 @@ def build_scope_tolerance_center() -> None:
     center_x = base.width // 2
     center_y = base.height // 2
 
-    # Scope projects 6x4 degrees into 630x560 px. The real 0.5-degree
-    # centering tolerance therefore occupies about 50x67 px from center.
-    # Clear that exact acceptance area and draw its brass boundary so the
-    # artwork agrees with the gameplay lock condition.
-    inner_rx = 52
-    inner_ry = 69
+    # Use the larger projected 0.5-degree radius so every valid lock position
+    # is inside the aperture while the optical reference remains circular.
+    # The artwork is displayed at 410/560 of source height. A 92 px source
+    # radius becomes about 67 px on screen, covering the larger vertical
+    # projection of the real 0.5-degree tolerance.
+    inner_radius = 92
     pixels = base.load()
-    for y in range(center_y - inner_ry, center_y + inner_ry + 1):
-        for x in range(center_x - inner_rx, center_x + inner_rx + 1):
-            normalized = ((x - center_x) / inner_rx) ** 2 + ((y - center_y) / inner_ry) ** 2
-            if normalized <= 1.0:
+    for y in range(center_y - inner_radius, center_y + inner_radius + 1):
+        for x in range(center_x - inner_radius, center_x + inner_radius + 1):
+            if (x - center_x) ** 2 + (y - center_y) ** 2 <= inner_radius ** 2:
                 pixels[x, y] = (0, 0, 0, 0)
 
     draw = ImageDraw.Draw(base)
     draw.ellipse(
-        (center_x - 55, center_y - 72, center_x + 55, center_y + 72),
+        (center_x - 96, center_y - 96, center_x + 96, center_y + 96),
         outline=(82, 57, 24, 255),
         width=3,
     )
     draw.ellipse(
-        (center_x - 53, center_y - 70, center_x + 53, center_y + 70),
+        (center_x - 94, center_y - 94, center_x + 94, center_y + 94),
         outline=(246, 218, 142, 255),
         width=2,
     )

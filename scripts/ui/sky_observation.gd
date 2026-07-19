@@ -1751,7 +1751,10 @@ func _update_marker_frames() -> void:
 		# ring must always surround the rendered object instead of shrinking
 		# inside large Moon/planet/deep-sky textures.
 		var target_diameter := maxf(target_rect.size.x, target_rect.size.y)
-		var ring_minimum := 72.0 if view_mode == "naked_eye" else (92.0 if view_mode == "finder" else 112.0)
+		# Keep the moving target marker visibly outside each mode's central
+		# aiming reference. This prevents two near-equal rings from reading as
+		# a broken or undersized lock state.
+		var ring_minimum := 96.0 if view_mode == "naked_eye" else (120.0 if view_mode == "finder" else 200.0)
 		var ring_padding := 28.0 if view_mode == "naked_eye" else (36.0 if view_mode == "finder" else 44.0)
 		var ring_size := maxf(ring_minimum, target_diameter + ring_padding)
 		var ring_path := LOCK_RING_TEXTURE if centered else APPROACH_RING_TEXTURE

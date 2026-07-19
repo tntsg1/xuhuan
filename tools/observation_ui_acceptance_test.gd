@@ -75,9 +75,10 @@ func _test_assets_and_layers() -> void:
 	_check(_visible_pixels_in_annulus(eye_image, 31.0, 44.0) > 80, "Eye artwork contains the enlarged center aperture")
 	var scope_image: Image = (load(ASSET_DIR + "scope_center_tolerance.png") as Texture2D).get_image()
 	var scope_center := Vector2i(scope_image.get_width() / 2, scope_image.get_height() / 2)
-	_check(scope_image.get_pixelv(scope_center + Vector2i(50, 0)).a < 0.15, "Scope center frame contains the horizontal lock tolerance")
-	_check(scope_image.get_pixelv(scope_center + Vector2i(0, 67)).a < 0.15, "Scope center frame contains the vertical lock tolerance")
-	_check(104.0 >= 52.0 * 4.0 / 3.0, "Scope center frame is at least one third wider than the rendered Moon")
+	_check(scope_image.get_pixelv(scope_center + Vector2i(90, 0)).a < 0.15, "Scope circular frame contains the scaled horizontal lock tolerance")
+	_check(scope_image.get_pixelv(scope_center + Vector2i(0, 90)).a < 0.15, "Scope circular frame contains the scaled vertical lock tolerance")
+	_check(scope_image.get_pixelv(scope_center + Vector2i(93, 0)).a >= 0.15 and scope_image.get_pixelv(scope_center + Vector2i(0, 93)).a >= 0.15, "Scope center frame is circular")
+	_check(184.0 * 410.0 / 560.0 >= 52.0 * 4.0 / 3.0, "Displayed Scope center frame is at least one third wider than the rendered Moon")
 	var object_icons: Dictionary = view.get("object_icons")
 	if not object_icons.is_empty():
 		var first_icon := object_icons.values()[0] as TextureRect
@@ -199,6 +200,7 @@ func _test_target_lock_alignment() -> void:
 		_check(icon_center.distance_to(ring_center) < 1.5, "target lock ring matches the projected celestial position")
 		_check(ring.texture.resource_path.ends_with("target_lock_ring.png"), "centered target replaces approach with the lock ring")
 		_check(ring.size.x > maxf(icon.size.x * icon.scale.x, icon.size.y * icon.scale.y), "lock ring remains larger than the rendered celestial target")
+		_check(ring.size.x >= 200.0, "Scope target lock ring remains clearly larger than the circular center frame")
 		_check(ring.size == approach_size, "approach and lock states keep one consistent target-derived frame size")
 	_check(not (view.get("observe_button") as Button).disabled, "Observe enables from the same centered-target condition")
 
