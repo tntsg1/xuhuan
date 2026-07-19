@@ -39,6 +39,9 @@ jobs:
             "https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}/Godot_v${GODOT_RELEASE}_export_templates.tpz"
           mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_TEMPLATE_VERSION}"
           unzip -q templates.tpz -d "$HOME/.local/share/godot/export_templates/${GODOT_TEMPLATE_VERSION}"
+          mv "$HOME/.local/share/godot/export_templates/${GODOT_TEMPLATE_VERSION}/templates/"* \
+            "$HOME/.local/share/godot/export_templates/${GODOT_TEMPLATE_VERSION}/"
+          rmdir "$HOME/.local/share/godot/export_templates/${GODOT_TEMPLATE_VERSION}/templates"
 
       - name: Export browser build
         run: |
