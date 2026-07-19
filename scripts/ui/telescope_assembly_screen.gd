@@ -1,6 +1,7 @@
 extends Control
 
 const AssemblyManagerScript = preload("res://scripts/systems/assembly_manager.gd")
+const AssemblyUITemplate = preload("res://scripts/ui/assembly_ui_template.gd")
 
 const SCREEN_SIZE := Vector2(1024, 768)
 const PART_ORDER: Array[String] = ["tripod", "mount", "tube", "objective", "eyepiece", "focus_knob", "finder_scope"]
@@ -131,6 +132,9 @@ func _build() -> void:
 
 
 func _draw_title_bar() -> void:
+	AssemblyUITemplate.add_title_bar(self, GameManager.text("Telescope Assembly", "望远镜组装台"), GameManager.text("Pick a part, then click its blueprint slot.", "选择零件，再点击蓝图安装位。"))
+	AssemblyUITemplate.add_hints_toggle(self, GameManager, _build)
+	return
 	_rect(Vector2(0, 0), Vector2(1024, 58), Color(0.030, 0.045, 0.085, 0.96))
 	_rect(Vector2(18, 12), Vector2(988, 3), Color(0.78, 0.56, 0.28))
 	_rect(Vector2(18, 52), Vector2(988, 3), Color(0.17, 0.25, 0.40))
@@ -151,7 +155,7 @@ func _draw_title_bar() -> void:
 
 
 func _build_parts_panel() -> void:
-	_panel(Vector2(20, 74), Vector2(300, 636), Color(0.050, 0.070, 0.120, 0.96), Color(0.78, 0.56, 0.28))
+	_panel(AssemblyUITemplate.LEFT_PANEL_RECT.position, AssemblyUITemplate.LEFT_PANEL_RECT.size, Color(0.050, 0.070, 0.120, 0.96), Color(0.78, 0.56, 0.28))
 	_rect(Vector2(24, 78), Vector2(292, 34), Color(0.30, 0.20, 0.10, 0.92))
 	var heading := _label(GameManager.text("Parts Tray", "零件托盘"), 17, Color(0.96, 0.93, 0.84))
 	heading.position = Vector2(40, 91)
@@ -160,8 +164,8 @@ func _build_parts_panel() -> void:
 	add_child(heading)
 
 	parts_scroll = ScrollContainer.new()
-	parts_scroll.position = Vector2(36, 128)
-	parts_scroll.size = Vector2(268, 560)
+	parts_scroll.position = AssemblyUITemplate.PARTS_SCROLL_RECT.position
+	parts_scroll.size = AssemblyUITemplate.PARTS_SCROLL_RECT.size
 	parts_scroll.clip_contents = true
 	parts_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	parts_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -174,7 +178,7 @@ func _build_parts_panel() -> void:
 
 
 func _build_blueprint_panel() -> void:
-	_panel(Vector2(332, 74), Vector2(436, 636), Color(0.020, 0.045, 0.095, 0.98), Color(0.78, 0.56, 0.28))
+	_panel(AssemblyUITemplate.BLUEPRINT_PANEL_RECT.position, AssemblyUITemplate.BLUEPRINT_PANEL_RECT.size, Color(0.020, 0.045, 0.095, 0.98), Color(0.78, 0.56, 0.28))
 	# Gold nameplate header (mockup style).
 	_dark_panel_add(Vector2(452, 80), Vector2(196, 34), Color(0.10, 0.13, 0.075, 0.96), Color(0.82, 0.62, 0.30))
 	var heading := _label(GameManager.text("BLUEPRINT · 蓝图", "BLUEPRINT · 蓝图"), 16, Color(0.96, 0.82, 0.42))
@@ -236,6 +240,24 @@ func _mission_bg_texture(path: String, pos: Vector2, size: Vector2) -> void:
 
 
 func _build_inspector_panel() -> void:
+	var back_callback := func() -> void:
+		GameManager.set_observatory_spawn("assembly")
+		GameManager.go("observatory")
+	var shell := AssemblyUITemplate.add_inspector_shell(
+		self,
+		GameManager.text("Inspector", "检查器"),
+		GameManager.text("Finish Assembly", "完成组装"),
+		GameManager.text("Reassemble", "重装"),
+		GameManager.text("Back", "返回"),
+		_finish,
+		_reset,
+		back_callback
+	)
+	inspector_title = shell["status"]
+	feedback_label = shell["feedback"]
+	stats_list = shell["stats"]
+	ready_dot = shell["ready_dot"]
+	return
 	_panel(Vector2(776, 74), Vector2(232, 636), Color(0.045, 0.065, 0.115, 0.98), Color(0.78, 0.56, 0.28))
 	_dark_panel_add(Vector2(812, 80), Vector2(160, 34), Color(0.10, 0.13, 0.075, 0.96), Color(0.82, 0.62, 0.30))
 	var heading := _label("INSPECTOR · 检查器", 14, Color(0.96, 0.82, 0.42))
@@ -331,7 +353,7 @@ func _refresh_parts() -> void:
 	_clear(parts_list)
 	var y := 0.0
 	var selected_y := -1.0
-	var next_part := _next_installable_part()
+	var next_part := _next_installable_part() if GameManager.assembly_hints_enabled() else ""
 	for part_type in PART_ORDER:
 		var unlocked: Array = GameManager.unlocked_parts_by_type(part_type)
 		if unlocked.is_empty():
@@ -358,6 +380,20 @@ func _scroll_parts_to(value: int) -> void:
 
 
 func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selected: bool, pos: Vector2) -> void:
+	var shared_texture_path := str(PART_TEXTURES.get(str(part.get("id", "")), part.get("icon_path", "")))
+	var shared_texture := load(shared_texture_path) as Texture2D if shared_texture_path != "" and ResourceLoader.exists(shared_texture_path) else null
+	AssemblyUITemplate.add_part_card(
+		parts_list,
+		pos,
+		GameManager.dict_text(part, "name"),
+		str(_part_label(part_type, "role")),
+		GameManager.text("Installed", "已安装") if installed else GameManager.text("Not Installed", "未安装"),
+		shared_texture,
+		installed,
+		selected,
+		_select_part.bind(part_type)
+	)
+	return
 	var bg_color := Color(0.155, 0.172, 0.180)
 	if installed:
 		bg_color = Color(0.112, 0.128, 0.132)
@@ -492,7 +528,7 @@ func _refresh_blueprint() -> void:
 	# slot, shows installed parts, and carries the click hotspots. The dashed
 	# slot outlines and telescope drawing come from the background image.
 	_clear(blueprint_layer)
-	var next_part := _next_installable_part()
+	var next_part := _next_installable_part() if GameManager.assembly_hints_enabled() else ""
 	for part_type in PART_ORDER:
 		if OPTIONAL_PARTS.has(part_type) and GameManager.unlocked_parts_by_type(part_type).is_empty():
 			continue
@@ -583,14 +619,7 @@ func _draw_slot(part_type: String, next_part: String) -> void:
 		elif selected_part_type == "" and next:
 			_draw_glow_frame(rect.grow(2.0), Color(0.55, 0.82, 0.98, 0.85))
 
-	var hot := Button.new()
-	hot.position = rect.position
-	hot.size = rect.size
-	hot.text = ""
-	hot.flat = true
-	hot.focus_mode = Control.FOCUS_NONE
-	hot.pressed.connect(_try_install.bind(part_type))
-	blueprint_layer.add_child(hot)
+	AssemblyUITemplate.add_slot_hit_target(blueprint_layer, rect, _try_install.bind(part_type))
 
 
 func _draw_glow_frame(rect: Rect2, color: Color) -> void:
@@ -735,8 +764,10 @@ func _refresh_inspector() -> void:
 	var next_part := _next_installable_part()
 	if next_part == "":
 		feedback_label.text = GameManager.text("All core parts installed. Press Finish.", "核心部件已装齐，点击完成。")
+	elif GameManager.assembly_hints_enabled():
+		feedback_label.text = GameManager.text("Next: ", "下一步：") + str(_part_label(next_part, "short")) + GameManager.text(" - pick it, click its slot. ", " —— 选它，点击安装位。") + _next_step_description(next_part)
 	else:
-		feedback_label.text = GameManager.text("Next: ", "下一步：") + str(_part_label(next_part, "short")) + GameManager.text(" - pick it, click its slot.", " —— 选它，点击安装位。")
+		feedback_label.text = GameManager.text("Hints off. Pick parts and install them in a valid order.", "提示已关闭。自行选择零件并按有效顺序安装。")
 
 
 func _set_ready_dot(color: Color) -> void:
@@ -863,7 +894,7 @@ func _try_install(slot_type: String) -> void:
 
 func _finish() -> void:
 	if GameManager.telescope_is_ready():
-		GameManager.last_guidance = "ready_to_observe"
+		GameManager.update_room_guidance_for_level()
 		GameManager.set_observatory_spawn("assembly")
 		GameManager.save()
 		GameManager.go("observatory")

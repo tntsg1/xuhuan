@@ -50,6 +50,7 @@ func _initialize() -> void:
 	_check(error_at_target < 0.0001, "focus_error ~0 at exact target")
 	_check(bool(probe.call("is_focus_acceptable")), "is_focus_acceptable true at exact target")
 	_check(str(probe.call("_focus_state")) == "sharp", "_focus_state sharp at exact target")
+	_check(is_zero_approx(float(probe.call("_target_blur_weight"))), "exact focus uses the sharp nebula texture state")
 	var slider: HSlider = probe.get("focus_slider")
 	_check(slider != null and absf(slider.value - float(probe.get("focus_value"))) <= float(slider.step) + 0.0001, "slider value matches focus_value (within one step)")
 
@@ -65,6 +66,7 @@ func _initialize() -> void:
 		float(probe.get("focus_error")), probe.call("_focus_state"), probe.call("is_focus_acceptable")
 	])
 	_check(not bool(probe.call("is_focus_acceptable")), "is_focus_acceptable false at +0.2 offset")
+	_check(float(probe.call("_target_blur_weight")) > 0.95, "off-focus nebula keeps the blurry texture state")
 	_check(str(probe.call("_current_feedback")).contains("Adjust focus"), "off-focus feedback asks to adjust")
 	probe.queue_free()
 	await process_frame

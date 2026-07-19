@@ -206,27 +206,20 @@
   {
     "id": "level_7",
     "level_number": 7,
-    "title_en": "Reflect the Light",
-    "title_zh": "反射光线",
-    "description_en": "Learn how a Newtonian reflector uses mirrors instead of lenses, then hunt the Orion Nebula.",
-    "description_zh": "学习牛顿反射望远镜如何用镜子代替透镜，然后寻找猎户座大星云。",
+    "title_en": "A Bigger Objective",
+    "title_zh": "更大的物镜",
+    "description_en": "The Orion Nebula is faint. Upgrade to the 100mm objective and a steadier mount, then find it again.",
+    "description_zh": "猎户座大星云很暗。升级 100mm 大口径物镜和更稳的支架，再去寻找它。",
     "observation_mode": "telescope",
-    "equipment_stage": "newtonian_basic",
+    "equipment_stage": "refractor_upgraded",
     "requires_telescope": true,
     "requires_focus": true,
-    "required_concept_card": "newtonian_light_path",
+    "required_concept_card": "aperture_light_gathering",
     "teaching_steps": [
       {
-        "id": "newtonian_intro",
-        "card_id": "newtonian_light_path",
+        "id": "aperture_intro",
+        "card_id": "aperture_light_gathering",
         "trigger": "before_assembly",
-        "mode": "brief",
-        "required_once": true
-      },
-      {
-        "id": "collimation_intro",
-        "card_id": "collimation_alignment",
-        "trigger": "before_collimation",
         "mode": "brief",
         "required_once": true
       }
@@ -243,16 +236,16 @@
     ],
     "minimum_success_quality": "Fair",
     "required_assembly_score": 70,
-    "hint_text_en": "Look for a faint purple cloud below Orion's Belt.",
-    "hint_text_zh": "在猎户座腰带下方寻找一片暗淡的紫色云雾。",
-    "success_text_en": "Mirrors can gather light just like lenses - often with a bigger aperture.",
-    "success_text_zh": "镜子和透镜一样能收集光线，而且通常口径更大。",
+    "hint_text_en": "A wider objective collects more light - faint targets get brighter.",
+    "hint_text_zh": "更大的物镜能收集更多光线——暗弱目标会变得更亮。",
+    "success_text_en": "Aperture, not magnification, decides how faint you can see.",
+    "success_text_zh": "决定你能看多暗的是口径，不是倍率。",
     "reward_credits": 90,
     "unlock_parts": [
       "objective_100mm",
       "stable_mount"
     ],
-    "unlock_equipment_stage": "newtonian_basic",
+    "unlock_equipment_stage": "refractor_upgraded",
     "badge": "Mirror Master"
   },
   {
@@ -263,7 +256,7 @@
     "description_en": "The Orion Nebula is faint. Upgrade to a larger aperture and see how much more appears.",
     "description_zh": "猎户座大星云很暗。升级更大口径，看看能多看到多少。",
     "observation_mode": "telescope",
-    "equipment_stage": "newtonian_basic",
+    "equipment_stage": "refractor_upgraded",
     "requires_telescope": true,
     "requires_focus": true,
     "required_concept_card": "aperture_light_gathering",
@@ -285,8 +278,9 @@
     "success_text_zh": "口径是望远镜最重要的参数。",
     "reward_credits": 90,
     "unlock_parts": [],
-    "unlock_equipment_stage": "newtonian_basic",
-    "badge": "Nebula Hunter"
+    "unlock_equipment_stage": "refractor_upgraded",
+    "badge": "Nebula Hunter",
+    "teaching_steps": []
   },
   {
     "id": "level_9",
@@ -831,9 +825,11 @@
       "finder_scope",
       "focus_knob"
     ],
-    "minimum_success_quality": "Fair",
+    "minimum_success_quality": "Poor",
     "environment": {
-      "sky_brightness": "city"
+      "sky_brightness": "city",
+      "seeing": "average",
+      "cloud_cover": 0.12
     },
     "required_assembly_score": 75,
     "hint_text_en": "The glow won't get much sharper tonight - the sky itself is the problem, not your gear.",
@@ -874,7 +870,9 @@
       "focus_knob"
     ],
     "environment": {
-      "sky_brightness": "dark"
+      "sky_brightness": "dark",
+      "seeing": "average",
+      "cloud_cover": 0.12
     },
     "required_assembly_score": 75,
     "hint_text_en": "Same telescope as before - let the darker sky do the work this time.",
@@ -895,8 +893,8 @@
     "level_number": 22,
     "title_en": "Star Drift",
     "title_zh": "星星在漂移",
-    "description_en": "Watch closely. The star is running away - no, the Earth is turning under you. Keep it centered as it drifts.",
-    "description_zh": "盯紧了。星星在慢慢逃——不，是地球在你脚下转。在它漂移时持续把它保持居中。",
+    "description_en": "Watch closely. Earth rotation makes Sirius drift, while the refractor leaves a red-blue fringe that remains even at best focus.",
+    "description_zh": "仔细观察：地球自转让天狼星漂移，而折射镜留下的红蓝彩边即使在最佳焦点也不会消失。",
     "observation_mode": "telescope",
     "equipment_stage": "advanced",
     "requires_telescope": true,
@@ -924,10 +922,10 @@
     "drift_enabled": true,
     "hold_seconds": 8,
     "required_assembly_score": 75,
-    "hint_text_en": "The target drifts slowly in azimuth. Keep nudging it back to center.",
-    "hint_text_zh": "目标会沿方位角缓慢漂移，持续微调把它拉回中心。",
-    "success_text_en": "You just fought the planet's spin by hand. Feel the workout?",
-    "success_text_zh": "你刚才在徒手对抗地球自转。感觉到工作量了吧？",
+    "hint_text_en": "Keep Sirius centered, focus it as sharply as possible, then notice that its red-blue split still remains.",
+    "hint_text_zh": "保持天狼星居中并尽量调到最清晰，然后观察仍然存在的红蓝分离。",
+    "success_text_en": "You countered Earth's rotation, but the color fringe followed Sirius. It is not tracking or focus error.",
+    "success_text_zh": "你抵消了地球自转，但彩边始终跟着天狼星。这不是追踪或调焦失误。",
     "reward_credits": 100,
     "unlock_parts": [],
     "unlock_equipment_stage": "advanced",
@@ -938,21 +936,22 @@
     "variation": "drift",
     "environment": {
       "seeing": "average"
-    }
+    },
+    "chromatic_aberration": true
   },
   {
     "id": "level_23",
     "level_number": 23,
-    "title_en": "Tracking Mount",
-    "title_zh": "追踪支架",
-    "description_en": "Tired arms? This mount turns at exactly the speed of the sky. Install it and dial the tracking rate to match the drift.",
-    "description_zh": "手酸了吧？这个支架会以和天空完全相同的速度转动。装上它，把追踪速率调到匹配漂移。",
+    "title_en": "Vega and the Strange Colored Fringe",
+    "title_zh": "织女星与奇怪的彩色边缘",
+    "description_en": "Let the tracking mount hold Vega steady, then look closely: a red edge on one side, blue on the other. Focus cannot remove it.",
+    "description_zh": "让追踪支架替你稳住织女星，然后仔细看：一侧偏红、一侧偏蓝的边缘。调焦也无法消除。",
     "observation_mode": "telescope",
     "equipment_stage": "advanced",
     "requires_telescope": true,
     "requires_focus": true,
-    "required_concept_card": "deep_sky_observation",
-    "target_object_id": "jupiter",
+    "required_concept_card": "chromatic_aberration",
+    "target_object_id": "vega",
     "required_parts": [
       "tripod",
       "mount",
@@ -968,10 +967,10 @@
       "tracking_mount"
     ],
     "required_assembly_score": 75,
-    "hint_text_en": "Dial the tracking rate close to 1x so the mount cancels the drift for you.",
-    "hint_text_zh": "把追踪速率调到接近 1 倍，让支架替你抵消漂移。",
-    "success_text_en": "Now the machine fights the spin, and you just watch.",
-    "success_text_zh": "现在由机器对抗自转，你只管看。",
+    "hint_text_en": "Set tracking near 1.0x, focus carefully, and inspect the star edge. The fringe is NOT your mistake.",
+    "hint_text_zh": "把追踪调到接近 1.0 倍，仔细调焦，然后检查星的边缘。彩边不是你的操作失误。",
+    "success_text_en": "Focused, tracked - and still fringed with color. Something is built into the lens itself.",
+    "success_text_zh": "对好了焦、追住了星——彩色边缘却还在。问题出在透镜本身。",
     "reward_credits": 100,
     "unlock_parts": [],
     "unlock_equipment_stage": "advanced",
@@ -985,15 +984,25 @@
     "environment": {
       "seeing": "average",
       "cloud_cover": 0.15
-    }
+    },
+    "chromatic_aberration": true,
+    "teaching_steps": [
+      {
+        "id": "l23_chromatic_first",
+        "card_id": "chromatic_aberration",
+        "trigger": "before_identify",
+        "mode": "brief",
+        "required_once": true
+      }
+    ]
   },
   {
     "id": "level_24",
     "level_number": 24,
     "title_en": "Long Look at Andromeda",
     "title_zh": "长久凝望仙女座",
-    "description_en": "One last lesson: deep sky rewards the patient. Hold Andromeda steady for a long, continuous look.",
-    "description_zh": "最后一课：深空回报有耐心的人。让仙女座保持稳定，进行一次长时间的持续观测。",
+    "description_en": "Hold Andromeda steady for a long look. The refractor now splits color along the galaxy's bright core and outer rim too - not only around stars.",
+    "description_zh": "长时间稳住仙女座。折射镜也会让星系亮核和外缘出现颜色分离——色差并不只发生在恒星上。",
     "observation_mode": "telescope",
     "equipment_stage": "advanced",
     "requires_telescope": true,
@@ -1013,10 +1022,10 @@
     "hold_seconds": 12,
     "hold_strict": true,
     "required_assembly_score": 75,
-    "hint_text_en": "Best gear, steady hold: keep Andromeda centered until the progress bar fills.",
-    "hint_text_zh": "用上最好的设备，稳住不动：让仙女座保持居中直到进度条充满。",
-    "success_text_en": "From naked eyes to a tracked deep-sky watch - you finished the whole path. Senior Observer.",
-    "success_text_zh": "从肉眼到追踪深空——整条路你走完了。高级观测员。",
+    "hint_text_en": "Keep Andromeda centered until the bar fills. At best focus, compare the red and blue separation along its opposite edges.",
+    "hint_text_zh": "保持仙女座居中直到进度条充满；在最佳焦点观察其两侧仍然分离的红蓝边缘。",
+    "success_text_en": "The same persistent color split now appears on a galaxy. The refractor lens, not the target, is causing it.",
+    "success_text_zh": "同样顽固的颜色分离也出现在星系上。原因在折射镜透镜，而不在天体。",
     "reward_credits": 200,
     "unlock_parts": [],
     "unlock_equipment_stage": "advanced",
@@ -1027,6 +1036,7 @@
     "variation": "final_endurance_watch",
     "environment": {
       "seeing": "average"
-    }
+    },
+    "chromatic_aberration": true
   }
 ]

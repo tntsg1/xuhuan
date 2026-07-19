@@ -7,6 +7,9 @@ const LocalizationScript := preload("res://scripts/systems/localization.gd")
 const TelescopeMathScript := preload("res://scripts/systems/telescope_math.gd")
 const AssemblyManagerScript := preload("res://scripts/systems/assembly_manager.gd")
 const ObservationSystemScript := preload("res://scripts/systems/observation_system.gd")
+const DeveloperConsoleScript := preload("res://scripts/ui/developer_console.gd")
+const ADVANCED_LEVELS_PATH := "res://data/advanced_levels.json"
+const ADVANCED_PARTS_PATH := "res://data/advanced_telescope_parts.json"
 
 const SCENES := {
 	"menu": "res://scenes/main_menu.tscn",
@@ -14,6 +17,11 @@ const SCENES := {
 	"interior": "res://scenes/observatory_interior.tscn",
 	"parts": "res://scenes/parts_cabinet.tscn",
 	"assembly": "res://scenes/telescope_assembly.tscn",
+	"advanced_assembly": "res://scenes/advanced_assembly.tscn",
+	"optical_tube_assembly": "res://scenes/optical_tube_assembly.tscn",
+	"collimation": "res://scenes/collimation.tscn",
+	"radio_observation": "res://scenes/radio_observation.tscn",
+	"multi_observation": "res://scenes/multi_observation.tscn",
 	"sky": "res://scenes/sky_observation.tscn",
 	"telescope": "res://scenes/telescope_view.tscn",
 	"journal": "res://scenes/learning_journal.tscn",
@@ -37,12 +45,15 @@ var language_mode := "en"
 var observatory_spawn_id := "default"
 # Last sky-observation aim, restored when re-entering the pad.
 var last_sky_aim: Dictionary = {"valid": false}
+var developer_console: Control
 
 
 func _ready() -> void:
 	parts_data = _load_json_array("res://data/telescope_parts.json")
+	parts_data.append_array(_load_json_array(ADVANCED_PARTS_PATH))
 	objects_data = _load_json_array("res://data/celestial_objects.json")
 	levels_data = _load_json_array("res://data/levels.json")
+	levels_data.append_array(_load_json_array(ADVANCED_LEVELS_PATH))
 	learning_cards_data = _load_json_array("res://data/learning_cards.json")
 	var mission_manager: Variant = _mission_manager()
 	if mission_manager != null:
@@ -52,10 +63,125 @@ func _ready() -> void:
 	language_mode = _normalized_language_mode(str(progress.get("language_mode", "en")))
 	_unlock_parts_for_current_level()
 	save()
+	set_process_unhandled_input(true)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not event is InputEventKey:
+		return
+	var key_event := event as InputEventKey
+	if not key_event.pressed or key_event.echo or key_event.keycode != KEY_EQUAL:
+		return
+	toggle_developer_console()
+	get_viewport().set_input_as_handled()
+
+
+func toggle_developer_console() -> void:
+	if developer_console != null and is_instance_valid(developer_console):
+		developer_console.queue_free()
+		developer_console = null
+		return
+	var current: Node = get_tree().current_scene
+	if current == null:
+		return
+	developer_console = DeveloperConsoleScript.new()
+	current.add_child(developer_console)
+
+
+func debug_jump_to_level(level_number: int, prepare_equipment: bool = false) -> void:
+	var max_level: int = max(1, levels_data.size())
+	progress["current_level"] = clampi(level_number, 1, max_level)
+	selected_object_id = current_target_object_id()
+	last_observation = {}
+	last_learning_card = {}
+	last_sky_aim = {"valid": false}
+	_unlock_parts_for_current_level()
+	# Developer jumps should not be interrupted by normal progression popups.
+	progress["pending_unlock_notice"] = []
+	if prepare_equipment:
+		_debug_prepare_equipment()
+	else:
+		reset_assembly()
+	update_room_guidance_for_level()
+	progress_changed.emit()
+
+
+func debug_launch(scene_key: String, prepare_equipment: bool = false) -> void:
+	if prepare_equipment:
+		_debug_prepare_equipment()
+	selected_object_id = current_target_object_id()
+	if scene_key == "observatory":
+		update_room_guidance_for_level()
+		set_observatory_spawn("default")
+	go(scene_key)
+
+
+func available_level_numbers() -> Array[int]:
+	var result: Array[int] = []
+	for level_value in levels_data:
+		if not level_value is Dictionary:
+			continue
+		var level: Dictionary = level_value
+		var number := int(level.get("level_number", 0))
+		if number > 0 and not result.has(number):
+			result.append(number)
+	result.sort()
+	return result
+
+
+func _debug_prepare_equipment() -> void:
+	# A repeatable level sandbox: select the best parts currently unlocked and
+	# perfectly install the parts the selected lesson actually requires.
+	var part_types: Array[String] = ["tripod", "mount", "tube", "objective", "eyepiece", "finder_scope", "focus_knob"]
+	for required_type_value in current_level().get("required_parts", []):
+		var required_type := str(required_type_value)
+		if not part_types.has(required_type):
+			part_types.append(required_type)
+	for part_type in part_types:
+		var options: Array = unlocked_parts_by_type(part_type)
+		if not options.is_empty():
+			equip_part(str(options[options.size() - 1].get("id", "")))
+	# Lessons that prescribe exact component IDs override the "best unlocked"
+	# pick, matching what the assembly screens themselves enforce.
+	for required_id_value in current_level().get("required_part_ids", []):
+		equip_part(str(required_id_value))
+	if _uses_tube_subassembly():
+		var tube_config := tube_subassembly_config()
+		var tube_order: Array = tube_config.get("order", [])
+		var tube_ids: Array = tube_config.get("ids", [])
+		var completed_subparts := {}
+		for index in range(tube_order.size()):
+			var subpart := str(tube_order[index])
+			completed_subparts[subpart] = true
+			if index < tube_ids.size():
+				equip_part(str(tube_ids[index]))
+		save_tube_assembly(completed_subparts, 100.0, 100.0, true)
+	reset_assembly()
+	for required_type_value in _effective_required_parts():
+		install_part(str(required_type_value), 0)
+	progress["finder_offset"] = {"az": 0.0, "alt": 0.0}
+	progress["finder_offset_seeded"] = false
+	progress["tracking_rate"] = 1.0 if has_tracking_mount_equipped() else 0.0
+
+
+func focus_control_installed() -> bool:
+	var state: Dictionary = progress.get("assembly_state", {})
+	for focus_type in ["focus_knob", "focuser"]:
+		var entry: Dictionary = state.get(focus_type, {})
+		if bool(entry.get("installed", false)):
+			return true
+	# Advanced reflector focusers live inside the optical-tube subassembly.
+	if _uses_tube_subassembly():
+		var tube_state := tube_assembly()
+		var subparts: Dictionary = tube_state.get("installed_subparts", tube_state.get("tube_assembly_state", {}))
+		if bool(subparts.get("focuser", false)):
+			return true
+	return false
 
 
 func default_progress() -> Dictionary:
 	return {
+		"campaign_version": 91,
 		"current_level": 1,
 		"credits": 0,
 		"completed_levels": [],
@@ -85,7 +211,9 @@ func default_progress() -> Dictionary:
 		"level_target_overrides": {},
 		"finder_offset": {"az": 0.0, "alt": 0.0},
 		"finder_offset_seeded": false,
-		"tracking_rate": 0.0
+		"tracking_rate": 0.0,
+		"collimation_scores": {"newtonian": 0.0},
+		"tube_assemblies": {}
 	}
 
 
@@ -115,6 +243,13 @@ func save() -> void:
 
 
 func go(scene_key: String) -> void:
+	if scene_key == "sky":
+		match current_observation_mode():
+			"radio": scene_key = "radio_observation"
+			"multi_device": scene_key = "multi_observation"
+			"telescope" when str(current_level().get("telescope_family", "")) == "space_segmented": scene_key = "multi_observation"
+	if scene_key == "assembly" and str(current_level().get("assembly_mode", "")) == "advanced":
+		scene_key = "advanced_assembly"
 	if not SCENES.has(scene_key):
 		push_error("Unknown scene key: " + scene_key)
 		return
@@ -287,6 +422,203 @@ func complete_current_story() -> void:
 	StoryManager.finish_active_event()
 
 
+# Observing-site facts. The base site matches SkyPositionService's default
+# observer (34.05N 118.24W): a suburban ridge NE of Los Angeles. Levels with
+# a city/dark sky_brightness are field trips and override region + Bortle.
+func site_info() -> Dictionary:
+	var env := current_environment()
+	var sky := str(env.get("sky_brightness", "suburban"))
+	var region_en := "Suburban ridge, San Gabriel foothills"
+	var region_zh := "郊区山脊 · 圣加布里埃尔山麓"
+	var bortle := "Bortle 5"
+	match sky:
+		"city":
+			region_en = "City rooftop field trip"
+			region_zh = "城市天台（本关外出观测）"
+			bortle = "Bortle 8"
+		"dark":
+			region_en = "Dark-sky camp field trip"
+			region_zh = "暗夜营地（本关外出观测）"
+			bortle = "Bortle 3"
+	var seeing := str(env.get("seeing", "good"))
+	var seeing_score := 8
+	match seeing:
+		"average": seeing_score = 6
+		"poor": seeing_score = 3
+	var cloud_pct := int(round(float(env.get("cloud_cover", 0.0)) * 100.0))
+	var weather_index: int = clampi(seeing_score - cloud_pct / 20, 1, 10)
+	return {
+		"lat": "34.05° N", "lon": "118.24° W", "altitude": "1100 m",
+		"region_en": region_en, "region_zh": region_zh, "bortle": bortle,
+		"seeing": seeing, "cloud_pct": cloud_pct, "weather_index": weather_index
+	}
+
+
+func assembly_hints_enabled() -> bool:
+	return bool(progress.get("assembly_hints_enabled", true))
+
+
+func set_assembly_hints(enabled: bool) -> void:
+	progress["assembly_hints_enabled"] = enabled
+	save()
+
+
+# ------------------------------------------------- auto-equip (scored)
+# Task profile for part scoring: what does TONIGHT's observation reward?
+func _task_profile() -> String:
+	var target_type := str(current_target().get("type_en", "")).to_lower()
+	if target_type.contains("nebula") or target_type.contains("galaxy"):
+		return "deep_sky"
+	if str(current_environment().get("seeing", "")) == "poor":
+		return "steady"
+	return "planet"
+
+
+# Composite performance score of a part under the given task profile.
+func _part_score(part: Dictionary, profile: String) -> float:
+	var s := 0.0
+	s += float(part.get("quality", 0.0))
+	s += float(part.get("stability", 0.0)) * (1.5 if profile == "steady" else 0.8)
+	s += float(part.get("stability_bonus", 0.0))
+	s += float(part.get("alignment_quality", 0.0)) * 0.5
+	s += float(part.get("tracking", 0.0)) * (1.2 if profile == "steady" else 0.5)
+	if bool(part.get("tracking_capable", false)):
+		s += 25.0 if profile == "steady" else 12.0
+	s += (float(part.get("focus_sensitivity", 0.0)) + float(part.get("focus_stability", 0.0))) * 30.0
+	s += float(part.get("aim_assist", 0.0))
+	var aperture := float(part.get("aperture_mm", 0.0))
+	if aperture > 0.0:
+		s += log(aperture) * (22.0 if profile == "deep_sky" else 10.0)
+	if str(part.get("type", "")) == "eyepiece":
+		var focal := float(part.get("focal_length_mm", 20.0))
+		s += float(part.get("field_of_view", 0.0)) * (0.8 if profile == "deep_sky" else 0.3)
+		if profile == "planet":
+			# Planetary detail wants magnification: shorter focal = higher power.
+			s += (40.0 - focal) * 2.5
+		else:
+			# Deep sky / rough air want the wide, bright, forgiving field.
+			s += focal * 2.0
+	return s
+
+
+# The exact part id this level PINS for a slot type ("" = free slot).
+func pinned_part_id(part_type: String) -> String:
+	for required_id_value in current_level().get("required_part_ids", []):
+		var part := get_part(str(required_id_value))
+		if str(part.get("type", "")) == part_type:
+			return str(part.get("id", ""))
+	return ""
+
+
+# Best unlocked, family-compatible part for a slot under tonight's profile.
+func best_part_for_type(part_type: String) -> Dictionary:
+	var profile := _task_profile()
+	var best: Dictionary = {}
+	var best_score := -1.0
+	var current_family := str(current_level().get("telescope_family", ""))
+	for option_value in unlocked_parts_by_type(part_type):
+		var option: Dictionary = option_value
+		var part_family := str(option.get("telescope_family", ""))
+		if part_family != "" and part_family != current_family:
+			continue
+		var score := _part_score(option, profile)
+		if score > best_score:
+			best_score = score
+			best = option
+	return best
+
+
+func _auto_reason(part_type: String, profile: String, part: Dictionary) -> Dictionary:
+	match part_type:
+		"eyepiece":
+			var focal := int(part.get("focal_length_mm", 0))
+			if profile == "planet":
+				return {"en": "Planetary detail needs power: the %dmm eyepiece gives the highest usable magnification." % focal,
+					"zh": "行星/恒星细节需要倍率：%dmm 目镜提供最高可用放大倍数。" % focal}
+			if profile == "steady":
+				return {"en": "Rough air punishes high power: the %dmm keeps the image low-power and steady." % focal,
+					"zh": "视宁度差时高倍率吃亏：%dmm 目镜保持低倍率、画面更稳。" % focal}
+			return {"en": "Deep sky wants a wide, bright field: the %dmm shows the most sky." % focal,
+				"zh": "深空目标需要宽而亮的视场：%dmm 目镜视场最大。" % focal}
+		"mount":
+			if bool(part.get("tracking_capable", false)):
+				return {"en": "Highest stability, and its tracking motor cancels Earth-rotation drift.",
+					"zh": "稳定性最高，且追踪马达能抵消地球自转漂移。"}
+			return {"en": "Highest stability of the compatible mounts.", "zh": "兼容支架中稳定性最高。"}
+		"objective", "primary_mirror":
+			return {"en": "Largest aperture: %dmm collects the most light." % int(part.get("aperture_mm", 0)),
+				"zh": "口径最大：%dmm 收集的光最多。" % int(part.get("aperture_mm", 0))}
+		"finder_scope":
+			return {"en": "Best available finder for this chapter.", "zh": "当前章节可用的最佳寻星镜。"}
+		"focus_knob", "focuser":
+			return {"en": "Finest focus control available.", "zh": "可用调焦部件中控制精度最高。"}
+	return {"en": "Highest overall score among compatible parts.", "zh": "兼容零件中综合评分最高。"}
+
+
+# One-click best loadout for the CURRENT level and target. Returns a plan
+# WITHOUT touching the save - the cabinet shows a preview (with per-part
+# reasons) and only applies on confirmation.
+#
+# Selection order per slot: family compatibility -> unlocked -> the level's
+# PINNED part if any (teaching levels, shown with the teaching reason) ->
+# otherwise the highest-scoring candidate for tonight's task profile.
+func auto_equip_plan() -> Array:
+	var profile := _task_profile()
+	var plan: Array = []
+	var slot_types: Array = []
+	for type_value in _effective_required_parts():
+		if str(type_value) != "optical_tube_assembly" and not slot_types.has(str(type_value)):
+			slot_types.append(str(type_value))
+	for type_value in current_level().get("required_parts", []):
+		if str(type_value) != "optical_tube_assembly" and not slot_types.has(str(type_value)):
+			slot_types.append(str(type_value))
+	for slot_value in slot_types:
+		var part_type := str(slot_value)
+		var pinned_id := pinned_part_id(part_type)
+		if pinned_id != "" and progress.get("unlocked_parts", []).has(pinned_id):
+			var pinned := get_part(pinned_id)
+			plan.append(_auto_equip_entry(part_type, pinned, true, {
+				"en": "This lesson prescribes this exact part - it is what the level is teaching.",
+				"zh": "本关指定使用该零件——这正是本关要学习/要求的设备。"
+			}))
+			continue
+		var best := best_part_for_type(part_type)
+		if best.is_empty():
+			continue
+		plan.append(_auto_equip_entry(part_type, best, false, _auto_reason(part_type, profile, best)))
+	return plan
+
+
+func _auto_equip_entry(part_type: String, part: Dictionary, pinned: bool, reason: Dictionary) -> Dictionary:
+	return {
+		"part_type": part_type,
+		"part_id": str(part.get("id", "")),
+		"name_en": str(part.get("name_en", part.get("id", ""))),
+		"name_zh": str(part.get("name_zh", part.get("id", ""))),
+		"changed": equipped_part_id(part_type) != str(part.get("id", "")),
+		"pinned": pinned,
+		"reason_en": str(reason.get("en", "")),
+		"reason_zh": str(reason.get("zh", ""))
+	}
+
+
+func apply_auto_equip(plan: Array) -> int:
+	var applied := 0
+	for entry_value in plan:
+		var entry: Dictionary = entry_value
+		if bool(entry.get("changed", false)) and equip_part(str(entry.get("part_id", ""))):
+			applied += 1
+	return applied
+
+
+func try_story_mechanic(mechanic: String, return_scene_key: String, follow_trigger: String = "") -> bool:
+	return StoryManager.begin_mechanic_event(mechanic, return_scene_key, follow_trigger)
+
+
+func try_story_epilogue(level_number: int, return_scene_key: String) -> bool:
+	return StoryManager.begin_epilogue(level_number, return_scene_key)
+
+
 func set_room_guidance(target: String, title: String, hint: String) -> void:
 	room_guidance_target = target
 	room_guidance_title = title
@@ -300,17 +632,153 @@ func clear_room_guidance() -> void:
 
 
 func update_room_guidance_for_level() -> void:
-	# Next-step guidance shown in the observatory after a mission completes
-	# (or a new level starts): derived from the CURRENT level and progress.
-	if not current_requires_telescope():
-		set_room_guidance_for_scene("sky", "")
-	elif not telescope_is_ready():
-		set_room_guidance_for_scene("assembly", "")
-	elif _deep_sky_target() and str(current_level().get("minimum_success_quality", "Good")) == "Good" and _has_better_unequipped_part():
-		# Faint targets need the upgraded optics the player just unlocked.
-		set_room_guidance_for_scene("parts", "")
-	else:
-		set_room_guidance_for_scene("sky", "")
+	var route := current_room_route()
+	set_room_guidance(
+		str(route.get("target", "")),
+		str(route.get("title", "")),
+		str(route.get("hint", ""))
+	)
+
+
+func route_outcome_text() -> String:
+	# "What happens after": the reward the guided step leads to.
+	var pieces: Array[String] = []
+	var concept := current_concept_card()
+	if not concept.is_empty() and not completed_concept_cards().has(str(concept.get("id", ""))):
+		pieces.append(text("learn \"" + dict_text(concept, "title") + "\"", "学到「" + dict_text(concept, "title") + "」"))
+	var unlock_names: Array[String] = []
+	for part_id_value in current_level().get("unlock_parts", []):
+		var part := get_part(str(part_id_value))
+		if not part.is_empty():
+			unlock_names.append(dict_text(part, "name"))
+	if not unlock_names.is_empty():
+		pieces.append(text("unlock " + ", ".join(unlock_names), "解锁 " + "、".join(unlock_names)))
+	if pieces.is_empty():
+		return ""
+	return text("Complete this mission to ", "完成本关将") + text(" and ", "并").join(pieces) + text(".", "。")
+
+
+func _required_equipment_route(required_missing: Array) -> Dictionary:
+	var required_id := str(required_missing[0])
+	var required_part := get_part(required_id)
+	var part_type := str(required_part.get("type", ""))
+	var required_name := dict_text(required_part, "name") if not required_part.is_empty() else required_id
+	var equipped_id := equipped_part_id(part_type)
+	var equipped_part := get_part(equipped_id)
+	var equipped_name := dict_text(equipped_part, "name") if not equipped_part.is_empty() else ""
+	var total_required := int(current_level().get("required_part_ids", []).size())
+	var matched_required := maxi(0, total_required - required_missing.size())
+	var progress_en := "Required loadout matched: %d/%d." % [matched_required, total_required]
+	var progress_zh := "本关指定配置已匹配：%d/%d。" % [matched_required, total_required]
+	var title_en := "Maya: Equip " + required_name
+	var title_zh := "Maya：装备" + required_name
+	var hint_en := "Required: " + required_name + ". " + progress_en
+	var hint_zh := "本关指定：" + required_name + "。" + progress_zh
+	if equipped_name != "" and equipped_id != required_id:
+		title_en = "Maya: Replace " + equipped_name
+		title_zh = "Maya：更换" + equipped_name
+		hint_en = "Equipped: %s. This mission specifically requires %s; higher stats do not replace the prescribed part. %s" % [equipped_name, required_name, progress_en]
+		hint_zh = "当前装备：%s。本关指定：%s；数值更高也不能替代指定零件。%s" % [equipped_name, required_name, progress_zh]
+	return {
+		"target": "cabinet",
+		"title": text(title_en, title_zh),
+		"hint": text(hint_en, hint_zh),
+		"action": text("Equip " + required_name, "装备" + required_name),
+		"outcome": text("Then return to the Assembly Table. The guide will check the next item automatically.", "然后返回组装台；引导会自动检查下一项。"),
+		"ready": false,
+		"missing": required_missing,
+		"required_part_id": required_id,
+		"equipped_part_id": equipped_id,
+		"matched_required": matched_required,
+		"total_required": total_required
+	}
+
+
+func current_room_route() -> Dictionary:
+	# The observatory, mission board, result card, and route indicator all use
+	# this one decision. It keeps the next physical action consistent.
+	var target_name := dict_text(current_target(), "name")
+	if current_observation_mode() == "naked_eye":
+		return {
+			"target": "telescope",
+			"title": text("Maya: Observation Pad", "Maya：观测台"),
+			"hint": text("Use naked-eye observation to find " + target_name + ".", "用肉眼观测寻找" + target_name + "。"),
+			"action": text("Go to the Observation Pad", "前往观测台"),
+			"outcome": route_outcome_text(),
+			"ready": true
+		}
+
+	var required_missing: Array = missing_required_parts()
+	if not required_missing.is_empty():
+		return _required_equipment_route(required_missing)
+
+	var assembly_missing: Array = missing_parts()
+	if not assembly_missing.is_empty() or not telescope_is_ready():
+		var install_names: Array[String] = []
+		for part_type_value in assembly_missing:
+			var part_type := str(part_type_value)
+			var selected_part := get_part(equipped_part_id(part_type))
+			var part_name := dict_text(selected_part, "name") if not selected_part.is_empty() else part_type.capitalize()
+			if not install_names.has(part_name):
+				install_names.append(part_name)
+		var install_text := ", ".join(install_names)
+		var focus_missing := assembly_missing.has("focus_knob")
+		var hint := text("Install " + install_text + " at the Assembly Table.", "在组装台安装" + install_text + "。")
+		if focus_missing:
+			hint = text("Install the Focus Knob near the eyepiece before focus training.", "开始调焦训练前，请在目镜附近安装调焦旋钮。")
+		return {
+			"target": "assembly",
+			"title": text("Maya: Assembly Table", "Maya：组装台"),
+			"hint": hint,
+			"action": text("Install " + install_text, "安装" + install_text),
+			"outcome": text("A finished telescope unlocks the Observation Pad.", "望远镜组装完成后，观测台即可使用。"),
+			"ready": false,
+			"missing": assembly_missing
+		}
+
+	if bool(current_level().get("requires_collimation", false)) and not collimation_is_acceptable():
+		var collimation_now := roundi(collimation_score())
+		var collimation_target := int(current_level().get("collimation_threshold", 80))
+		return {
+			"target": "assembly",
+			"title": text("Maya: Collimation Bench", "Maya：准直工作台"),
+			"hint": text(
+				"Collimation is %d%%; this mission requires at least %d%%. Open the Assembly Table and choose Collimate Mirrors." % [collimation_now, collimation_target],
+				"当前准直 %d%%；本关至少需要 %d%%。进入组装台后点击“准直镜面”。" % [collimation_now, collimation_target]
+			),
+			"action": text("Collimate the reflector", "为反射镜准直"),
+			"outcome": text("A collimated mirror gives sharp, centered images.", "准直合格后，反射镜才能给出清晰居中的图像。"),
+			"ready": false
+		}
+
+	if current_level().get("required_part_ids", []).is_empty() and _deep_sky_target() and str(current_level().get("minimum_success_quality", "Good")) == "Good" and _has_better_unequipped_part():
+		return {
+			"target": "cabinet",
+			"title": text("Maya: Upgrade the optics", "Maya：升级光学部件"),
+			"hint": text("Equip the stronger unlocked optics for this faint target.", "为这个暗弱目标装备刚解锁的更强光学部件。"),
+			"action": text("Choose a better optical part", "选择更好的光学部件"),
+			"outcome": text("More aperture means a brighter deep-sky image.", "更大口径意味着更亮的深空图像。"),
+			"ready": false
+		}
+
+	return {
+		"target": "telescope",
+		"title": text("Maya: Observation Pad", "Maya：观测台"),
+		"hint": text("The telescope is ready. Find and observe " + target_name + ".", "望远镜已准备好。寻找并观测" + target_name + "。"),
+		"action": text("Observe " + target_name, "观测" + target_name),
+		"outcome": route_outcome_text(),
+		"ready": true
+	}
+
+
+func _part_name_list(part_ids: Array) -> String:
+	var names: Array[String] = []
+	for part_id_value in part_ids:
+		var part := get_part(str(part_id_value))
+		var part_name := dict_text(part, "name") if not part.is_empty() else str(part_id_value)
+		if not names.has(part_name):
+			names.append(part_name)
+	return ", ".join(names)
 
 
 func _deep_sky_target() -> bool:
@@ -396,13 +864,30 @@ func show_mission_complete_card(payload: Dictionary) -> void:
 
 
 func can_enter_observation() -> Dictionary:
-	if not current_requires_telescope():
+	# Some later instruments (infrared and radio) are not player-held
+	# telescopes, but they still need their own assembled hardware. Only true
+	# naked-eye lessons may bypass equipment and collimation checks.
+	var level := current_level()
+	if current_observation_mode() != "naked_eye" and not current_requires_telescope():
+		if not missing_required_parts().is_empty():
+			return {"ok": false, "reason_en": "Required equipment is not selected. Use the Parts Cabinet first.", "reason_zh": "尚未选择所需设备。请先前往零件柜。"}
+		if not missing_parts().is_empty():
+			return {"ok": false, "reason_en": "Equipment is not assembled. Use the Assembly Table.", "reason_zh": "设备尚未组装。请前往组装台。"}
+		if bool(level.get("requires_collimation", false)) and not collimation_is_acceptable():
+			return {"ok": false, "reason_en": "Collimation is required. Return to the Assembly Table and align the optical axis.", "reason_zh": "需要先完成准直。请回到组装台校正光轴。"}
+	if current_observation_mode() == "naked_eye":
 		return {
 			"ok": true,
 			"reason_en": "Naked eye observation - no telescope needed.",
 			"reason_zh": "肉眼观测——不需要望远镜。"
 		}
 	if telescope_is_ready():
+		if bool(current_level().get("requires_collimation", false)) and not collimation_is_acceptable():
+			return {
+				"ok": false,
+				"reason_en": "Collimation is required. Return to the Assembly Table and align the optical axis.",
+				"reason_zh": "需要先完成准直。请回到组装台校正光轴。"
+			}
 		return {"ok": true, "reason_en": "", "reason_zh": ""}
 	var missing: Array = missing_parts()
 	var names_en: Array[String] = []
@@ -463,13 +948,15 @@ func install_part(part_type: String, wrong_attempts: int) -> int:
 		"alignment_score": score,
 		"wrong_attempts": wrong_attempts
 	}
-	progress["telescope_ready"] = AssemblyManagerScript.is_complete(progress["assembly_state"], current_level().get("required_parts", []))
+	progress["telescope_ready"] = AssemblyManagerScript.is_complete(progress["assembly_state"], _effective_required_parts())
 	save()
 	return score
 
 
 func telescope_is_ready() -> bool:
-	return bool(progress.get("telescope_ready", false)) and AssemblyManagerScript.is_complete(progress["assembly_state"], current_level().get("required_parts", []))
+	if _uses_tube_subassembly():
+		return advanced_tube_completed() and AssemblyManagerScript.is_complete(progress["assembly_state"], _effective_required_parts())
+	return bool(progress.get("telescope_ready", false)) and AssemblyManagerScript.is_complete(progress["assembly_state"], _effective_required_parts())
 
 
 func equip_part(part_id: String) -> bool:
@@ -481,13 +968,17 @@ func equip_part(part_id: String) -> bool:
 		return false
 	if not progress.get("unlocked_parts", []).has(part_id):
 		return false
+	var part_family := str(part.get("telescope_family", ""))
+	var current_family := str(current_level().get("telescope_family", ""))
+	if part_family != "" and part_family != current_family:
+		return false
 	if str(progress["selected_parts"].get(part_type, "")) == part_id:
 		return true
 	progress["selected_parts"][part_type] = part_id
 	# Swapping a part means it must be reinstalled on the bench.
 	if progress["assembly_state"].has(part_type):
 		progress["assembly_state"][part_type] = {"installed": false, "alignment_score": 0, "wrong_attempts": 0}
-	progress["telescope_ready"] = AssemblyManagerScript.is_complete(progress["assembly_state"], current_level().get("required_parts", []))
+	progress["telescope_ready"] = AssemblyManagerScript.is_complete(progress["assembly_state"], _effective_required_parts())
 	save()
 	return true
 
@@ -497,7 +988,96 @@ func equipped_part_id(part_type: String) -> String:
 
 
 func missing_parts() -> Array:
-	return AssemblyManagerScript.missing_parts(progress["assembly_state"], current_level().get("required_parts", []))
+	return AssemblyManagerScript.missing_parts(progress["assembly_state"], _effective_required_parts())
+
+
+func _uses_tube_subassembly() -> bool:
+	return str(current_level().get("assembly_mode", "")) == "advanced" and str(current_level().get("telescope_family", "")) in ["newtonian", "dobsonian", "cassegrain", "gregorian"]
+
+
+func _effective_required_parts() -> Array:
+	if not _uses_tube_subassembly():
+		return current_level().get("required_parts", [])
+	if str(current_level().get("telescope_family", "")) == "dobsonian":
+		# The rocker box replaces tripod+mount; the finder rides on the tube.
+		return ["mount", "optical_tube_assembly", "finder_scope"]
+	if str(current_level().get("telescope_family", "")) == "newtonian":
+		# Newtonian main bench mirrors the refractor flow: base, mount, the
+		# completed optical tube, then the aiming aid.
+		return ["tripod", "mount", "optical_tube_assembly", "finder_scope"]
+	return ["tripod", "mount", "optical_tube_assembly"]
+
+
+func tube_assembly() -> Dictionary:
+	var family := str(current_level().get("telescope_family", ""))
+	var all_states: Dictionary = progress.get("tube_assemblies", {})
+	var state: Variant = all_states.get(family, {})
+	return state if state is Dictionary else {}
+
+
+func advanced_tube_completed() -> bool:
+	return bool(tube_assembly().get("completed", false))
+
+
+func update_tube_subassembly_progress(installed_subparts: Dictionary) -> void:
+	var config := tube_subassembly_config()
+	if config.is_empty():
+		return
+	var family := str(config.get("family", ""))
+	if not progress.get("tube_assemblies") is Dictionary:
+		progress["tube_assemblies"] = {}
+	var previous := tube_assembly()
+	progress["tube_assemblies"][family] = {
+		"telescope_family": family,
+		"tube_assembly_state": installed_subparts.duplicate(),
+		"installed_subparts": installed_subparts.duplicate(),
+		"subassembly_score": float(previous.get("subassembly_score", 0.0)),
+		"collimation_score": collimation_score(),
+		"optical_alignment": float(previous.get("optical_alignment", 0.0)),
+		"completed": false,
+		"placeholder_assets_used": true
+	}
+	save()
+
+
+func tube_subassembly_config() -> Dictionary:
+	var family := str(current_level().get("telescope_family", ""))
+	match family:
+		"newtonian":
+			return {"family": family, "order": ["reflector_tube", "mirror_cell", "primary_mirror", "secondary_spider", "secondary_mirror", "focuser", "eyepiece", "collimation_tool"], "ids": ["newtonian_reflector_tube", "newtonian_mirror_cell", "newtonian_primary_mirror", "newtonian_secondary_spider", "newtonian_secondary_mirror", "newtonian_focuser", "newtonian_25mm_eyepiece", "newtonian_collimation_cap"]}
+		"dobsonian":
+			return {"family": family, "order": ["reflector_tube", "mirror_cell", "primary_mirror", "secondary_spider", "secondary_mirror", "focuser", "eyepiece", "collimation_tool"], "ids": ["dobsonian_reflector_tube", "dobsonian_mirror_cell", "dobsonian_primary_mirror", "dobsonian_secondary_spider", "dobsonian_secondary_mirror", "dobsonian_crayford_focuser", "dobsonian_30mm_eyepiece", "dobsonian_collimation_tool"]}
+		"cassegrain":
+			return {"family": family, "order": ["reflector_tube", "primary_mirror", "secondary_mirror", "central_baffle", "focuser", "eyepiece"], "ids": ["cassegrain_compact_tube", "cassegrain_primary_mirror", "cassegrain_convex_secondary", "cassegrain_central_baffle", "cassegrain_rear_focuser", "cassegrain_12mm_eyepiece"]}
+		"gregorian":
+			return {"family": family, "order": ["reflector_tube", "primary_mirror", "optical_support", "secondary_mirror", "focuser", "eyepiece"], "ids": ["gregorian_optical_tube", "gregorian_primary_mirror", "gregorian_optical_support", "gregorian_concave_secondary", "gregorian_focuser", "gregorian_18mm_eyepiece"]}
+	return {}
+
+
+func save_tube_assembly(installed_subparts: Dictionary, score: float, optical_alignment: float, placeholder_assets_used: bool) -> bool:
+	var config := tube_subassembly_config()
+	if config.is_empty():
+		return false
+	for subpart_value in config.get("order", []):
+		if not bool(installed_subparts.get(str(subpart_value), false)):
+			return false
+	var family := str(config.get("family", ""))
+	if not progress.get("tube_assemblies") is Dictionary:
+		progress["tube_assemblies"] = {}
+	progress["tube_assemblies"][family] = {
+		"telescope_family": family,
+		"tube_assembly_state": installed_subparts.duplicate(),
+		"installed_subparts": installed_subparts.duplicate(),
+		"subassembly_score": clampf(score, 0.0, 100.0),
+		"collimation_score": collimation_score(),
+		"optical_alignment": clampf(optical_alignment, 0.0, 100.0),
+		"completed": true,
+		"placeholder_assets_used": placeholder_assets_used
+	}
+	progress["assembly_state"]["optical_tube_assembly"] = {"installed": false, "alignment_score": roundi(score), "wrong_attempts": 0}
+	progress["telescope_ready"] = false
+	save()
+	return true
 
 
 # Hard gate: specific part IDs (not just part types) the current level
@@ -515,6 +1095,31 @@ func missing_required_parts() -> Array[String]:
 		if equipped_id != required_id:
 			missing.append(required_id)
 	return missing
+
+
+# Older Newtonian saves can have a main slot installed while selected_parts
+# still names the previously equipped mount, incorrectly locking Identify.
+func sync_newtonian_installed_equipment() -> bool:
+	var level := current_level()
+	if str(level.get("assembly_mode", "")) != "advanced" or not str(level.get("telescope_family", "")) in ["newtonian", "dobsonian"]:
+		return false
+	var state: Dictionary = progress.get("assembly_state", {})
+	var selected: Dictionary = progress.get("selected_parts", {})
+	var changed := false
+	for required_value in level.get("required_part_ids", []):
+		var required_id := str(required_value)
+		var part := get_part(required_id)
+		var part_type := str(part.get("type", ""))
+		if not part_type in ["tripod", "mount", "finder_scope"]:
+			continue
+		var installed_entry: Dictionary = state.get(part_type, {})
+		if bool(installed_entry.get("installed", false)) and str(selected.get(part_type, "")) != required_id:
+			selected[part_type] = required_id
+			changed = true
+	if changed:
+		progress["selected_parts"] = selected
+		save()
+	return changed
 
 
 # ------------------------------------------------------------ mission steps
@@ -672,7 +1277,59 @@ func current_environment() -> Dictionary:
 
 
 func calculate_stats() -> Dictionary:
-	return TelescopeMathScript.calculate(get_selected_parts(), progress.get("assembly_state", {}))
+	var selected_parts := get_selected_parts()
+	# A save can retain selections from a different telescope family. Keep
+	# those parts in inventory, but only feed generic parts and parts belonging
+	# to this lesson's family into the optical calculation.
+	var family := str(current_level().get("telescope_family", "refractor"))
+	for part_type in selected_parts.keys():
+		var part: Dictionary = selected_parts[part_type]
+		var part_family := str(part.get("telescope_family", ""))
+		if part_family != "" and part_family != family:
+			selected_parts.erase(part_type)
+	var assembly_state: Dictionary = progress.get("assembly_state", {}).duplicate(true)
+	if _uses_tube_subassembly():
+		var installed_subparts: Dictionary = tube_assembly().get("installed_subparts", {})
+		if bool(installed_subparts.get("focuser", false)):
+			var tube_focus_score := float(tube_assembly().get("optical_alignment", tube_assembly().get("subassembly_score", 0.0)))
+			assembly_state["focuser"] = {"installed": true, "alignment_score": tube_focus_score, "wrong_attempts": 0}
+	var stats: Dictionary = TelescopeMathScript.calculate(selected_parts, assembly_state)
+	if _uses_tube_subassembly():
+		var tube_state := tube_assembly()
+		var subassembly_score := float(tube_state.get("subassembly_score", 0.0))
+		stats["subassembly_score"] = subassembly_score
+		stats["assembly_score"] = minf(float(stats.get("assembly_score", 0.0)), subassembly_score)
+		stats["clarity_score"] = snapped(float(stats.get("clarity_score", 0.0)) * subassembly_score / 100.0, 0.1)
+	if bool(current_level().get("requires_collimation", false)):
+		var score: float = collimation_score()
+		stats["collimation_score"] = score
+		stats["clarity_score"] = snapped(float(stats.get("clarity_score", 0.0)) * (0.45 + score / 200.0), 0.1)
+	else:
+		stats["collimation_score"] = 100.0
+	return stats
+
+
+func collimation_score() -> float:
+	var family := str(current_level().get("telescope_family", "newtonian"))
+	var scores: Dictionary = progress.get("collimation_scores", {})
+	return float(scores.get(family, 0.0))
+
+
+func collimation_is_acceptable() -> bool:
+	var threshold := float(current_level().get("collimation_threshold", 0.0))
+	return threshold <= 0.0 or collimation_score() >= threshold
+
+
+func set_collimation_score(value: float) -> void:
+	var family := str(current_level().get("telescope_family", "newtonian"))
+	if not progress.get("collimation_scores") is Dictionary:
+		progress["collimation_scores"] = {}
+	progress["collimation_scores"][family] = clampf(value, 0.0, 100.0)
+	if progress.get("tube_assemblies") is Dictionary and progress["tube_assemblies"].has(family):
+		var tube_state: Dictionary = progress["tube_assemblies"][family]
+		tube_state["collimation_score"] = progress["collimation_scores"][family]
+		progress["tube_assemblies"][family] = tube_state
+	save()
 
 
 func evaluate_selected_object(extra_context: Dictionary = {}) -> Dictionary:
@@ -770,24 +1427,129 @@ func _mission_manager() -> Variant:
 func _add_journal_entry(object_id: String, observation: Dictionary) -> void:
 	var obj := get_object(object_id)
 	var stats := calculate_stats()
+	var level := current_level()
+	var objective := get_part(equipped_part_id("objective"))
+	var eyepiece := get_part(equipped_part_id("eyepiece"))
+	var mount := get_part(equipped_part_id("mount"))
+	var environment := current_environment()
+	var concept_id := str(level.get("required_concept_card", ""))
+	var concept := get_learning_card(concept_id)
+	# Repeat practice of a known concept is logged as a comparison run, not a
+	# duplicate knowledge card.
+	var prior_index := -1
+	for entry_index in range(progress["journal_entries"].size()):
+		var prior: Dictionary = progress["journal_entries"][entry_index]
+		if concept_id != "" and str(prior.get("concept_card_id", "")) == concept_id:
+			prior_index = entry_index + 1
+			break
+	var knowledge_en := str(concept.get("title_en", obj.get("learning_text_en", "")))
+	var knowledge_zh := str(concept.get("title_zh", obj.get("learning_text_zh", "")))
+	var entry_kind_en := "First experiment"
+	var entry_kind_zh := "首次实验"
+	if prior_index > 0:
+		entry_kind_en = "Repeat experiment"
+		entry_kind_zh = "对比实验"
+		knowledge_en = "Repeat practice of \"%s\" - compare with entry #%02d." % [knowledge_en, prior_index]
+		knowledge_zh = "再次练习「%s」——与第 %02d 条记录对比。" % [knowledge_zh, prior_index]
+	var recap: Dictionary = StoryManager.recap_for_level(int(level.get("level_number", 0)))
+	# Process record: what the player actually had to manage this session.
+	var process_en: Array[String] = []
+	var process_zh: Array[String] = []
+	if bool(level.get("requires_focus", false)):
+		process_en.append("Focus: locked in")
+		process_zh.append("调焦：已合焦")
+	if bool(level.get("requires_collimation", false)):
+		process_en.append("Collimation: %d%%" % roundi(collimation_score()))
+		process_zh.append("准直：%d%%" % roundi(collimation_score()))
+	if bool(level.get("drift_enabled", false)):
+		if has_tracking_mount_equipped() and tracking_rate() > 0.5:
+			process_en.append("Tracking: mount at %.2fx" % tracking_rate())
+			process_zh.append("追踪：支架 %.2f 倍速" % tracking_rate())
+		else:
+			process_en.append("Tracking: held by hand (%ds)" % int(level.get("hold_seconds", 0)))
+			process_zh.append("追踪：手动保持 %d 秒" % int(level.get("hold_seconds", 0)))
 	progress["journal_entries"].append({
 		"object_id": object_id,
 		"object_name_en": obj.get("name_en", object_id),
 		"object_name_zh": obj.get("name_zh", object_id),
 		"object_type_en": obj.get("type_en", ""),
 		"object_type_zh": obj.get("type_zh", ""),
-		"level_completed": current_level().get("level_number", progress.get("current_level", 1)),
+		"level_completed": level.get("level_number", progress.get("current_level", 1)),
 		"assembly_score": stats.get("assembly_score", 0),
 		"observation_quality": observation.get("quality", "Unknown"),
 		"learning_text_en": obj.get("learning_text_en", ""),
 		"learning_text_zh": obj.get("learning_text_zh", ""),
 		"observation_mode": observation.get("observation_mode", current_observation_mode()),
-		"concept_card_id": str(current_level().get("required_concept_card", "")),
-		"concept_title_en": str(get_learning_card(str(current_level().get("required_concept_card", ""))).get("title_en", "")),
-		"concept_title_zh": str(get_learning_card(str(current_level().get("required_concept_card", ""))).get("title_zh", ""))
+		"concept_card_id": concept_id,
+		"concept_title_en": str(concept.get("title_en", "")),
+		"concept_title_zh": str(concept.get("title_zh", "")),
+		"variation": str(level.get("variation", "")),
+		"magnification": float(stats.get("magnification", 0.0)),
+		"objective_aperture_mm": int(objective.get("aperture_mm", 0)),
+		"objective_focal_length_mm": int(objective.get("focal_length_mm", 0)),
+		"eyepiece_focal_length_mm": int(eyepiece.get("focal_length_mm", 0)),
+		"equipment_en": _journal_equipment_summary("en", objective, eyepiece, mount),
+		"equipment_zh": _journal_equipment_summary("zh", objective, eyepiece, mount),
+		"environment_en": _journal_environment_summary("en", environment),
+		"environment_zh": _journal_environment_summary("zh", environment),
+		"actions_en": _journal_action_summary("en", level, observation),
+		"actions_zh": _journal_action_summary("zh", level, observation),
+		"result_en": "Recorded " + str(observation.get("quality", "Unknown")) + " quality after this setup.",
+		"result_zh": "使用本次配置记录到" + str(observation.get("quality", "Unknown")) + "质量的观测结果。",
+		"knowledge_en": knowledge_en,
+		"knowledge_zh": knowledge_zh,
+		"entry_kind_en": entry_kind_en,
+		"entry_kind_zh": entry_kind_zh,
+		"process_en": " | ".join(process_en),
+		"process_zh": " | ".join(process_zh),
+		"maya_en": str(recap.get("en", "")),
+		"maya_zh": str(recap.get("zh", ""))
 	})
 	if not progress["observed_objects"].has(object_id):
 		progress["observed_objects"].append(object_id)
+
+
+func _journal_equipment_summary(locale: String, objective: Dictionary, eyepiece: Dictionary, mount: Dictionary) -> String:
+	var objective_name := str(objective.get("name_%s" % locale, objective.get("id", "objective")))
+	var eyepiece_name := str(eyepiece.get("name_%s" % locale, eyepiece.get("id", "eyepiece")))
+	var mount_name := str(mount.get("name_%s" % locale, mount.get("id", "mount")))
+	return "%s | %s | %s" % [objective_name, eyepiece_name, mount_name]
+
+
+func _journal_environment_summary(locale: String, environment: Dictionary) -> String:
+	if environment.is_empty():
+		return "Clear sky" if locale == "en" else "晴朗天空"
+	var parts: Array[String] = []
+	var seeing := str(environment.get("seeing", ""))
+	var clouds := float(environment.get("cloud_cover", 0.0))
+	var sky := str(environment.get("sky_brightness", ""))
+	if seeing != "":
+		parts.append("Seeing: " + seeing.capitalize() if locale == "en" else "视宁度：" + seeing)
+	if clouds > 0.0:
+		parts.append("Cloud: %d%%" % int(round(clouds * 100.0)) if locale == "en" else "云量：%d%%" % int(round(clouds * 100.0)))
+	if sky != "":
+		parts.append("Sky: " + sky.capitalize() if locale == "en" else "天空：" + sky)
+	return " | ".join(parts)
+
+
+func _journal_action_summary(locale: String, level: Dictionary, observation: Dictionary) -> String:
+	var actions: Array[String] = []
+	if bool(level.get("requires_focus", false)):
+		actions.append("Focused the eyepiece" if locale == "en" else "调节目镜焦点")
+	var variation := str(level.get("variation", ""))
+	if variation == "eyepiece_comparison":
+		actions.append("Compared low and high power" if locale == "en" else "比较低倍率与高倍率")
+	elif variation == "finder_calibration":
+		actions.append("Calibrated finder alignment" if locale == "en" else "校准寻星镜")
+	elif variation == "tracking_mount":
+		actions.append("Set the tracking rate" if locale == "en" else "设置追踪速率")
+	elif variation == "accept_fair_quality" or variation == "dark_sky":
+		actions.append("Waited for dark adaptation" if locale == "en" else "等待暗适应")
+	elif bool(level.get("drift_enabled", false)):
+		actions.append("Kept the target centered" if locale == "en" else "持续保持目标居中")
+	if actions.is_empty():
+		actions.append("Centered and identified the target" if locale == "en" else "居中并识别目标")
+	return "; ".join(actions)
 
 
 func _unlock_parts_for_current_level() -> void:
@@ -827,7 +1589,20 @@ func _fresh_assembly_state() -> Dictionary:
 		"objective": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
 		"eyepiece": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
 		"finder_scope": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
-		"focus_knob": {"installed": false, "alignment_score": 0, "wrong_attempts": 0}
+		"focus_knob": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"reflector_tube": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"mirror_cell": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"primary_mirror": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"secondary_spider": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"secondary_mirror": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"focuser": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"collimation_tool": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"detector": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"sunshield": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"radio_dish": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"receiver": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"signal_processor": {"installed": false, "alignment_score": 0, "wrong_attempts": 0},
+		"optical_tube_assembly": {"installed": false, "alignment_score": 0, "wrong_attempts": 0}
 	}
 
 
@@ -850,6 +1625,19 @@ func _normalize_progress() -> void:
 
 
 func _migrate_progress_schema() -> void:
+	# Campaign renumbering (90 -> 91 levels, 2026-07-18): the 10th Newtonian
+	# level was inserted at L34, shifting every later level up by one. Saves
+	# without a campaign_version that sit at L34+ follow their content.
+	if int(progress.get("campaign_version", 0)) < 91:
+		var current: int = int(progress.get("current_level", 1))
+		if current >= 34:
+			progress["current_level"] = current + 1
+		var shifted_completed: Array = []
+		for completed_value in progress.get("completed_levels", []):
+			var completed: int = int(completed_value)
+			shifted_completed.append(completed + 1 if completed >= 34 else completed)
+		progress["completed_levels"] = shifted_completed
+		progress["campaign_version"] = 91
 	# Old saves predate newer part types (e.g. focus_knob): backfill any
 	# missing assembly_state slots and selected_parts defaults.
 	if not progress.get("assembly_state") is Dictionary:
@@ -879,6 +1667,12 @@ func _migrate_progress_schema() -> void:
 		progress["finder_offset_initial_len"] = maxf(3.0, finder_offset_length())
 	if not (progress.get("tracking_rate") is float or progress.get("tracking_rate") is int):
 		progress["tracking_rate"] = 0.0
+	if not progress.get("collimation_scores") is Dictionary:
+		progress["collimation_scores"] = {"newtonian": 0.0}
+	elif not progress["collimation_scores"].has("newtonian"):
+		progress["collimation_scores"]["newtonian"] = 0.0
+	if not progress.get("tube_assemblies") is Dictionary:
+		progress["tube_assemblies"] = {}
 	progress["language_mode"] = _normalized_language_mode(str(progress.get("language_mode", "en")))
 	language_mode = str(progress["language_mode"])
 

@@ -37,6 +37,10 @@ var guidance_panel: Panel
 var guidance_title_label: Label
 var guidance_hint_label: Label
 var guidance_action_label: Label
+var guidance_outcome_label: Label
+var route_edge_indicator: Control
+var route_arrow_label: Label
+var route_distance_label: Label
 var focus_label: Label
 var feedback_label: Label
 var interactables: Array[Dictionary] = []
@@ -78,6 +82,15 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# The Mission Board is a modal task center. Do not let its hotkeys also
+	# activate furniture behind it while the player is reading the route.
+	if mission_board_popup != null:
+		if event is InputEventKey:
+			var board_key := event as InputEventKey
+			if board_key.pressed and not board_key.echo and (board_key.keycode == KEY_TAB or board_key.keycode == KEY_ESCAPE):
+				mission_key_was_down = board_key.keycode == KEY_TAB
+				_close_mission_board(true)
+		return
 	if event is InputEventKey:
 		var key_event := event as InputEventKey
 		if key_event.pressed and not key_event.echo and (key_event.keycode == KEY_E or _event_action_pressed(event, "interact")):
@@ -93,6 +106,10 @@ func _input(event: InputEvent) -> void:
 
 
 func _poll_action_keys() -> void:
+	if mission_board_popup != null:
+		interact_key_was_down = Input.is_key_pressed(KEY_E) or _action_pressed("interact")
+		mission_key_was_down = Input.is_key_pressed(KEY_TAB) or _action_pressed("view_missions")
+		return
 	var interact_down := Input.is_key_pressed(KEY_E) or _action_pressed("interact")
 	if interact_down and not interact_key_was_down:
 		_interact_with_nearby()
@@ -142,13 +159,13 @@ func _draw_full_background() -> void:
 
 func _register_hitboxes() -> void:
 	_register_interactable("cabinet", GameManager.text("Parts Cabinet", "零件柜"), GameManager.text("Review unlocked telescope parts.", "查看已解锁的望远镜零件。"), Rect2(82, 124, 214, 182))
-	_register_interactable("door", GameManager.text("Observatory Door", "天文台门"), GameManager.text("Enter the observatory control room.", "进入天文台控制室。"), Rect2(468, 88, 88, 188))
+	_register_interactable("door", GameManager.text("Observatory Dome", "圆顶观星站"), GameManager.text("The ridge dome: wind-shielded formal station with its own control room. Same sky as the pad - steadier housing.", "山脊圆顶：挡风的正式观测站，带控制室。和露天观测台看同一片天空，但圆顶更稳、更抗风。"), Rect2(468, 88, 88, 188))
 	_register_interactable("mission", GameManager.text("Mission Board", "任务公告板"), GameManager.text("Read the current level goal here.", "在此查看当前关卡目标。"), Rect2(622, 108, 138, 124))
 	_register_interactable("assembly", GameManager.text("Assembly Table", "组装台"), GameManager.text("Build and align the telescope.", "组装和校准望远镜。"), Rect2(782, 214, 170, 160))
 	if GameManager.current_observation_mode() == "naked_eye":
 		_register_interactable("telescope", GameManager.text("Naked Eye Observation", "肉眼观测"), GameManager.text("Observe the night sky with your own eyes.", "用肉眼观察夜空。"), Rect2(455, 398, 120, 124))
 	else:
-		_register_interactable("telescope", GameManager.text("Telescope Observation Pad", "望远镜观测台"), GameManager.text("Start observation here after assembly.", "组装完成后在此开始观测。"), Rect2(455, 398, 120, 124))
+		_register_interactable("telescope", GameManager.text("Telescope Observation Pad", "望远镜观测台"), GameManager.text("Open-air quick setup: carry your telescope out and observe right away. Same sky as the dome.", "露天快速架设：把你组装的望远镜搬出来立刻观测。与圆顶观星站看同一片天空。"), Rect2(455, 398, 120, 124))
 	_register_interactable("journal", GameManager.text("Learning Journal", "学习日志"), GameManager.text("Review completed observations and learning cards.", "查看已完成的观测和学习卡。"), Rect2(96, 476, 214, 132))
 	_register_interactable("computer", GameManager.text("Stats Terminal", "统计终端"), GameManager.text("Check telescope performance and readiness.", "查看望远镜性能和就绪状态。"), Rect2(730, 492, 146, 116))
 
@@ -236,15 +253,34 @@ func _draw_hud() -> void:
 
 	guidance_panel = Panel.new()
 	guidance_panel.position = Vector2(222, 76)
-	guidance_panel.size = Vector2(580, 126)
+	guidance_panel.size = Vector2(580, 170)
 	guidance_panel.add_theme_stylebox_override("panel", _style(Color(0.030, 0.045, 0.080, 0.96), BRASS, 3, 6))
 	add_child(guidance_panel)
 	_corner_pins(guidance_panel)
 	guidance_title_label = _label_to(guidance_panel, "", Vector2(24, 14), Vector2(532, 30), 22, HORIZONTAL_ALIGNMENT_CENTER)
-	guidance_hint_label = _label_to(guidance_panel, "", Vector2(32, 50), Vector2(516, 34), 17, HORIZONTAL_ALIGNMENT_CENTER)
+	guidance_hint_label = _label_to(guidance_panel, "", Vector2(32, 48), Vector2(516, 52), 15, HORIZONTAL_ALIGNMENT_CENTER)
 	guidance_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	guidance_action_label = _label_to(guidance_panel, "", Vector2(32, 88), Vector2(516, 22), 14, HORIZONTAL_ALIGNMENT_CENTER)
+	guidance_action_label = _label_to(guidance_panel, "", Vector2(32, 106), Vector2(516, 22), 14, HORIZONTAL_ALIGNMENT_CENTER)
 	guidance_action_label.add_theme_color_override("font_color", Color(0.52, 0.86, 1.0))
+	guidance_outcome_label = _label_to(guidance_panel, "", Vector2(32, 136), Vector2(516, 20), 12, HORIZONTAL_ALIGNMENT_CENTER)
+	guidance_outcome_label.add_theme_color_override("font_color", Color(0.86, 0.78, 0.52))
+
+	# Persistent route cue: compact enough to leave the room visible, but it
+	# continuously points toward the next physical interaction target.
+	route_edge_indicator = Control.new()
+	route_edge_indicator.set_anchors_preset(Control.PRESET_FULL_RECT)
+	route_edge_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(route_edge_indicator)
+	route_arrow_label = _label_to(route_edge_indicator, "▲", Vector2.ZERO, Vector2(54, 54), 34, HORIZONTAL_ALIGNMENT_CENTER)
+	route_arrow_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	route_arrow_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.30))
+	# The original triangle glyph was corrupted by a text-encoding conversion.
+	# Use an ASCII caret so the directional cue renders consistently on Web.
+	route_arrow_label.text = "^"
+	route_distance_label = _label_to(route_edge_indicator, "", Vector2.ZERO, Vector2(160, 34), 12, HORIZONTAL_ALIGNMENT_CENTER)
+	route_distance_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	route_distance_label.add_theme_color_override("font_color", WARM_TEXT)
+	route_edge_indicator.visible = false
 
 	focus_label = _label("", Vector2(260, 662), Vector2(504, 20), 13, HORIZONTAL_ALIGNMENT_CENTER)
 	feedback_label = _label(GameManager.text("Start at the Mission Board, then use the Assembly Table.", "先从任务公告板开始，然后去组装台。"), Vector2(112, 680), Vector2(800, 20), 13, HORIZONTAL_ALIGNMENT_CENTER)
@@ -495,81 +531,503 @@ func _handle_interaction(id: String) -> void:
 
 func _toggle_mission_board() -> void:
 	if mission_board_popup != null:
-		mission_board_popup.queue_free()
-		mission_board_popup = null
+		_close_mission_board(true)
 		return
+	_open_mission_board()
+
+
+func _open_mission_board() -> void:
 	var level := GameManager.current_level()
-	var note := GameManager.mission_board_note()
-	var concept := GameManager.get_learning_card(GameManager.current_concept_card_id())
-	var stage_names := {
-		"eye": GameManager.text("Naked Eye", "肉眼"),
-		"refractor_basic": GameManager.text("Basic Refractor", "基础折射镜"),
-		"refractor_with_finder": GameManager.text("Refractor + Finder", "折射镜+寻星镜"),
-		"newtonian_basic": GameManager.text("Newtonian Reflector", "牛顿反射镜"),
-		"advanced": GameManager.text("Advanced Setup", "高级设备")
-	}
+	var target := GameManager.current_target()
+	var route := _mission_board_route()
 
 	mission_board_popup = Control.new()
 	mission_board_popup.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mission_board_popup.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(mission_board_popup)
 
 	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.55)
+	dim.color = Color(0, 0, 0, 0.68)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	mission_board_popup.add_child(dim)
 
 	var panel := Panel.new()
-	panel.position = Vector2(262, 148)
-	panel.size = Vector2(500, 452)
+	panel.position = Vector2(36, 60)
+	panel.size = Vector2(952, 650)
 	panel.add_theme_stylebox_override("panel", _style(Color(0.035, 0.050, 0.090, 0.98), BRASS, 3, 5))
 	mission_board_popup.add_child(panel)
+	_corner_pins(panel)
 
-	_popup_label(GameManager.text("CLUB MISSION", "俱乐部任务"), Vector2(282, 164), Vector2(460, 22), 13, BRASS, HORIZONTAL_ALIGNMENT_CENTER)
-	var title_label := _popup_label(GameManager.dict_text(level, "title"), Vector2(282, 190), Vector2(460, 52), 20, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
-	title_label.max_lines_visible = 2
+	_board_label(panel, GameManager.text("CLUB MISSION", "俱乐部任务"), Vector2(22, 16), Vector2(220, 18), 12, BRASS)
+	var level_number := int(level.get("level_number", 0))
+	_board_label(panel, GameManager.text("LEVEL %02d", "第 %02d 关") % level_number, Vector2(718, 16), Vector2(210, 18), 12, CYAN, HORIZONTAL_ALIGNMENT_RIGHT)
+	var title := _board_label(panel, GameManager.dict_text(level, "title"), Vector2(22, 38), Vector2(660, 34), 24, WARM_TEXT)
+	title.max_lines_visible = 1
+	var target_name := GameManager.dict_text(target, "name")
+	_board_label(panel, GameManager.text("Target: ", "目标：") + target_name, Vector2(22, 78), Vector2(430, 22), 15, Color(0.96, 0.84, 0.46))
+	_board_label(panel, GameManager.text("Mode: ", "模式：") + _mission_observation_mode_text(), Vector2(462, 78), Vector2(228, 22), 14, CYAN)
+	_board_label(panel, _mission_readiness_text(route), Vector2(688, 78), Vector2(240, 22), 12, _mission_readiness_color(route), HORIZONTAL_ALIGNMENT_RIGHT)
+	_rect_to(panel, Vector2(20, 110), Vector2(912, 1), Color(0.35, 0.45, 0.62, 0.72))
 
-	_popup_label(GameManager.text("Maya's Note", "Maya 的提示"), Vector2(292, 252), Vector2(440, 18), 11, Color(0.66, 0.76, 0.86))
-	var note_label := _popup_label(
-		"\"" + GameManager.text(str(note.get("en", "")), str(note.get("zh", ""))) + "\"",
-		Vector2(292, 272), Vector2(440, 58), 12, Color(0.98, 0.85, 0.58)
-	)
-	note_label.max_lines_visible = 3
+	var route_panel := _board_section(panel, Vector2(20, 128), Vector2(514, 326), GameManager.text("MISSION ROUTE", "任务路线"))
+	_build_mission_checklist(route_panel, route)
 
-	var objective_heading := GameManager.text("Objective", "目标")
-	if not level.get("target_pool", []).is_empty():
-		var picked := GameManager.current_target()
-		objective_heading = GameManager.text("Objective -> ", "目标 -> ") + GameManager.dict_text(picked, "name")
-	_popup_label(objective_heading, Vector2(292, 334), Vector2(440, 18), 11, Color(0.66, 0.76, 0.86))
-	var objective_label := _popup_label(GameManager.dict_text(level, "description"), Vector2(292, 354), Vector2(440, 56), 12, WARM_TEXT)
-	objective_label.max_lines_visible = 4
+	var info_panel := _board_section(panel, Vector2(550, 128), Vector2(382, 326), GameManager.text("MAYA'S NOTE", "Maya 的提示"))
+	_build_mission_info_panel(info_panel, level, route)
+	_build_mission_reward_preview(panel, level)
 
-	_popup_label(GameManager.text("Equipment", "设备阶段"), Vector2(292, 416), Vector2(220, 18), 11, Color(0.66, 0.76, 0.86))
-	_popup_label(str(stage_names.get(GameManager.current_equipment_stage(), GameManager.current_equipment_stage())), Vector2(292, 436), Vector2(220, 40), 12, CYAN)
+	var route_label := _board_label(panel, "", Vector2(26, 536), Vector2(900, 30), 14, Color(1.0, 0.82, 0.34), HORIZONTAL_ALIGNMENT_CENTER)
+	route_label.text = GameManager.text("Next: ", "下一步：") + str(route.get("action", ""))
+	route_label.clip_text = true
 
-	_popup_label(GameManager.text("Concept", "学习概念"), Vector2(522, 416), Vector2(210, 18), 11, Color(0.66, 0.76, 0.86))
-	var concept_label := _popup_label(GameManager.dict_text(concept, "title") if not concept.is_empty() else "-", Vector2(522, 436), Vector2(210, 60), 12, Color(0.86, 0.72, 1.0))
-	concept_label.max_lines_visible = 3
-
-	var close := Button.new()
-	close.text = GameManager.text("Close", "关闭")
-	close.position = Vector2(432, 546)
-	close.size = Vector2(160, 40)
-	close.add_theme_font_size_override("font_size", 14)
-	close.pressed.connect(_toggle_mission_board)
-	mission_board_popup.add_child(close)
+	var go_button := _board_button(panel, GameManager.text("Show Route", "显示路线"), Vector2(168, 582), Vector2(250, 42), Color(0.08, 0.28, 0.22), Color(0.56, 0.90, 0.54))
+	go_button.pressed.connect(func() -> void: _close_mission_board(true))
+	var log_button := _board_button(panel, GameManager.text("Open Logbook", "打开日志"), Vector2(434, 582), Vector2(250, 42), Color(0.06, 0.18, 0.34), Color(0.42, 0.74, 1.0))
+	log_button.pressed.connect(_open_logbook_from_mission_board)
+	var close_button := _board_button(panel, GameManager.text("Close", "关闭"), Vector2(700, 582), Vector2(126, 42), Color(0.12, 0.15, 0.22), Color(0.54, 0.62, 0.74))
+	close_button.pressed.connect(func() -> void: _close_mission_board(true))
 
 
-func _popup_label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
-	var label := Label.new()
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.text = text
-	label.position = pos
-	label.size = size
-	label.horizontal_alignment = align
-	label.add_theme_font_size_override("font_size", font_size)
+func _close_mission_board(show_guidance: bool) -> void:
+	if mission_board_popup != null:
+		mission_board_popup.queue_free()
+		mission_board_popup = null
+	if show_guidance:
+		var route := _mission_board_route()
+		GameManager.set_room_guidance(str(route.get("target", "")), str(route.get("title", "")), str(route.get("hint", "")))
+		active_guidance = "room_guidance"
+		_update_room_guidance_panel()
+
+
+func _open_logbook_from_mission_board() -> void:
+	if mission_board_popup != null:
+		mission_board_popup.queue_free()
+		mission_board_popup = null
+	GameManager.set_observatory_spawn("journal")
+	GameManager.go("journal")
+
+
+func _mission_board_route() -> Dictionary:
+	return GameManager.current_room_route()
+
+	# Legacy local route branches remain below for save-compatible reference;
+	# all callers now use the GameManager route source above.
+	var target_name := GameManager.dict_text(GameManager.current_target(), "name")
+	if not GameManager.current_requires_telescope():
+		return {
+			"target": "telescope",
+			"title": GameManager.text("Maya: Observation Pad", "Maya：观测台"),
+			"hint": GameManager.text("Use naked-eye observation to find " + target_name + ".", "用肉眼观测寻找" + target_name + "。"),
+			"action": GameManager.text("Go to the Observation Pad", "前往观测台"),
+			"ready": true
+		}
+	var exact_missing := GameManager.missing_required_parts()
+	if not exact_missing.is_empty():
+		return {
+			"target": "cabinet",
+			"title": GameManager.text("Maya: Parts Cabinet", "Maya：零件柜"),
+			"hint": GameManager.text("Equip the required part, then return to the Assembly Table.", "先装备所需零件，再回到组装台。"),
+			"action": GameManager.text("Go to the Parts Cabinet", "前往零件柜"),
+			"ready": false
+		}
+	if not GameManager.missing_parts().is_empty() or not GameManager.telescope_is_ready():
+		return {
+			"target": "assembly",
+			"title": GameManager.text("Maya: Assembly Table", "Maya：组装台"),
+			"hint": GameManager.text("Install the required parts and finish the telescope assembly.", "安装所需零件并完成望远镜组装。"),
+			"action": GameManager.text("Go to the Assembly Table", "前往组装台"),
+			"ready": false
+		}
+	return {
+		"target": "telescope",
+		"title": GameManager.text("Maya: Observation Pad", "Maya：观测台"),
+		"hint": GameManager.text("The telescope is ready. Find and observe " + target_name + ".", "望远镜已准备好。寻找并观测" + target_name + "。"),
+		"action": GameManager.text("Go to the Observation Pad", "前往观测台"),
+		"ready": true
+	}
+
+
+func _mission_observation_mode_text() -> String:
+	if GameManager.current_observation_mode() == "naked_eye":
+		return GameManager.text("Naked Eye", "肉眼")
+	var required: Array = GameManager.current_level().get("required_parts", [])
+	if required.has("finder_scope"):
+		return GameManager.text("Finder Scope -> Telescope", "寻星镜 -> 望远镜")
+	return GameManager.text("Telescope", "望远镜")
+
+
+func _mission_readiness_text(route: Dictionary) -> String:
+	if bool(route.get("ready", false)):
+		return GameManager.text("READY TO OBSERVE", "可以观测")
+	var missing_names := _mission_missing_names()
+	if not missing_names.is_empty():
+		return GameManager.text("MISSING: ", "缺少：") + ", ".join(missing_names)
+	return GameManager.text("TELESCOPE NOT READY", "望远镜未就绪")
+
+
+func _mission_readiness_color(route: Dictionary) -> Color:
+	return Color(0.46, 0.94, 0.60) if bool(route.get("ready", false)) else Color(1.0, 0.64, 0.36)
+
+
+func _mission_missing_names() -> Array[String]:
+	var names: Array[String] = []
+	for part_id in GameManager.missing_required_parts():
+		var required_part := GameManager.get_part(part_id)
+		var required_name := GameManager.dict_text(required_part, "name") if not required_part.is_empty() else str(part_id)
+		if not names.has(required_name):
+			names.append(required_name)
+	var assembly_state: Dictionary = GameManager.progress.get("assembly_state", {})
+	for part_type_value in GameManager.missing_parts():
+		var part_type := str(part_type_value)
+		var selected_part := GameManager.get_part(GameManager.equipped_part_id(part_type))
+		var part_name := GameManager.dict_text(selected_part, "name") if not selected_part.is_empty() else part_type.capitalize()
+		var part_state: Dictionary = assembly_state.get(part_type, {})
+		if not bool(part_state.get("installed", false)) and not names.has(part_name):
+			names.append(part_name)
+	return names
+
+
+func _mission_board_checklist(route: Dictionary) -> Array:
+	var level := GameManager.current_level()
+	var rows: Array = []
+	rows.append({"label": GameManager.text("Read Maya's note", "阅读 Maya 的提示"), "done": true})
+	if not GameManager.current_requires_telescope():
+		rows.append({"label": GameManager.text("Start naked-eye observation", "开始肉眼观测"), "done": false})
+	else:
+		var exact_missing := GameManager.missing_required_parts()
+		rows.append({
+			"label": GameManager.text("Equip required parts", "装备所需零件"),
+			"done": exact_missing.is_empty()
+		})
+		var assembly_missing := GameManager.missing_parts()
+		if GameManager.current_requires_focus() and assembly_missing.has("focus_knob"):
+			rows.append({
+				"label": GameManager.text("Install the Focus Knob near the eyepiece", "在目镜附近安装调焦旋钮"),
+				"done": false
+			})
+		rows.append({
+			"label": GameManager.text("Assemble the telescope", "组装望远镜"),
+			"done": assembly_missing.is_empty() and GameManager.telescope_is_ready()
+		})
+		rows.append({"label": GameManager.text("Start observation", "开始观测"), "done": false})
+		if GameManager.current_requires_focus() and str(level.get("variation", "")) != "eyepiece_comparison":
+			rows.append({"label": GameManager.text("Adjust focus in Telescope View", "在望远镜视野中调焦"), "done": false})
+	for special_row_value in _mission_special_rows(level):
+		rows.append(special_row_value)
+	if str(level.get("variation", "")) != "eyepiece_comparison":
+		for step_value in GameManager.mission_steps():
+			if not step_value is Dictionary:
+				continue
+			var step: Dictionary = step_value
+			var step_id := str(step.get("id", ""))
+			rows.append({
+				"label": _mission_step_label(level, step),
+				"done": GameManager.completed_mission_steps().has(step_id)
+			})
+	var target_name := GameManager.dict_text(GameManager.current_target(), "name")
+	rows.append({"label": GameManager.text("Identify ", "识别") + target_name, "done": false})
+	rows.append({"label": GameManager.text("Learning card unlocks after observation", "观测完成后解锁学习卡"), "done": false})
+	var current_marked := false
+	for row_value in rows:
+		var row: Dictionary = row_value
+		if not bool(row.get("done", false)) and not current_marked:
+			row["current"] = true
+			current_marked = true
+		else:
+			row["current"] = false
+	return rows
+
+
+func _mission_special_rows(level: Dictionary) -> Array:
+	var variation := str(level.get("variation", ""))
+	var target_name := GameManager.dict_text(GameManager.current_target(), "name")
+	var rows: Array = []
+	match variation:
+		"eyepiece_comparison":
+			var steps_done := GameManager.completed_mission_steps()
+			rows.append({
+				"label": GameManager.text("Low power: use 20mm, focus, observe " + target_name, "低倍率：使用 20mm，对焦后观测" + target_name),
+				"done": steps_done.has("low_power")
+			})
+			rows.append({
+				"label": GameManager.text("High power: switch to 10mm, refocus, observe again", "高倍率：换 10mm，重新调焦后再观测"),
+				"done": steps_done.has("high_power")
+			})
+			rows.append({
+				"label": GameManager.text("Compare image size, brightness, and steadiness", "比较图像大小、亮度和稳定性"),
+				"done": steps_done.has("low_power") and steps_done.has("high_power")
+			})
+		"low_altitude_seeing":
+			rows.append({"label": GameManager.text("Use low or medium power near the horizon", "低空目标使用低倍率或中倍率"), "done": false})
+			rows.append({"label": GameManager.text("Separate atmospheric seeing from focus", "区分大气扰动与失焦"), "done": false})
+		"moon_high_power_refocus":
+			rows.append({"label": GameManager.text("Switch to high power, then refocus", "切到高倍率后重新调焦"), "done": false})
+		"coordinate_navigation":
+			rows.append({"label": GameManager.text("Read " + target_name + " Az/Alt coordinates", "读取" + target_name + "的方位角与俯仰角"), "done": false})
+			rows.append({"label": GameManager.text("Aim by coordinates, not by the hint circle", "按坐标转向，不依赖提示圈"), "done": false})
+		"finder_calibration":
+			rows.append({"label": GameManager.text("Center a bright star in the main telescope", "在主望远镜中居中一颗亮星"), "done": false})
+			rows.append({"label": GameManager.text("Align the finder to within 0.5 degrees", "把寻星镜校准到 0.5 度以内"), "done": GameManager.is_finder_aligned()})
+		"workflow_discipline", "independent_random_target":
+			rows.append({"label": GameManager.text("Navigate Eye -> Finder -> Telescope", "按肉眼 -> 寻星镜 -> 主望远镜导航"), "done": false})
+		"accept_fair_quality":
+			rows.append({"label": GameManager.text("Wait for dark adaptation", "等待暗适应完成"), "done": false})
+			rows.append({"label": GameManager.text("Use averted vision to reveal the faint glow", "使用侧视法寻找暗淡光斑"), "done": false})
+		"aperture_upgrade_comparison":
+			rows.append({"label": GameManager.text("Equip the 100mm objective", "装备 100mm 大口径物镜"), "done": GameManager.equipped_part_id("objective") == "objective_100mm"})
+		"city_sky":
+			rows.append({"label": GameManager.text("Record the target even with city glow", "即使有城市光污染也记录目标"), "done": false})
+		"dark_sky":
+			rows.append({"label": GameManager.text("Let your eyes adapt to the darker sky", "让眼睛适应更暗的天空"), "done": false})
+		"drift":
+			rows.append({"label": GameManager.text("Keep " + target_name + " centered for %ds" % int(level.get("hold_seconds", 0)), "让" + target_name + "居中保持 %d 秒" % int(level.get("hold_seconds", 0))), "done": false})
+		"tracking_mount":
+			rows.append({"label": GameManager.text("Equip the tracking mount", "装备追踪支架"), "done": GameManager.has_tracking_mount_equipped()})
+			rows.append({"label": GameManager.text("Set tracking close to 1.0x", "把追踪速率调到接近 1.0 倍"), "done": absf(GameManager.tracking_rate() - 1.0) <= 0.10})
+		"final_endurance_watch":
+			rows.append({"label": GameManager.text("Hold " + target_name + " centered for %ds without drifting", "让" + target_name + "持续居中 %d 秒且不漂移" % int(level.get("hold_seconds", 0))), "done": false})
+	return rows
+
+
+func _mission_step_label(level: Dictionary, step: Dictionary) -> String:
+	var variation := str(level.get("variation", ""))
+	var step_id := str(step.get("id", ""))
+	if variation == "eyepiece_comparison":
+		if step_id == "low_power":
+			return GameManager.text("Low power pass: use 20mm, focus, observe " + GameManager.dict_text(GameManager.current_target(), "name"), "低倍率步骤：使用 20mm，对焦后观测" + GameManager.dict_text(GameManager.current_target(), "name"))
+		if step_id == "high_power":
+			return GameManager.text("High power pass: switch to 10mm, refocus, observe again", "高倍率步骤：换 10mm，重新调焦后再观测")
+	return GameManager.dict_text(step, "label")
+
+
+func _build_mission_checklist(parent: Control, route: Dictionary) -> void:
+	var route_text := _board_label(parent, GameManager.text("Follow the highlighted route in the observatory.", "跟随大厅中高亮的路线。"), Vector2(14, 30), Vector2(482, 18), 10, Color(0.62, 0.73, 0.85))
+	route_text.clip_text = true
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(12, 56)
+	scroll.size = Vector2(490, 256)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	parent.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 6)
+	scroll.add_child(list)
+	var route_target := str(route.get("target", ""))
+	for row_value in _mission_board_checklist(route):
+		var row: Dictionary = row_value
+		var done := bool(row.get("done", false))
+		var current := bool(row.get("current", false))
+		var card := Panel.new()
+		card.custom_minimum_size = Vector2(468, 38)
+		var fill := Color(0.045, 0.070, 0.105, 0.96)
+		var border := Color(0.16, 0.25, 0.36, 0.85)
+		if done:
+			fill = Color(0.04, 0.16, 0.11, 0.96)
+			border = Color(0.30, 0.78, 0.50, 0.95)
+		elif current:
+			fill = Color(0.22, 0.15, 0.055, 0.98)
+			border = Color(1.0, 0.76, 0.26, 0.98)
+		card.add_theme_stylebox_override("panel", _style(fill, border, 1 if not current else 2, 3))
+		list.add_child(card)
+		var marker := "✓" if done else (">" if current else "○")
+		var marker_color := Color(0.42, 0.95, 0.60) if done else (Color(1.0, 0.84, 0.30) if current else Color(0.48, 0.60, 0.72))
+		_board_label(card, marker, Vector2(10, 8), Vector2(24, 22), 16, marker_color, HORIZONTAL_ALIGNMENT_CENTER)
+		var label := _board_label(card, str(row.get("label", "")), Vector2(40, 5), Vector2(414, 28), 12, WARM_TEXT)
+		label.max_lines_visible = 2
+		if current and route_target != "":
+			label.tooltip_text = str(route.get("action", ""))
+
+
+func _build_mission_info_panel(parent: Control, level: Dictionary, route: Dictionary) -> void:
+	var note := GameManager.mission_board_note()
+	var note_text := GameManager.text(str(note.get("en", "")), str(note.get("zh", "")))
+	var lesson_hint := GameManager.dict_text(level, "hint_text")
+	if note_text == "":
+		note_text = GameManager.dict_text(level, "description")
+	if lesson_hint != "" and not note_text.contains(lesson_hint):
+		note_text += "\n" + lesson_hint
+	var maya_note := _board_label(parent, "\"" + note_text + "\"", Vector2(14, 32), Vector2(354, 62), 11, Color(0.98, 0.85, 0.58))
+	maya_note.max_lines_visible = 4
+	_rect_to(parent, Vector2(14, 102), Vector2(354, 1), Color(0.30, 0.40, 0.55, 0.70))
+	_board_label(parent, GameManager.text("REQUIRED EQUIPMENT", "所需设备"), Vector2(14, 112), Vector2(354, 16), 11, CYAN)
+	_build_required_equipment_list(parent)
+	_rect_to(parent, Vector2(14, 210), Vector2(354, 1), Color(0.30, 0.40, 0.55, 0.70))
+	_board_label(parent, GameManager.text("READINESS", "准备状态"), Vector2(14, 220), Vector2(354, 16), 11, CYAN)
+	var readiness := _mission_readiness_text(route)
+	var readiness_label := _board_label(parent, readiness, Vector2(14, 240), Vector2(354, 28), 12, _mission_readiness_color(route))
+	readiness_label.max_lines_visible = 2
+	var target_line := _board_label(parent, GameManager.text("Why this mission: ", "本关重点：") + GameManager.dict_text(level, "description"), Vector2(14, 276), Vector2(354, 38), 10, Color(0.73, 0.81, 0.90))
+	target_line.max_lines_visible = 2
+
+
+func _build_required_equipment_list(parent: Control) -> void:
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(14, 130)
+	scroll.size = Vector2(354, 70)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	parent.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 2)
+	scroll.add_child(list)
+	if not GameManager.current_requires_telescope():
+		_board_equipment_line(list, GameManager.text("No telescope equipment required", "无需望远镜设备"), true, GameManager.text("Naked eye", "肉眼"))
+		return
+	var assembly_state: Dictionary = GameManager.progress.get("assembly_state", {})
+	var exact_missing := GameManager.missing_required_parts()
+	var added_types: Array[String] = []
+	var ordered_types: Array = []
+	var missing_types: Array = GameManager.missing_parts()
+	if GameManager.current_requires_focus() and missing_types.has("focus_knob"):
+		ordered_types.append("focus_knob")
+	for part_type_value in missing_types:
+		if not ordered_types.has(part_type_value):
+			ordered_types.append(part_type_value)
+	for part_type_value in GameManager.current_level().get("required_parts", []):
+		if not ordered_types.has(part_type_value):
+			ordered_types.append(part_type_value)
+	for part_type_value in ordered_types:
+		var part_type := str(part_type_value)
+		if added_types.has(part_type):
+			continue
+		added_types.append(part_type)
+		var selected_id := GameManager.equipped_part_id(part_type)
+		var selected_part := GameManager.get_part(selected_id)
+		var name := GameManager.dict_text(selected_part, "name") if not selected_part.is_empty() else part_type.capitalize()
+		var part_state: Dictionary = assembly_state.get(part_type, {})
+		var installed := bool(part_state.get("installed", false))
+		_board_equipment_line(list, name, installed, GameManager.text("Installed", "已安装") if installed else GameManager.text("Needs assembly", "待安装"))
+	for part_id in exact_missing:
+		var required_part := GameManager.get_part(part_id)
+		var required_name := GameManager.dict_text(required_part, "name") if not required_part.is_empty() else str(part_id)
+		_board_equipment_line(list, required_name, false, GameManager.text("Missing", "缺少"))
+
+
+func _board_equipment_line(parent: Control, name: String, ready: bool, status: String) -> void:
+	var line := HBoxContainer.new()
+	line.custom_minimum_size = Vector2(336, 18)
+	line.add_theme_constant_override("separation", 6)
+	parent.add_child(line)
+	var dot := Label.new()
+	dot.text = "●"
+	dot.custom_minimum_size = Vector2(12, 18)
+	dot.add_theme_font_size_override("font_size", 10)
+	dot.add_theme_color_override("font_color", Color(0.42, 0.95, 0.60) if ready else Color(1.0, 0.64, 0.34))
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_child(dot)
+	var name_label := Label.new()
+	name_label.text = name
+	name_label.custom_minimum_size = Vector2(218, 18)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.clip_text = true
+	name_label.add_theme_font_size_override("font_size", 10)
+	name_label.add_theme_color_override("font_color", WARM_TEXT)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_child(name_label)
+	var status_label := Label.new()
+	status_label.text = status
+	status_label.custom_minimum_size = Vector2(92, 18)
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	status_label.clip_text = true
+	status_label.add_theme_font_size_override("font_size", 9)
+	status_label.add_theme_color_override("font_color", Color(0.42, 0.95, 0.60) if ready else Color(1.0, 0.70, 0.36))
+	status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_child(status_label)
+
+
+func _build_mission_reward_preview(parent: Control, level: Dictionary) -> void:
+	_board_label(parent, GameManager.text("REWARD PREVIEW", "奖励预览"), Vector2(26, 462), Vector2(180, 16), 11, BRASS)
+	_rect_to(parent, Vector2(20, 480), Vector2(912, 1), Color(0.30, 0.40, 0.55, 0.70))
+	var items := _mission_reward_preview_items(level)
+	var row := HBoxContainer.new()
+	row.position = Vector2(26, 488)
+	row.size = Vector2(900, 32)
+	row.add_theme_constant_override("separation", 8)
+	parent.add_child(row)
+	for item_value in items:
+		var item: Dictionary = item_value
+		var chip := Panel.new()
+		chip.custom_minimum_size = Vector2(float(item.get("width", 170.0)), 30)
+		chip.add_theme_stylebox_override("panel", _style(Color(0.055, 0.085, 0.12, 0.96), Color(0.25, 0.40, 0.58, 0.90), 1, 3))
+		row.add_child(chip)
+		var title := _board_label(chip, str(item.get("title", "")), Vector2(8, 3), Vector2(chip.custom_minimum_size.x - 16.0, 22), 10, Color(0.92, 0.84, 0.54), HORIZONTAL_ALIGNMENT_CENTER)
+		title.clip_text = true
+
+
+func _mission_reward_preview_items(level: Dictionary) -> Array:
+	var items: Array = []
+	var credits := int(level.get("reward_credits", 0))
+	if credits > 0:
+		items.append({"title": GameManager.text("+%d Club Credits", "+%d 社团积分") % credits, "width": 164.0})
+	var concept_id := str(level.get("required_concept_card", ""))
+	if concept_id != "":
+		var concept := GameManager.get_learning_card(concept_id)
+		var concept_title := GameManager.dict_text(concept, "title") if not concept.is_empty() else GameManager.text("Journal Entry", "观测日志")
+		items.append({"title": GameManager.text("Learn: ", "知识：") + concept_title, "width": 216.0})
+	var badge := str(level.get("badge", ""))
+	if badge != "":
+		items.append({"title": GameManager.text("Badge: ", "徽章：") + _mission_badge_text(badge), "width": 174.0})
+	var unlock_names: Array[String] = []
+	for part_id in level.get("unlock_parts", []):
+		var part := GameManager.get_part(str(part_id))
+		if not part.is_empty():
+			unlock_names.append(GameManager.dict_text(part, "name"))
+	if not unlock_names.is_empty():
+		items.append({"title": GameManager.text("New gear: ", "新装备：") + ", ".join(unlock_names), "width": 246.0})
+	return items
+
+
+func _mission_badge_text(badge: String) -> String:
+	if GameManager.language_mode != "zh":
+		return badge
+	var names := {
+		"First Look": "初见星空",
+		"Star Spotter": "寻星者",
+		"First Light": "第一缕星光",
+		"Sharp Eye": "锐眼",
+		"Power User": "倍率掌握者",
+		"Finder Scope": "寻星镜大师",
+		"Mirror Master": "反射镜大师",
+		"Nebula Hunter": "星云猎手",
+		"Deep Sky Explorer": "深空探索者",
+		"Magnification Mastery": "倍率掌握",
+		"Sky Navigator": "天空导航员",
+		"Deep Sky Observer": "深空观测员",
+		"Senior Observer": "高级观测员"
+	}
+	return str(names.get(badge, badge))
+
+
+func _board_section(parent: Control, pos: Vector2, section_size: Vector2, title: String) -> Panel:
+	var section := Panel.new()
+	section.position = pos
+	section.size = section_size
+	section.add_theme_stylebox_override("panel", _style(Color(0.025, 0.040, 0.072, 0.94), Color(0.22, 0.34, 0.50, 0.92), 1, 3))
+	parent.add_child(section)
+	_board_label(section, title, Vector2(14, 10), Vector2(section_size.x - 28, 18), 12, BRASS)
+	_rect_to(section, Vector2(12, 28), Vector2(section_size.x - 24, 1), Color(0.30, 0.40, 0.55, 0.70))
+	return section
+
+
+func _board_button(parent: Control, text: String, pos: Vector2, button_size: Vector2, normal_color: Color, border_color: Color) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.position = pos
+	button.size = button_size
+	button.add_theme_font_size_override("font_size", 14)
+	button.add_theme_color_override("font_color", WARM_TEXT)
+	button.add_theme_stylebox_override("normal", _style(normal_color, border_color, 2, 4))
+	button.add_theme_stylebox_override("hover", _style(normal_color.lightened(0.12), border_color.lightened(0.12), 2, 4))
+	button.add_theme_stylebox_override("pressed", _style(normal_color.darkened(0.12), border_color, 2, 4))
+	parent.add_child(button)
+	return button
+
+
+func _board_label(parent: Control, text: String, pos: Vector2, label_size: Vector2, font_size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+	var label := _label_to(parent, text, pos, label_size, font_size, align)
 	label.add_theme_color_override("font_color", color)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mission_board_popup.add_child(label)
 	return label
 
 
@@ -670,12 +1128,12 @@ func _toggle_stats_terminal() -> void:
 	stats_terminal_popup.add_child(dim)
 
 	var panel := Panel.new()
-	panel.position = Vector2(272, 168)
-	panel.size = Vector2(480, 412)
+	panel.position = Vector2(158, 60)
+	panel.size = Vector2(708, 654)
 	panel.add_theme_stylebox_override("panel", _style(Color(0.030, 0.055, 0.060, 0.98), Color(0.35, 0.85, 0.55), 3, 5))
 	stats_terminal_popup.add_child(panel)
 
-	_terminal_label(GameManager.text("STATS TERMINAL", "统计终端"), Vector2(292, 184), Vector2(440, 22), 13, Color(0.45, 0.95, 0.60), HORIZONTAL_ALIGNMENT_CENTER)
+	_terminal_label(GameManager.text("STATS TERMINAL", "统计终端"), Vector2(178, 104), Vector2(668, 24), 16, Color(0.45, 0.95, 0.60), HORIZONTAL_ALIGNMENT_CENTER)
 
 	var rows: Array = [
 		[GameManager.text("Assembly", "组装"), float(stats.get("assembly_score", 0.0))],
@@ -684,42 +1142,42 @@ func _toggle_stats_terminal() -> void:
 		[GameManager.text("Stability", "稳定"), float(stats.get("stability_score", 0.0))],
 		[GameManager.text("Focus Ctrl", "调焦"), float(stats.get("focus_control_score", 0.0))]
 	]
-	var y := 220.0
+	var y := 150.0
 	for row_value in rows:
 		var row: Array = row_value
 		var value: float = float(row[1])
-		_terminal_label(str(row[0]), Vector2(300, y), Vector2(160, 18), 12, WARM_TEXT)
+		_terminal_label(str(row[0]), Vector2(188, y), Vector2(140, 18), 12, WARM_TEXT)
 		var bar_bg := ColorRect.new()
-		bar_bg.position = Vector2(470, y + 4)
-		bar_bg.size = Vector2(180, 10)
+		bar_bg.position = Vector2(330, y + 4)
+		bar_bg.size = Vector2(154, 10)
 		bar_bg.color = Color(0.06, 0.10, 0.10)
 		stats_terminal_popup.add_child(bar_bg)
 		var fill := ColorRect.new()
-		fill.position = Vector2(470, y + 4)
-		fill.size = Vector2(clampf(value, 0.0, 100.0) * 1.8, 10)
+		fill.position = Vector2(330, y + 4)
+		fill.size = Vector2(clampf(value, 0.0, 100.0) * 1.54, 10)
 		fill.color = Color(0.40, 0.85, 0.55)
 		stats_terminal_popup.add_child(fill)
-		_terminal_label(str(snapped(value, 0.1)), Vector2(660, y), Vector2(60, 18), 12, Color(0.80, 0.95, 0.85), HORIZONTAL_ALIGNMENT_RIGHT)
-		y += 28.0
+		_terminal_label(str(snapped(value, 0.1)), Vector2(490, y), Vector2(42, 18), 12, Color(0.80, 0.95, 0.85), HORIZONTAL_ALIGNMENT_RIGHT)
+		y += 25.0
 
 	var divider := ColorRect.new()
-	divider.position = Vector2(292, y + 8)
-	divider.size = Vector2(440, 1)
+	divider.position = Vector2(180, y + 8)
+	divider.size = Vector2(350, 1)
 	divider.color = Color(0.35, 0.85, 0.55, 0.4)
 	stats_terminal_popup.add_child(divider)
 
-	_terminal_label(GameManager.text("CLUB CREDITS: %d", "社团积分: %d") % int(GameManager.progress.get("credits", 0)), Vector2(292, y + 20), Vector2(440, 24), 16, Color(0.98, 0.85, 0.45), HORIZONTAL_ALIGNMENT_CENTER)
+	_terminal_label(GameManager.text("CLUB CREDITS: %d", "社团积分：%d") % int(GameManager.progress.get("credits", 0)), Vector2(180, y + 20), Vector2(350, 24), 16, Color(0.98, 0.85, 0.45), HORIZONTAL_ALIGNMENT_CENTER)
 	var note := _terminal_label(
 		GameManager.text("Club Credits are saved for future equipment upgrades.", "社团积分将用于后续设备升级。"),
-		Vector2(300, y + 50), Vector2(424, 40), 11, Color(0.78, 0.88, 0.82), HORIZONTAL_ALIGNMENT_CENTER
+		Vector2(190, y + 50), Vector2(330, 40), 11, Color(0.78, 0.88, 0.82), HORIZONTAL_ALIGNMENT_CENTER
 	)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	var shop := Button.new()
 	shop.text = GameManager.text("Upgrade Shop - Coming Soon", "升级商店 - 即将开放")
 	shop.disabled = true
-	shop.position = Vector2(312, y + 96)
-	shop.size = Vector2(400, 34)
+	shop.position = Vector2(200, y + 96)
+	shop.size = Vector2(310, 34)
 	shop.add_theme_font_size_override("font_size", 12)
 	stats_terminal_popup.add_child(shop)
 
@@ -730,6 +1188,69 @@ func _toggle_stats_terminal() -> void:
 	close.add_theme_font_size_override("font_size", 14)
 	close.pressed.connect(_toggle_stats_terminal)
 	stats_terminal_popup.add_child(close)
+
+	# Live saved state, shared with assembly, missions, and the logbook.
+	var selected_parts: Dictionary = GameManager.get_selected_parts()
+	var equipped_names: Array[String] = []
+	for part_type in ["tripod", "mount", "tube", "objective", "eyepiece", "focus_knob", "finder_scope"]:
+		var part: Dictionary = selected_parts.get(part_type, {})
+		if not part.is_empty():
+			equipped_names.append(GameManager.dict_text(part, "name"))
+	var completed_count := (GameManager.progress.get("completed_levels", []) as Array).size()
+	var journal_count := (GameManager.progress.get("journal_entries", []) as Array).size()
+	var concept_count := (GameManager.progress.get("completed_concept_cards", []) as Array).size()
+	var unlocked_count := (GameManager.progress.get("unlocked_parts", []) as Array).size()
+	_terminal_label(GameManager.text("EQUIPPED SETUP", "当前装备"), Vector2(556, 150), Vector2(282, 20), 13, Color(0.46, 0.88, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
+	var setup := _terminal_label(
+		"\n".join(equipped_names) if not equipped_names.is_empty() else GameManager.text("No equipment selected", "尚未选择装备"),
+		Vector2(556, 176), Vector2(282, 126), 11, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER
+	)
+	setup.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	setup.clip_text = true
+	_terminal_label(GameManager.text("PROGRESS", "进度"), Vector2(556, 316), Vector2(282, 20), 13, Color(0.46, 0.88, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
+	_terminal_label(
+		GameManager.text("Levels: %d   Knowledge cards: %d\nUnlocked parts: %d", "已完成关卡：%d   知识卡：%d\n已解锁零件：%d") % [completed_count, concept_count, unlocked_count],
+		Vector2(556, 342), Vector2(282, 48), 12, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER
+	)
+	_terminal_label(GameManager.text("OBSERVATION HISTORY", "观测历史"), Vector2(556, 410), Vector2(282, 20), 13, Color(0.46, 0.88, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
+	_terminal_label(
+		GameManager.text("Recorded sessions: %d\nObserved objects: %d", "记录次数：%d\n已观测天体：%d") % [journal_count, (GameManager.progress.get("observed_objects", []) as Array).size()],
+		Vector2(556, 436), Vector2(282, 48), 12, WARM_TEXT, HORIZONTAL_ALIGNMENT_CENTER
+	)
+
+	# ---- Observing site: where on Earth this club actually sits ----
+	var site: Dictionary = GameManager.site_info()
+	var site_divider := ColorRect.new()
+	site_divider.position = Vector2(178, 478)
+	site_divider.size = Vector2(668, 1)
+	site_divider.color = Color(0.35, 0.85, 0.55, 0.4)
+	stats_terminal_popup.add_child(site_divider)
+	_terminal_label(GameManager.text("OBSERVING SITE", "观测站信息"), Vector2(178, 488), Vector2(668, 20), 13, Color(0.46, 0.88, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
+	var map_path := "res://assets/learning_diagrams/site_map.png"
+	if ResourceLoader.exists(map_path):
+		var map_rect := TextureRect.new()
+		map_rect.custom_minimum_size = Vector2.ZERO
+		map_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		map_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		map_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		map_rect.texture = load(map_path)
+		map_rect.position = Vector2(178, 514)
+		map_rect.size = Vector2(336, 189)
+		stats_terminal_popup.add_child(map_rect)
+	var seeing_text := GameManager.text("good", "好")
+	match str(site.get("seeing", "")):
+		"average": seeing_text = GameManager.text("average", "中")
+		"poor": seeing_text = GameManager.text("poor", "差")
+	var site_facts := _terminal_label(
+		GameManager.text(
+			"Latitude %s | Longitude %s\nAltitude %s\nRegion: %s\nLight pollution: %s\nTonight: seeing %s, clouds %d%%\nWeather index: %d / 10",
+			"纬度 %s | 经度 %s\n海拔 %s\n区域环境：%s\n光污染：%s\n今晚：视宁度%s，云量 %d%%\n天气指数：%d / 10"
+		) % [str(site["lat"]), str(site["lon"]), str(site["altitude"]),
+			GameManager.text(str(site["region_en"]), str(site["region_zh"])),
+			str(site["bortle"]), seeing_text, int(site["cloud_pct"]), int(site["weather_index"])],
+		Vector2(530, 514), Vector2(316, 189), 12, WARM_TEXT
+	)
+	site_facts.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 
 func _terminal_label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
@@ -766,6 +1287,8 @@ func _update_room_guidance_panel() -> void:
 		return
 	if GameManager.room_guidance_target == "":
 		guidance_panel.visible = false
+		if route_edge_indicator != null:
+			route_edge_indicator.visible = false
 		_update_guidance_overlay({})
 		return
 	guidance_panel.visible = true
@@ -774,12 +1297,22 @@ func _update_room_guidance_panel() -> void:
 	var item := _get_interactable(GameManager.room_guidance_target)
 	if not item.is_empty():
 		target_name = str(item.get("name", ""))
+	var target_center: Vector2 = item.get("rect", Rect2()).get_center()
+	var delta := target_center - player_pos
+	var distance := int(round(delta.length()))
+	# The diagnostic must stay visible while the movement cue changes below.
+	# Otherwise a precise loadout error collapses back to "Go to cabinet".
+	guidance_hint_label.text = GameManager.room_guidance_hint
 	if nearby_id == GameManager.room_guidance_target:
-		guidance_hint_label.text = "[E] " + target_name
-		guidance_action_label.text = GameManager.text("Press E to continue", "按 E 继续")
+		guidance_action_label.text = "[E] " + target_name + " · " + GameManager.text("Press E to continue", "按 E 继续")
+		if route_edge_indicator != null:
+			route_edge_indicator.visible = false
 	else:
-		guidance_hint_label.text = GameManager.room_guidance_hint
-		guidance_action_label.text = GameManager.text("Follow the highlighted area", "跟随高亮区域")
+		guidance_action_label.text = _route_target_prompt(GameManager.room_guidance_target) + " · " + _route_move_hint(delta)
+		_update_route_edge_indicator(delta, _route_target_prompt(GameManager.room_guidance_target), distance)
+	if guidance_outcome_label != null:
+		var route := GameManager.current_room_route()
+		guidance_outcome_label.text = str(route.get("outcome", "")) if str(route.get("target", "")) == GameManager.room_guidance_target else ""
 	_update_guidance_overlay(item)
 
 
@@ -796,18 +1329,83 @@ func _update_guidance_overlay(item: Dictionary) -> void:
 	rect.position.y = clampf(rect.position.y, 0.0, H)
 	rect.size.x = clampf(rect.size.x, 0.0, W - rect.position.x)
 	rect.size.y = clampf(rect.size.y, 0.0, H - rect.position.y)
-	var shade := Color(0.0, 0.0, 0.0, 0.50)
-	_rect_to(guidance_overlay, Vector2.ZERO, Vector2(W, rect.position.y), shade)
-	_rect_to(guidance_overlay, Vector2(0, rect.end.y), Vector2(W, H - rect.end.y), shade)
-	_rect_to(guidance_overlay, Vector2(0, rect.position.y), Vector2(rect.position.x, rect.size.y), shade)
-	_rect_to(guidance_overlay, Vector2(rect.end.x, rect.position.y), Vector2(W - rect.end.x, rect.size.y), shade)
-
+	# Dim everything except the guided device (four rects around its cutout)
+	# so the next destination is unmistakable.
+	var dim_color := Color(0.0, 0.0, 0.0, 0.34)
+	for dim_rect in [
+		Rect2(0, 0, W, rect.position.y),
+		Rect2(0, rect.end.y, W, H - rect.end.y),
+		Rect2(0, rect.position.y, rect.position.x, rect.size.y),
+		Rect2(rect.end.x, rect.position.y, W - rect.end.x, rect.size.y)
+	]:
+		if dim_rect.size.x <= 0.0 or dim_rect.size.y <= 0.0:
+			continue
+		var shade := ColorRect.new()
+		shade.color = dim_color
+		shade.position = dim_rect.position
+		shade.size = dim_rect.size
+		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		guidance_overlay.add_child(shade)
 	var pulse := 0.70 + 0.25 * sin(float(Time.get_ticks_msec()) / 180.0)
 	var outer := _thin_highlight_frame_to(guidance_overlay, rect.grow(8.0), Color(1.0, 0.78, 0.26, pulse))
 	outer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var inner := _thin_highlight_frame_to(guidance_overlay, rect.grow(2.0), Color(1.0, 0.95, 0.58, 0.92))
 	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_draw_guidance_arrow(guidance_overlay, rect)
+
+
+func _update_route_edge_indicator(delta: Vector2, target_name: String, distance: int) -> void:
+	if route_edge_indicator == null:
+		return
+	if delta.length() < 1.0:
+		route_edge_indicator.visible = false
+		return
+	route_edge_indicator.visible = true
+	var direction := delta.normalized()
+	# Keep the cue in the player's immediate space. It behaves like a compass
+	# pointer around the observer instead of a detached screen-edge marker.
+	var pointer_center := player_pos + direction * 48.0
+	pointer_center.x = clampf(pointer_center.x, ROOM_RECT.position.x + 22.0, ROOM_RECT.end.x - 22.0)
+	pointer_center.y = clampf(pointer_center.y, ROOM_RECT.position.y + 22.0, ROOM_RECT.end.y - 22.0)
+	route_arrow_label.position = pointer_center - Vector2(27, 27)
+	route_arrow_label.rotation = atan2(direction.y, direction.x) + PI * 0.5
+	# The panel already carries the exact target and distance. Keeping this
+	# extra label hidden avoids competing with the nearby interaction prompt.
+	route_distance_label.visible = false
+
+
+func _route_target_prompt(target_id: String) -> String:
+	match target_id:
+		"assembly":
+			return GameManager.text("Go to the Assembly Table", "前往组装台")
+		"cabinet":
+			return GameManager.text("Go to the Parts Cabinet", "前往零件柜")
+		"telescope":
+			return GameManager.text("Go to the Observation Pad", "前往观测台")
+		"journal":
+			return GameManager.text("Go to the Club Logbook", "前往观测日志")
+		"mission":
+			return GameManager.text("Go to the Mission Board", "前往任务板")
+		"computer":
+			return GameManager.text("Go to the Stats Terminal", "前往统计终端")
+		"door":
+			return GameManager.text("Go to the Observatory Door", "前往天文台门")
+	return target_id.capitalize()
+
+
+func _route_move_hint(delta: Vector2) -> String:
+	var horizontal := ""
+	var vertical := ""
+	if absf(delta.x) >= 16.0:
+		horizontal = GameManager.text("right", "向右") if delta.x > 0.0 else GameManager.text("left", "向左")
+	if absf(delta.y) >= 16.0:
+		vertical = GameManager.text("down", "向下") if delta.y > 0.0 else GameManager.text("up", "向上")
+	if horizontal != "" and vertical != "":
+		return GameManager.text("Move " + horizontal + " and " + vertical + ".", horizontal + vertical + "移动。")
+	if horizontal != "":
+		return GameManager.text("Move " + horizontal + ".", horizontal + "移动。")
+	if vertical != "":
+		return GameManager.text("Move " + vertical + ".", vertical + "移动。")
+	return GameManager.text("Move closer to interact.", "靠近后互动。")
 
 
 func _draw_guidance_arrow(parent: Control, target_rect: Rect2) -> void:

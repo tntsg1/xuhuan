@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://c146eqkgabdad"]
 
-[ext_resource type="Script" path="res://scripts/ui/learning_card.gd" id="1"]
+[ext_resource type="Script" uid="uid://bi5q774508rlu" path="res://scripts/ui/learning_card.gd" id="1"]
 
-[node name="LearningCard" type="Control"]
+[node name="LearningCard" type="Control" unique_id=130551535]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

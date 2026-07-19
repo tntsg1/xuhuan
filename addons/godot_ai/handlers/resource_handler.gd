@@ -26,7 +26,9 @@ func search_resources(params: Dictionary) -> Dictionary:
 
 	var efs := EditorInterface.get_resource_filesystem()
 	if efs == null:
-		return ErrorCodes.make(ErrorCodes.EDITOR_NOT_READY, "EditorFileSystem not available")
+		return ErrorCodes.make_not_ready(
+			ErrorCodes.SUB_EDITOR_UNAVAILABLE,
+			"EditorFileSystem not available", false)
 
 	var results: Array[Dictionary] = []
 	_scan_resources(efs.get_filesystem(), type_filter, path_filter, results)
@@ -217,6 +219,25 @@ static func _validate_resource_class(type_str: String) -> Variant:
 	return null
 
 
+## Build the "Unknown resource type" error with a steer toward op="scan". A type
+## that reaches here is neither an engine built-in (ClassDB) nor a registered
+## project class (the global script-class registry). In an agent-driven workflow
+## the most common cause is a `class_name` script just made via script_create
+## that isn't registered yet — the global class table only rebuilds on a
+## filesystem scan (normally an editor-focus event). Point the caller at the one
+## cheap call that fixes that, so it doesn't fall back to a full plugin reload.
+## See #614 for the headless scan op.
+static func _unknown_resource_type_error(type_str: String) -> Dictionary:
+	return ErrorCodes.make(
+		ErrorCodes.VALUE_OUT_OF_RANGE,
+		(
+			"Unknown resource type: %s — not an engine built-in or a registered project class. "
+			+ "If you just created it with script_create, the global class table is stale until a "
+			+ "scan: call filesystem_manage(op=\"scan\"), then retry. Otherwise check the spelling."
+		) % type_str
+	)
+
+
 ## Resolve a resource type name to a fresh instance. Handles engine built-ins
 ## (ClassDB) and project `class_name` Resources (the global script-class
 ## registry). Returns a Resource on success, or an error dict on failure.
@@ -264,13 +285,27 @@ static func _instantiate_resource(type_str: String) -> Variant:
 			if made == null or not (made is Resource):
 				return ErrorCodes.make(ErrorCodes.INTERNAL_ERROR, "Failed to instantiate %s as a Resource" % type_str)
 			return made
-	return ErrorCodes.make(ErrorCodes.VALUE_OUT_OF_RANGE, "Unknown resource type: %s" % type_str)
+	return _unknown_resource_type_error(type_str)
+
+
+## Maximum nesting depth for the {"__class__": ...} sub-resource shortcut.
+## Caller-supplied dicts recurse through _apply_resource_properties; without a
+## cap a deeply nested payload overflows the GDScript call stack and crashes
+## the editor (#536). 32 is far beyond any legitimate sub-resource chain.
+const MAX_NESTED_RESOURCE_DEPTH := 32
 
 
 ## Apply a dict of property values to a freshly-instantiated Resource,
 ## reusing NodeHandler's coercion so Vector3/Color/etc. dicts land typed.
 ## Returns null on success or an error dict on failure.
-static func _apply_resource_properties(res: Resource, properties: Dictionary) -> Variant:
+## `depth` is internal recursion bookkeeping for the nested {"__class__": ...}
+## shortcut — external callers use the default of 0.
+static func _apply_resource_properties(res: Resource, properties: Dictionary, depth: int = 0) -> Variant:
+	if depth > MAX_NESTED_RESOURCE_DEPTH:
+		return ErrorCodes.make(
+			ErrorCodes.INVALID_PARAMS,
+			"Nested resource properties exceed the maximum depth of %d — flatten the {\"__class__\": ...} nesting or create the deep sub-resources in separate calls" % MAX_NESTED_RESOURCE_DEPTH
+		)
 	var prop_types := {}
 	for prop in res.get_property_list():
 		prop_types[prop.name] = prop.get("type", TYPE_NIL)
@@ -331,7 +366,7 @@ static func _apply_resource_properties(res: Resource, properties: Dictionary) ->
 			var remaining: Dictionary = (v as Dictionary).duplicate()
 			remaining.erase("__class__")
 			if not remaining.is_empty():
-				var nested_err := _apply_resource_properties(sub_res, remaining)
+				var nested_err := _apply_resource_properties(sub_res, remaining, depth + 1)
 				if nested_err != null:
 					return nested_err
 			v = sub_res
@@ -415,7 +450,7 @@ func get_resource_info(params: Dictionary) -> Dictionary:
 		var custom_info: Variant = _custom_resource_info(type_str)
 		if custom_info != null:
 			return custom_info
-		return ErrorCodes.make(ErrorCodes.VALUE_OUT_OF_RANGE, "Unknown resource type: %s" % type_str)
+		return _unknown_resource_type_error(type_str)
 	if ClassDB.is_parent_class(type_str, "Node"):
 		return ErrorCodes.make(
 			ErrorCodes.WRONG_TYPE,

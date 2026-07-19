@@ -52,8 +52,10 @@ static func missing_parts(assembly_state: Dictionary, required_parts: Array = []
 
 
 static func _required_list(required_parts: Array) -> Array:
-	# Core parts are always required; the level may add optional equipment
-	# such as finder_scope or focus_knob.
+	# Legacy refractor levels use their default core. Advanced telescope
+	# families provide a complete independent required_parts contract.
+	if not required_parts.is_empty():
+		return required_parts.duplicate()
 	var required := REQUIRED_CORE.duplicate()
 	for part_value in required_parts:
 		var part := str(part_value)

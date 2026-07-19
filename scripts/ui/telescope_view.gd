@@ -21,6 +21,7 @@ const SPRITE_MAP := {
 	"polaris": "res://assets/telescope_view/star_white_large.png",
 	"sirius": "res://assets/telescope_view/star_blue_large.png",
 	"betelgeuse": "res://assets/telescope_view/star_red_large.png",
+	"vega": "res://assets/telescope_view/vega_chromatic_demo.png",
 	"orion_nebula": "res://assets/telescope_view/orion_nebula_large.png",
 	"andromeda": "res://assets/telescope_view/andromeda_large.png",
 	"arcturus": "res://assets/telescope_view/arcturus_clear.png",
@@ -52,6 +53,11 @@ const STATE_TEXTURES := {
 		"clear": "res://assets/telescope_view/andromeda_clear.png",
 		"blurry": "res://assets/telescope_view/andromeda_blurry.png",
 		"dim": "res://assets/telescope_view/andromeda_dim.png"
+	},
+	"vega": {
+		"clear": "res://assets/telescope_view/vega_user_clear.png",
+		"blurry": "res://assets/telescope_view/vega_user_blurry.png",
+		"dim": "res://assets/telescope_view/vega_user_dim.png"
 	},
 	"orion_nebula": {
 		"clear": "res://assets/telescope_view/orion_nebula_clear.png",
@@ -101,13 +107,20 @@ const PANEL_SIZE := Vector2(236, 594)
 const CONTENT_X := 772.0
 const CONTENT_W := 194.0
 const FOCUS_ADJUST_SPEED := 0.22
+const OBS_UI_DIR := "res://assets/ui/observation/suc/processed/"
 
 var feedback_label: Label
 var quality_label: Label
 var mission_step_label: Label
 var choices_box: VBoxContainer
+var identify_title_label: Label
+var identify_choice_ids: Array[String] = []
+var quiz_brief_overlay: Control
+var quiz_brief_dismissed := false
 var observation: Dictionary
 var selected_object: Dictionary
+
+static var _last_correct_choice_index := -1
 
 var observation_mode := "telescope"
 var requires_focus := false
@@ -119,9 +132,19 @@ var focus_error := 0.0
 var focus_locked := false
 
 var focus_slider: HSlider
+var focus_knob_status: TextureRect
 var focus_state_label: Label
 var focus_pct_label: Label
 var updating_slider := false
+var focus_guide_panel: Panel
+var focus_guide_text: Label
+var focus_guide_zone: ColorRect
+var focus_guide_active := false
+var focus_adjustment_count := 0
+var focus_direction_changes := 0
+var last_focus_adjust_direction := 0
+var best_focus_error := 1.0
+var last_focus_improvement_adjustment := 0
 
 var lens_center := Vector2.ZERO
 var target_center := Vector2.ZERO
@@ -203,6 +226,8 @@ var hold_timer := 0.0
 var hold_strict := false
 var drift_reevaluate_timer := 0.0
 var tracking_slider: HSlider
+var tracking_knob_status: TextureRect
+var tracking_enabled_status: TextureRect
 var tracking_label: Label
 var hold_label: Label
 var hold_bar_fill: ColorRect
@@ -212,6 +237,7 @@ var target_off_center := false
 
 func _ready() -> void:
 	GameManager.language_changed.connect(_on_language_changed)
+	GameManager.sync_newtonian_installed_equipment()
 	selected_object = GameManager.get_object(GameManager.selected_object_id)
 	if selected_object.is_empty():
 		selected_object = GameManager.current_target()
@@ -239,9 +265,7 @@ func _init_drift() -> void:
 
 
 func _focus_knob_installed() -> bool:
-	var state: Dictionary = GameManager.progress.get("assembly_state", {})
-	var knob: Dictionary = state.get("focus_knob", {})
-	return bool(knob.get("installed", false))
+	return GameManager.focus_control_installed()
 
 
 func _focus_control_score() -> float:
@@ -298,7 +322,12 @@ func _target_turbulence() -> float:
 	var severity := _seeing_severity()
 	var mag_factor := clampf(magnification / 55.0, 0.4, 1.6)
 	var altitude_factor := clampf(1.6 - _current_altitude() / 60.0, 0.7, 1.3)
-	return clampf(severity * mag_factor * altitude_factor, 0.0, 1.0)
+	var turbulence := clampf(severity * mag_factor * altitude_factor, 0.0, 1.0)
+	if _is_star_target():
+		# The atmosphere is never perfectly still: a point source always
+		# scintillates at the eyepiece, even under "good" seeing.
+		turbulence = maxf(turbulence, 0.16)
+	return turbulence
 
 
 func _target_sky_lift() -> float:
@@ -373,7 +402,10 @@ func cloud_tier_index() -> int:
 func _process(delta: float) -> void:
 	if _is_dark_adaptation_target():
 		_advance_dark_adaptation(delta)
-	if requires_focus:
+	if requires_focus or drift_enabled:
+		# The chase also repositions the target sprite: on drift levels it
+		# must run even without focus, or the star field slides while the
+		# target itself stays frozen.
 		_advance_visual_smoothing(delta)
 	if observation_mode != "naked_eye":
 		_advance_conditions(delta)
@@ -383,7 +415,7 @@ func _process(delta: float) -> void:
 
 
 func _handle_focus_input(delta: float) -> void:
-	if not requires_focus or focus_locked or not allow_focus_input:
+	if not requires_focus or focus_locked or not allow_focus_input or quiz_brief_overlay != null:
 		return
 	var direction := 0.0
 	if Input.is_key_pressed(KEY_Q):
@@ -502,7 +534,7 @@ func _advance_dark_adaptation(delta: float) -> void:
 		if dark_adaptation_label != null:
 			dark_adaptation_label.text = "Dark adaptation: %d%%" % int(round(eased * 100.0))
 		if averted_vision_label != null:
-			averted_vision_label.text = "Averted侧视: Active启用" if averted_vision_active else "Averted侧视: Inactive未启用"
+			averted_vision_label.text = GameManager.text("Averted vision: Active", "侧视：启用") if averted_vision_active else GameManager.text("Averted vision: Inactive", "侧视：未启用")
 			averted_vision_label.add_theme_color_override("font_color", Color(0.55, 1.0, 0.62) if averted_vision_active else Color(0.66, 0.72, 0.80))
 		_update_target_visuals()
 
@@ -557,19 +589,19 @@ func _advance_visual_smoothing(delta: float) -> void:
 
 
 func _target_blur_weight() -> float:
-	# 0 = fully sharp art, 1 = fully blurry photo. Focus error drives a
-	# smooth band around the tolerance; equipment-limited Fair quality
-	# keeps the image soft even at perfect focus.
+	# 0 = fully sharp art, 1 = fully blurry photo. This is deliberately
+	# driven by focus only: a faint Fair-quality nebula can still be in focus.
+	# Telescope quality affects brightness and contrast elsewhere, never which
+	# focus texture is visible.
 	if blur_overlay == null:
 		return 0.0
-	var focus_component: float = smoothstep(focus_tolerance * 0.8, focus_tolerance * 2.4, focus_error)
-	# NOTE: visual_effect is a relative "weakest stat" hint and can say
-	# "blurry" even at Excellent - never let it drive the image. Only the
-	# authoritative quality verdict keeps the image soft at good focus.
-	var quality := str(observation.get("quality", ""))
-	if quality == "Fair" and is_focus_acceptable():
-		return maxf(focus_component, 1.0)
-	return focus_component
+	# Keep the success tolerance forgiving, but do not make that whole range
+	# visually identical. The image now improves continuously all the way to
+	# the true focal plane; at the edge of the accepted zone a small residual
+	# blur remains, while exact focus is fully sharp.
+	if focus_error <= focus_tolerance:
+		return smoothstep(0.0, focus_tolerance, focus_error) * 0.22
+	return 0.22 + smoothstep(focus_tolerance, focus_tolerance * 2.8, focus_error) * 0.78
 
 
 func _advance_conditions(delta: float) -> void:
@@ -597,9 +629,9 @@ func _advance_conditions(delta: float) -> void:
 		cond_cloud_atten = lerpf(cond_cloud_atten, _cloud_target_atten(), weight)
 		moving = true
 	if cloud_veil != null:
-		# Full-field veil density = live attenuation (whole view grays over
-		# as a cloud crosses, clears in the gaps).
-		cloud_veil.modulate.a = clampf(cond_cloud_atten * 0.55 + cloud_cover_level * 0.10, 0.0, 0.8)
+		# Dark absorption veil: the thicker the cloud over the target, the
+		# darker the whole field. Attenuation stays the score's source of truth.
+		cloud_veil.modulate.a = clampf(cond_cloud_atten * 0.50 + cloud_cover_level * 0.10, 0.0, 0.62)
 	if absf(grain_intensity - target_grain_intensity) > 0.001:
 		grain_intensity = lerpf(grain_intensity, target_grain_intensity, weight)
 		if grain_material != null:
@@ -619,12 +651,12 @@ func _advance_conditions(delta: float) -> void:
 			cloud_reevaluate_timer = 0.0
 			observation = _evaluate()
 			_refresh_target_sprite()
-			if quality_label != null:
-				var quality := str(observation.get("quality", "Unknown"))
-				quality_label.text = GameManager.text("Quality: ", "质量: ") + quality
-				quality_label.add_theme_color_override("font_color", _quality_color(quality))
-			if feedback_label != null:
-				feedback_label.text = _current_feedback()
+			# Full focus-panel refresh (quality label included): on cloudy
+			# DRIFT levels this is the only steady refresh path - the 0.3s
+			# drift cadence is gated to cloudless levels - so without it the
+			# hold/ready status under the focus slider only updated while a
+			# focus key was held.
+			_refresh_focus_ui()
 
 
 func _apply_turbulence_uniforms() -> void:
@@ -650,9 +682,27 @@ func _apply_breathing_and_jitter(t: float) -> void:
 		)
 		main_sprite.position = visual_target_center - main_sprite.size * display_scale * 0.5 + jitter
 	elif _is_diffuse_target():
-		# Nebula/galaxy: whole-image alpha "breathing", no shape distortion.
+		# Nebula/galaxy: low-frequency contrast + blur breathing and a tiny
+		# image wander. Extended targets should not ripple like planets, but
+		# average/poor seeing must still be visibly different from still air.
+		# Keep the focus cross-fade intact here. Previously this branch restored
+		# the clear base art to full opacity every frame, so a defocused nebula
+		# could look sharp as soon as the focus input stopped moving.
 		var breathe := 1.0 + 0.05 * cond_turbulence * sin(t * 1.1 + effect_seed)
-		main_sprite.modulate.a = clampf(visual_base_alpha * breathe * cloud_mult, 0.0, 1.0)
+		var diffuse_alpha := clampf(visual_base_alpha * breathe * cloud_mult, 0.0, 1.0)
+		var seeing_blur := cond_turbulence * 0.16 * (0.5 + 0.5 * sin(t * 1.35 + effect_seed * 0.8))
+		var combined_blur := clampf(blur_weight + seeing_blur, 0.0, 1.0)
+		var jitter := Vector2(
+			sin(t * 1.7 + effect_seed) * cond_turbulence * 1.8,
+			cos(t * 1.3 + effect_seed * 0.6) * cond_turbulence * 1.2
+		)
+		main_sprite.position = visual_target_center - main_sprite.size * display_scale * 0.5 + jitter
+		if blur_overlay != null:
+			blur_overlay.position = visual_target_center - blur_overlay.size * display_scale * 0.5 + jitter
+			main_sprite.modulate.a = diffuse_alpha * (1.0 - combined_blur)
+			blur_overlay.modulate.a = diffuse_alpha * combined_blur
+		else:
+			main_sprite.modulate.a = diffuse_alpha
 	else:
 		# Planet/Moon: shader-driven UV wobble + breathing blur + jitter.
 		var breathing := cond_turbulence * 0.18 * (0.5 + 0.5 * sin(t * 1.3 + effect_seed))
@@ -725,6 +775,12 @@ func _init_focus() -> void:
 		# Always start visibly out of focus so the player learns the knob.
 		focus_value = fmod(focus_value + 0.27, 1.0)
 	focus_error = absf(focus_value - target_focus_value)
+	best_focus_error = focus_error
+	focus_adjustment_count = 0
+	focus_direction_changes = 0
+	last_focus_adjust_direction = 0
+	last_focus_improvement_adjustment = 0
+	focus_guide_active = false
 	if not allow_focus_input:
 		# No focus knob installed: the image stays clearly defocused.
 		focus_error = maxf(focus_error, 0.25)
@@ -926,6 +982,10 @@ func _quality_shortfall_text() -> String:
 func _build() -> void:
 	for child in get_children():
 		child.queue_free()
+	quiz_brief_overlay = null
+	focus_knob_status = null
+	tracking_knob_status = null
+	tracking_enabled_status = null
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_rect(self, Vector2.ZERO, Vector2(1024, 768), COL_BG)
 	_pixel_frame(self, Vector2(12, 10), Vector2(1000, 744), Color(0.006, 0.008, 0.018), COL_BLUE_BORDER, COL_GOLD)
@@ -933,6 +993,9 @@ func _build() -> void:
 	var view := _scope_visual()
 	view.position = Vector2(54, 98)
 	add_child(view)
+	# Wood frame AFTER the scope view: the ring occluder's clip container
+	# reaches the screen edges and would repaint over the frame strips.
+	_add_wood_frame()
 	# Title bar AFTER the scope view: the ring occluder inside the view is
 	# oversized and would otherwise paint over the title strip.
 	if observation_mode == "naked_eye":
@@ -942,13 +1005,65 @@ func _build() -> void:
 	_build_observation_panel()
 	if drift_enabled:
 		_build_drift_panel()
+	if requires_focus and allow_focus_input:
+		_build_focus_novice_guide()
 	if requires_focus:
 		_refresh_focus_ui()
 
 
+const SKY_BG_TEXTURE := "res://assets/reference/sky_observation_ui_bg_v2_1024.png"
+const COL_BRASS := Color(0.72, 0.53, 0.26)
+
+
+func _add_wood_frame() -> void:
+	# Reuses the finder view's baked wooden frame (edge strips via
+	# AtlasTexture regions - no new art). The top strip is the bottom strip
+	# flipped, because the baked top edge carries the compass ornament.
+	var base := load(SKY_BG_TEXTURE) as Texture2D
+	if base == null:
+		return
+	# Only the LEFT column and the left 748px of the bottom edge are pure
+	# wood in the baked art (the rest carries panel borders), so the frame
+	# is built from those clean regions: bottom stretched full-width, top =
+	# bottom flipped, right = left mirrored.
+	var strips := [
+		[Rect2(0, 734, 748, 34), Rect2(0, 734, 1024, 34), false, false],
+		[Rect2(0, 734, 748, 34), Rect2(0, 0, 1024, 34), true, false],
+		[Rect2(0, 0, 34, 768), Rect2(0, 0, 34, 768), false, false],
+		[Rect2(0, 0, 34, 768), Rect2(990, 0, 34, 768), false, true],
+	]
+	for strip_value in strips:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = base
+		atlas.region = strip_value[0]
+		var rect := TextureRect.new()
+		rect.custom_minimum_size = Vector2.ZERO
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		rect.stretch_mode = TextureRect.STRETCH_SCALE
+		rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		rect.flip_v = bool(strip_value[2])
+		rect.flip_h = bool(strip_value[3])
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rect.texture = atlas
+		rect.position = (strip_value[1] as Rect2).position
+		rect.size = (strip_value[1] as Rect2).size
+		add_child(rect)
+
+
 func _title_bar(title_text: String) -> void:
-	_pixel_panel(self, Vector2(28, 20), Vector2(968, 60), COL_NAVY, COL_BLUE_BORDER)
-	var title := _plabel(title_text, Vector2(28, 24), Vector2(968, 44), 26, COL_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	# Brass plaque, matching the finder view's ornament styling.
+	var plaque := Panel.new()
+	plaque.position = Vector2(312, 16)
+	plaque.size = Vector2(400, 54)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.075, 0.038, 0.97)
+	style.border_color = COL_BRASS
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(6)
+	plaque.add_theme_stylebox_override("panel", style)
+	plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(plaque)
+	var title := _plabel(title_text, Vector2(312, 22), Vector2(400, 42), 25, Color(0.96, 0.86, 0.58), HORIZONTAL_ALIGNMENT_CENTER)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 
 
@@ -998,7 +1113,7 @@ func _build_observation_panel() -> void:
 	if requires_focus:
 		_build_focus_block()
 
-	_plabel(GameManager.text("Identify", "识别"), Vector2(CONTENT_X, 414), Vector2(CONTENT_W, 20), 16, Color(0.98, 0.82, 0.50))
+	identify_title_label = _plabel(GameManager.text("Identify", "识别"), Vector2(CONTENT_X, 414), Vector2(CONTENT_W, 20), 16, Color(0.98, 0.82, 0.50))
 
 	choices_box = VBoxContainer.new()
 	choices_box.position = Vector2(CONTENT_X, 436)
@@ -1024,10 +1139,15 @@ func _build_observation_panel() -> void:
 	)
 	bottom.add_child(back)
 
+	if quiz_brief_dismissed:
+		_set_identify_choices_visible(true)
+	else:
+		_show_pre_quiz_guide()
+
 
 func _build_focus_block() -> void:
 	if not allow_focus_input:
-		_plabel("Focus", Vector2(CONTENT_X, 348), Vector2(70, 18), 13, COL_GOLD_LIGHT)
+		_plabel(GameManager.text("Focus", "对焦"), Vector2(CONTENT_X, 348), Vector2(70, 18), 13, COL_GOLD_LIGHT)
 		var missing := _plabel(GameManager.text("Knob: not installed", "旋钮：未安装"), Vector2(CONTENT_X + 60, 346), Vector2(CONTENT_W - 60, 26), 9, Color(1.0, 0.45, 0.32), HORIZONTAL_ALIGNMENT_RIGHT)
 		missing.max_lines_visible = 2
 		focus_state_label = _plabel(
@@ -1037,7 +1157,12 @@ func _build_focus_block() -> void:
 		focus_state_label.max_lines_visible = 3
 		return
 
-	_plabel("Focus · Ctrl %d%%" % int(_focus_control_score()), Vector2(CONTENT_X, 350), Vector2(126, 18), 11, COL_GOLD_LIGHT)
+	# Equipment property, deliberately constant: the knob's mechanical
+	# precision (finer slider steps at >=60), NOT a live focus readout.
+	focus_knob_status = _hud_asset(OBS_UI_DIR + "focus_knob_ui.png", Rect2(Vector2(CONTENT_X, 343), Vector2(28, 28)))
+	focus_knob_status.pivot_offset = focus_knob_status.size * 0.5
+	focus_knob_status.rotation = lerpf(-PI * 0.72, PI * 0.72, focus_value)
+	_plabel(GameManager.text("Knob precision %d%%" % int(_focus_control_score()), "旋钮精度 %d%%" % int(_focus_control_score())), Vector2(CONTENT_X + 32, 350), Vector2(94, 18), 10, COL_GOLD_LIGHT)
 	focus_pct_label = _plabel("", Vector2(CONTENT_X + 126, 351), Vector2(CONTENT_W - 126, 18), 11, COL_TEXT, HORIZONTAL_ALIGNMENT_RIGHT)
 
 	focus_slider = HSlider.new()
@@ -1048,6 +1173,15 @@ func _build_focus_block() -> void:
 	focus_slider.value = focus_value
 	focus_slider.position = Vector2(CONTENT_X, 370)
 	focus_slider.size = Vector2(CONTENT_W, 18)
+	var clear_start := clampf(target_focus_value - focus_tolerance, 0.0, 1.0)
+	var clear_end := clampf(target_focus_value + focus_tolerance, 0.0, 1.0)
+	focus_guide_zone = _rect(
+		self,
+		Vector2(CONTENT_X + CONTENT_W * clear_start, 368),
+		Vector2(maxf(4.0, CONTENT_W * (clear_end - clear_start)), 22),
+		Color(0.28, 0.95, 0.48, 0.28)
+	)
+	focus_guide_zone.visible = false
 	focus_slider.value_changed.connect(func(value: float) -> void:
 		if not updating_slider:
 			_set_focus_value(value)
@@ -1059,10 +1193,90 @@ func _build_focus_block() -> void:
 
 
 func _set_focus_value(value: float) -> void:
+	var old_value := focus_value
 	focus_value = clampf(value, 0.0, 1.0)
+	if focus_knob_status != null:
+		focus_knob_status.rotation = lerpf(-PI * 0.72, PI * 0.72, focus_value)
 	focus_error = absf(focus_value - target_focus_value)
+	_track_focus_attempt(old_value)
 	observation = _evaluate()
 	_refresh_focus_ui()
+
+
+func _track_focus_attempt(old_value: float) -> void:
+	var movement := focus_value - old_value
+	if absf(movement) < 0.0005:
+		return
+	focus_adjustment_count += 1
+	var direction := 1 if movement > 0.0 else -1
+	if last_focus_adjust_direction != 0 and direction != last_focus_adjust_direction:
+		focus_direction_changes += 1
+	last_focus_adjust_direction = direction
+	if focus_error + 0.002 < best_focus_error:
+		best_focus_error = focus_error
+		last_focus_improvement_adjustment = focus_adjustment_count
+
+	if is_focus_acceptable():
+		focus_guide_active = false
+		_update_focus_novice_guide()
+		return
+
+	var near_miss := best_focus_error <= focus_tolerance * 2.25
+	var oscillating := focus_direction_changes >= 2
+	var stalled := focus_adjustment_count - last_focus_improvement_adjustment >= 5
+	if (focus_adjustment_count >= 6 and near_miss) \
+			or (focus_adjustment_count >= 8 and oscillating) \
+			or (focus_adjustment_count >= 14 and stalled):
+		focus_guide_active = true
+	_update_focus_novice_guide()
+
+
+func _build_focus_novice_guide() -> void:
+	var guide_y := 558.0 if drift_enabled else 584.0
+	focus_guide_panel = _styled_panel(
+		self,
+		Vector2(84, guide_y), Vector2(576, 94),
+		Color(0.025, 0.050, 0.085, 0.98), Color(0.35, 0.78, 1.0),
+		3, 4, false, Color(0.35, 0.78, 1.0)
+	)
+	focus_guide_panel.z_index = 120
+	var title := _plabel(GameManager.text("Focus Help", "调焦帮助"), Vector2(104, guide_y + 12), Vector2(536, 22), 16, Color(0.55, 0.88, 1.0))
+	title.z_index = 121
+	focus_guide_text = _plabel("", Vector2(104, guide_y + 36), Vector2(536, 46), 12, COL_TEXT)
+	focus_guide_text.z_index = 121
+	focus_guide_text.max_lines_visible = 3
+	focus_guide_panel.visible = false
+	title.visible = false
+	focus_guide_text.visible = false
+	focus_guide_panel.set_meta("title_label", title)
+	_update_focus_novice_guide()
+
+
+func _update_focus_novice_guide() -> void:
+	if focus_guide_panel == null:
+		return
+	var show_guide := focus_guide_active and not is_focus_acceptable()
+	focus_guide_panel.visible = show_guide
+	var title := focus_guide_panel.get_meta("title_label") as Label
+	if title != null:
+		title.visible = show_guide
+	if focus_guide_text != null:
+		focus_guide_text.visible = show_guide
+	if focus_guide_zone != null:
+		focus_guide_zone.visible = show_guide
+	if not show_guide:
+		return
+	var remaining := int(round(focus_error * 100.0))
+	if focus_value < target_focus_value:
+		focus_guide_text.text = GameManager.text(
+			"Hold E to move right about %d%%. Stop inside the green clear zone; if the image worsens, tap Q back." % remaining,
+			"按住 E 向右调约 %d%%。进入绿色清晰区就停下；如果画面变糊，轻按 Q 往回调。" % remaining
+		)
+	else:
+		focus_guide_text.text = GameManager.text(
+			"Hold Q to move left about %d%%. Stop inside the green clear zone; if the image worsens, tap E back." % remaining,
+			"按住 Q 向左调约 %d%%。进入绿色清晰区就停下；如果画面变糊，轻按 E 往回调。" % remaining
+		)
 
 
 # --------------------------------------------------------- E2 drift / track
@@ -1078,13 +1292,15 @@ func _build_drift_panel() -> void:
 	# right-hand observation panel - never competes with it for space.
 	# Three fixed, non-wrapping rows: Drift+Track status / Hold bar / rate slider.
 	var panel_h := DRIFT_PANEL_SIZE.y if GameManager.has_tracking_mount_equipped() else DRIFT_PANEL_SIZE.y - DRIFT_ROW_H
-	_pixel_panel(self, DRIFT_PANEL_POS, Vector2(DRIFT_PANEL_SIZE.x, panel_h), COL_NAVY, COL_BLUE_BORDER)
+	_pixel_panel(self, DRIFT_PANEL_POS, Vector2(DRIFT_PANEL_SIZE.x, panel_h), COL_NAVY, COL_BRASS)
 	var x := DRIFT_PANEL_POS.x + 12.0
 	var y := DRIFT_PANEL_POS.y + 8.0
 
 	drift_label = _plabel(_drift_status_text(), Vector2(x, y), Vector2(DRIFT_PANEL_SIZE.x - 24.0, 14), 10, Color(0.90, 0.86, 0.60))
 	drift_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	drift_label.clip_text = true
+	if GameManager.has_tracking_mount_equipped():
+		tracking_enabled_status = _hud_asset(OBS_UI_DIR + "tracking_enabled_icon.png", Rect2(Vector2(DRIFT_PANEL_POS.x + DRIFT_PANEL_SIZE.x - 32, y - 3), Vector2(20, 20)))
 	y += DRIFT_ROW_H
 
 	if hold_seconds_required > 0.0:
@@ -1096,8 +1312,11 @@ func _build_drift_panel() -> void:
 		y += DRIFT_ROW_H
 
 	if GameManager.has_tracking_mount_equipped():
-		var rate_label := _plabel("Rate速率", Vector2(x, y + 2.0), Vector2(90, 14), 9, Color(0.75, 0.85, 0.95))
+		var rate_label := _plabel(GameManager.text("Rate", "速率"), Vector2(x, y + 2.0), Vector2(52, 14), 9, Color(0.75, 0.85, 0.95))
 		rate_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		tracking_knob_status = _hud_asset(OBS_UI_DIR + "tracking_rate_knob.png", Rect2(Vector2(x + 54.0, y - 4.0), Vector2(26, 26)))
+		tracking_knob_status.pivot_offset = tracking_knob_status.size * 0.5
+		tracking_knob_status.rotation = lerpf(-PI * 0.72, PI * 0.72, clampf(GameManager.tracking_rate() / 2.0, 0.0, 1.0))
 		tracking_slider = HSlider.new()
 		tracking_slider.min_value = 0.0
 		tracking_slider.max_value = 2.0
@@ -1107,6 +1326,8 @@ func _build_drift_panel() -> void:
 		tracking_slider.size = Vector2(200, 18)
 		tracking_slider.value_changed.connect(func(value: float) -> void:
 			GameManager.set_tracking_rate(value)
+			if tracking_knob_status != null:
+				tracking_knob_status.rotation = lerpf(-PI * 0.72, PI * 0.72, clampf(value / 2.0, 0.0, 1.0))
 			_refresh_drift_ui()
 		)
 		add_child(tracking_slider)
@@ -1117,9 +1338,7 @@ func _build_drift_panel() -> void:
 
 
 func _drift_status_text() -> String:
-	# Compact single-line bilingual row (spec: no GameManager.text stacking
-	# in tight UI rows - that returns a two-line "en\nzh" string).
-	return "Drift漂移: On开启"
+	return GameManager.text("Drift: On", "漂移：开启")
 
 
 func _tracking_state_label() -> Dictionary:
@@ -1136,7 +1355,10 @@ func _tracking_state_label() -> Dictionary:
 func _refresh_drift_ui() -> void:
 	if drift_label != null:
 		var tracking_state := _tracking_state_label()
-		var track_text := "Track追踪: %s·%s" % [str(tracking_state.get("en", "")), str(tracking_state.get("zh", ""))]
+		var track_text := GameManager.text(
+			"Tracking: %s" % str(tracking_state.get("en", "")),
+			"追踪：%s" % str(tracking_state.get("zh", ""))
+		)
 		if GameManager.has_tracking_mount_equipped():
 			var rate_error := absf(GameManager.tracking_rate() - 1.0)
 			track_text += "  Δ%.2fx" % rate_error
@@ -1145,9 +1367,17 @@ func _refresh_drift_ui() -> void:
 		var ratio := clampf(hold_timer / hold_seconds_required, 0.0, 1.0)
 		hold_bar_fill.size = Vector2(74.0 * ratio, 8)
 	if hold_label != null:
-		hold_label.text = "Hold居中: %.1f/%.1fs" % [hold_timer, hold_seconds_required]
+		hold_label.text = GameManager.text(
+			"Centered: %.1f/%.1fs" % [hold_timer, hold_seconds_required],
+			"居中：%.1f/%.1f秒" % [hold_timer, hold_seconds_required]
+		)
 	if tracking_label != null:
 		tracking_label.text = "%.2fx" % GameManager.tracking_rate()
+	if tracking_knob_status != null:
+		tracking_knob_status.rotation = lerpf(-PI * 0.72, PI * 0.72, clampf(GameManager.tracking_rate() / 2.0, 0.0, 1.0))
+	if tracking_enabled_status != null:
+		var aligned := absf(GameManager.tracking_rate() - 1.0) <= 0.1
+		tracking_enabled_status.modulate = Color(0.58, 1.0, 0.72, 1.0) if aligned else Color(0.72, 0.74, 0.78, 0.50)
 
 
 func _refresh_focus_ui() -> void:
@@ -1158,6 +1388,8 @@ func _refresh_focus_ui() -> void:
 		updating_slider = true
 		focus_slider.value = focus_value
 		updating_slider = false
+	if focus_knob_status != null:
+		focus_knob_status.rotation = lerpf(-PI * 0.72, PI * 0.72, focus_value)
 	if focus_pct_label != null:
 		focus_pct_label.text = "%d%%  (Q/E)" % int(round(focus_value * 100.0))
 	if focus_state_label != null and allow_focus_input:
@@ -1292,10 +1524,13 @@ func _add_condition_row_a(y: float) -> float:
 		match seeing_label:
 			"Poor": seeing_zh = "差"
 			"Average": seeing_zh = "中"
-		parts.append("Seeing视宁度: %s·%s" % [seeing_label, seeing_zh])
+		parts.append(GameManager.text("Seeing: %s" % seeing_label, "视宁度：%s" % seeing_zh))
 	if cloud_cover_level > 0.0:
 		var cloud_tier := _cloud_tier_label()
-		parts.append("Cloud云: %s·%s" % [str(cloud_tier.get("en", "")), str(cloud_tier.get("zh", ""))])
+		parts.append(GameManager.text(
+			"Clouds: %s" % str(cloud_tier.get("en", "")),
+			"云层：%s" % str(cloud_tier.get("zh", ""))
+		))
 	if parts.is_empty():
 		return y
 	_plabel("  ".join(parts), Vector2(CONTENT_X, y), Vector2(CONTENT_W, CONDITION_ROW_H), 9, Color(0.95, 0.78, 0.45))
@@ -1310,10 +1545,10 @@ func _add_condition_row_b(y: float) -> float:
 		return y
 	var sky_tier := _sky_tier_label()
 	var contrast_tier := _contrast_label()
-	var line := "Sky天空: %s·%s  Contrast对比: %s·%s" % [
-		str(sky_tier.get("en", "")), str(sky_tier.get("zh", "")),
-		str(contrast_tier.get("en", "")), str(contrast_tier.get("zh", ""))
-	]
+	var line := GameManager.text(
+		"Sky: %s  Contrast: %s" % [str(sky_tier.get("en", "")), str(contrast_tier.get("en", ""))],
+		"天空：%s  对比度：%s" % [str(sky_tier.get("zh", "")), str(contrast_tier.get("zh", ""))]
+	)
 	_plabel(line, Vector2(CONTENT_X, y), Vector2(CONTENT_W, CONDITION_ROW_H), 9, Color(0.95, 0.78, 0.45))
 	return y + CONDITION_ROW_H
 
@@ -1328,7 +1563,7 @@ func _add_dark_adaptation_row(y: float) -> float:
 		Vector2(CONTENT_X, y), Vector2(CONTENT_W, CONDITION_ROW_H), 8, Color(0.70, 0.82, 0.98)
 	)
 	averted_vision_label = _plabel(
-		"Averted侧视: Active启用" if averted_vision_active else "Averted侧视: Inactive未启用",
+		GameManager.text("Averted vision: Active", "侧视：启用") if averted_vision_active else GameManager.text("Averted vision: Inactive", "侧视：未启用"),
 		Vector2(CONTENT_X, y), Vector2(CONTENT_W, CONDITION_ROW_H), 8, Color(0.66, 0.72, 0.80), HORIZONTAL_ALIGNMENT_RIGHT
 	)
 	return y + CONDITION_ROW_H
@@ -1352,10 +1587,30 @@ func _short_feedback(quality: String) -> String:
 
 
 func _add_identify_choices() -> void:
+	if identify_choice_ids.is_empty():
+		identify_choice_ids = _build_identify_choice_ids()
+	var letters := ["A", "B", "C", "D"]
+	for index in range(identify_choice_ids.size()):
+		var id := identify_choice_ids[index]
+		var obj := GameManager.get_object(id)
+		if obj.is_empty():
+			continue
+		var letter := str(letters[index]) if index < letters.size() else str(index + 1)
+		var label := "%s. %s" % [letter, GameManager.dict_text(obj, "name").replace("\n", " · ")]
+		var button := _pixel_button(label, Vector2(CONTENT_W, 32), 12)
+		button.clip_text = true
+		button.set_meta("object_id", id)
+		button.set_meta("choice_index", index)
+		button.pressed.connect(_identify.bind(id))
+		choices_box.add_child(button)
+
+
+func _build_identify_choice_ids() -> Array[String]:
 	var ids: Array[String] = []
-	_add_unique(ids, str(selected_object.get("id", "")))
+	var correct_id := str(selected_object.get("id", ""))
+	_add_unique(ids, correct_id)
 	_add_unique(ids, str(GameManager.current_target().get("id", "")))
-	for id in _distractors_for(str(selected_object.get("id", ""))):
+	for id in _distractors_for(correct_id):
 		if ids.size() >= 4:
 			break
 		_add_unique(ids, id)
@@ -1365,20 +1620,90 @@ func _add_identify_choices() -> void:
 		_add_unique(ids, id)
 	if ids.size() > 4:
 		ids.resize(4)
-	for id in ids:
+	ids.erase(correct_id)
+	ids.shuffle()
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var correct_index := rng.randi_range(0, ids.size())
+	if ids.size() > 0 and correct_index == _last_correct_choice_index:
+		correct_index = (correct_index + rng.randi_range(1, ids.size())) % (ids.size() + 1)
+	ids.insert(correct_index, correct_id)
+	_last_correct_choice_index = correct_index
+	return ids
+
+
+func _set_identify_choices_visible(show_choices: bool) -> void:
+	if identify_title_label != null:
+		identify_title_label.visible = show_choices
+	if choices_box != null:
+		choices_box.visible = show_choices
+
+
+func _show_pre_quiz_guide() -> void:
+	_set_identify_choices_visible(false)
+	quiz_brief_overlay = Control.new()
+	quiz_brief_overlay.name = "PreQuizObjectGuide"
+	quiz_brief_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	quiz_brief_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	quiz_brief_overlay.z_index = 200
+	add_child(quiz_brief_overlay)
+
+	_rect(quiz_brief_overlay, Vector2.ZERO, Vector2(1024, 768), Color(0.0, 0.0, 0.0, 0.78))
+	_styled_panel(quiz_brief_overlay, Vector2(154, 72), Vector2(716, 624), Color(0.025, 0.040, 0.072, 0.99), COL_GOLD, 3, 5, true)
+	_plabel_on(quiz_brief_overlay, GameManager.text("Object Field Guide", "天体辨识指南"), Vector2(184, 96), Vector2(656, 34), 24, COL_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	var intro := _plabel_on(
+		quiz_brief_overlay,
+		GameManager.text(
+			"Review the candidates before the identification question. Match shape, color, brightness, and object type to what you observed.",
+			"答题前先复习候选天体。把形状、颜色、亮度和天体类型与刚才的观测结果进行比较。"
+		),
+		Vector2(198, 138), Vector2(628, 46), 12, Color(0.78, 0.86, 0.94), HORIZONTAL_ALIGNMENT_CENTER
+	)
+	intro.max_lines_visible = 3
+
+	for index in range(identify_choice_ids.size()):
+		var id := identify_choice_ids[index]
 		var obj := GameManager.get_object(id)
-		if obj.is_empty():
-			continue
-		# Single line "Moon · 月球" keeps buttons at 32 px in bilingual mode.
-		var button := _pixel_button(GameManager.dict_text(obj, "name").replace("\n", " · "), Vector2(CONTENT_W, 32), 12)
-		button.clip_text = true
-		button.pressed.connect(_identify.bind(id))
-		choices_box.add_child(button)
+		var column := index % 2
+		var row := index / 2
+		var card_pos := Vector2(184 + column * 326, 204 + row * 168)
+		_styled_panel(quiz_brief_overlay, card_pos, Vector2(306, 148), Color(0.045, 0.070, 0.115, 1.0), COL_BLUE_BORDER, 2, 3, false)
+		var name_text := "%s. %s" % [String.chr(65 + index), GameManager.dict_text(obj, "name").replace("\n", " · ")]
+		_plabel_on(quiz_brief_overlay, name_text, card_pos + Vector2(14, 10), Vector2(278, 24), 15, COL_GOLD_LIGHT)
+		var feature := _object_guide_text(obj)
+		var feature_label := _plabel_on(quiz_brief_overlay, feature, card_pos + Vector2(14, 40), Vector2(278, 96), 10, COL_TEXT)
+		feature_label.max_lines_visible = 6
+
+	var start_button := _pixel_button(GameManager.text("Start Identification", "开始识别"), Vector2(250, 42), 14)
+	start_button.position = Vector2(387, 634)
+	start_button.pressed.connect(_dismiss_pre_quiz_guide)
+	quiz_brief_overlay.add_child(start_button)
+	start_button.grab_focus()
+
+
+func _object_guide_text(obj: Dictionary) -> String:
+	var type_text := GameManager.dict_text(obj, "type")
+	var clue := GameManager.dict_text(obj, "short_hint")
+	var learning := GameManager.dict_text(obj, "learning_text")
+	return GameManager.text("Type: %s\n%s\n%s", "类型：%s\n%s\n%s") % [type_text, clue, learning]
+
+
+func _dismiss_pre_quiz_guide() -> void:
+	quiz_brief_dismissed = true
+	if quiz_brief_overlay != null:
+		quiz_brief_overlay.queue_free()
+		quiz_brief_overlay = null
+	_set_identify_choices_visible(true)
 
 
 func _identify(choice_id: String) -> void:
 	# Reset any lingering milestone-green from _announce_step_complete.
 	feedback_label.add_theme_color_override("font_color", Color(0.86, 0.90, 0.88))
+	# Concept brief tied to the identification moment (e.g. chromatic
+	# aberration on L25): explain what the player is looking at, then let
+	# them come back and answer.
+	if GameManager.try_teaching_intercept("before_identify", "telescope"):
+		return
 	if requires_focus and not allow_focus_input:
 		feedback_label.text = GameManager.text(
 			"Install the Focus Knob before trying to identify this target.",
@@ -1510,7 +1835,7 @@ func _add_target_visual(parent: Control, scope_center: Vector2) -> void:
 	base_alpha = _quality_alpha(quality)
 	if observation_mode == "naked_eye":
 		base_alpha = _naked_eye_alpha()
-	elif effect == "dim" and quality in ["Poor", "Failed"]:
+	elif effect == "dim" and quality in ["Poor", "Failed"] and not _city_glow_diffuse_target():
 		base_alpha *= 0.55
 	base_alpha = clampf(base_alpha + _dark_adaptation_alpha_bonus(), 0.0, 1.0)
 
@@ -1587,6 +1912,14 @@ func _sprite_path_for_target(id: String, quality: String, effect: String) -> Str
 			# sprite only distinguishes light shortage (dim) vs sharp art.
 			# Quality verdict only - visual_effect is a relative hint.
 			if quality in ["Poor", "Failed"] and is_focus_acceptable():
+				# City glow destroys contrast, not focus. Using the already-dark
+				# asset here and then applying the city alpha/noise penalties made
+				# a correctly focused galaxy disappear completely. Preserve its
+				# focused contour; the sky lift, grain, tint and alpha still show
+				# how difficult the observation is.
+				var sky_key := str(GameManager.current_environment().get("sky_brightness", "")).to_lower()
+				if _is_diffuse_target() and sky_key == "city":
+					return str(textures["clear"])
 				return str(textures["dim"])
 			return str(textures["clear"])
 		# Quality verdict ONLY - visual_effect is a relative weakest-stat
@@ -1675,7 +2008,7 @@ func _refresh_target_sprite() -> void:
 	base_alpha = _quality_alpha(quality)
 	if observation_mode == "naked_eye":
 		base_alpha = _naked_eye_alpha()
-	elif effect == "dim" and quality in ["Poor", "Failed"]:
+	elif effect == "dim" and quality in ["Poor", "Failed"] and not _city_glow_diffuse_target():
 		base_alpha *= 0.55
 	base_alpha = clampf(base_alpha + _dark_adaptation_alpha_bonus(), 0.0, 1.0)
 	var path := _sprite_path_for_target(id, quality, effect)
@@ -1712,6 +2045,10 @@ func _cloud_alpha_multiplier() -> float:
 	return 1.0 - 0.75 * cond_cloud_atten
 
 
+func _city_glow_diffuse_target() -> bool:
+	return _is_diffuse_target() and str(GameManager.current_environment().get("sky_brightness", "")).to_lower() == "city"
+
+
 func _update_target_visuals() -> void:
 	if main_sprite == null:
 		return
@@ -1728,16 +2065,30 @@ func _update_target_visuals() -> void:
 	var origin := visual_target_center - main_sprite.size * display_scale * 0.5
 	if blur_overlay != null:
 		# Cross-fade: blurry photo dissolves into the sharp art.
-		main_sprite.modulate.a = visual_base_alpha * (1.0 - blur_weight * 0.85) * cloud_mult
+		# At full defocus the sharp base must be completely hidden. Leaving even
+		# a small clear-art alpha made some diffuse targets appear to switch back
+		# to their sharp texture after the focus input stopped.
+		main_sprite.modulate.a = visual_base_alpha * (1.0 - blur_weight) * cloud_mult
 		blur_overlay.modulate.a = visual_base_alpha * blur_weight * cloud_mult
 		blur_overlay.position = visual_target_center - blur_overlay.size * display_scale * 0.5
 	else:
 		main_sprite.modulate.a = visual_base_alpha * clampf(1.0 - visual_focus_error * 1.1, 0.30, 1.0) * cloud_mult
 	main_sprite.position = origin
-	ghost_a.modulate.a = ghost_alpha
-	ghost_a.position = visual_target_center - ghost_a.size * display_scale * 0.5 + Vector2(spread, spread * 0.6)
-	ghost_b.modulate.a = ghost_alpha * 0.8
-	ghost_b.position = visual_target_center - ghost_b.size * display_scale * 0.5 + Vector2(-spread * 0.8, spread * 0.4)
+	if bool(GameManager.current_level().get("chromatic_aberration", false)):
+		# The separation remains visible at best focus. Extended targets need a
+		# wider split than star points so the colored rims read at the same scale.
+		var target_scale := 1.65 if _is_diffuse_target() else (1.30 if not _is_star_target() else 1.0)
+		var chroma_offset := (12.0 + visual_focus_error * 20.0) * target_scale
+		var chroma_alpha := 0.50 if _is_diffuse_target() else 0.68
+		ghost_a.modulate = Color(1.0, 0.12, 0.18, visual_base_alpha * chroma_alpha * cloud_mult)
+		ghost_b.modulate = Color(0.10, 0.36, 1.0, visual_base_alpha * chroma_alpha * cloud_mult)
+		ghost_a.position = visual_target_center - ghost_a.size * display_scale * 0.5 + Vector2(chroma_offset, 0)
+		ghost_b.position = visual_target_center - ghost_b.size * display_scale * 0.5 - Vector2(chroma_offset, 0)
+	else:
+		ghost_a.modulate = Color(1, 1, 1, ghost_alpha)
+		ghost_a.position = visual_target_center - ghost_a.size * display_scale * 0.5 + Vector2(spread, spread * 0.6)
+		ghost_b.modulate = Color(1, 1, 1, ghost_alpha * 0.8)
+		ghost_b.position = visual_target_center - ghost_b.size * display_scale * 0.5 + Vector2(-spread * 0.8, spread * 0.4)
 
 
 func _setup_turbulence_materials() -> void:
@@ -1895,12 +2246,8 @@ func _add_real_sky_stars(parent: Control, scope_center: Vector2, fov_radius: flo
 
 
 func _add_cloud_layer(parent: Control, scope_center: Vector2) -> void:
-	# The eyepiece field is only a few degrees wide - a passing cloud dims
-	# the WHOLE view, it never appears as a cute little wisp next to the
-	# planet (user-verified realism call). The wisps still exist but are
-	# INVISIBLE trackers that drive the live attenuation (wait-for-a-gap
-	# gameplay unchanged); what the player sees is a full-field gray veil
-	# whose density follows cond_cloud_atten.
+	# Moving translucent wisps make the current cloud attenuation legible.
+	# Their overlap is also what lowers the actual observation score.
 	cloud_nodes.clear()
 	cloud_velocities.clear()
 	cloud_strengths.clear()
@@ -1918,7 +2265,9 @@ func _add_cloud_layer(parent: Control, scope_center: Vector2) -> void:
 	cloud_veil.position = scope_center - Vector2(218, 218)
 	cloud_veil.size = Vector2(436, 436)
 	var veil_style := StyleBoxFlat.new()
-	veil_style.bg_color = Color(0.58, 0.61, 0.68)
+	# ABSORPTION, not reflection: at night an eyepiece cloud shows as the
+	# field going DARK (starlight absorbed), never as a bright gray haze.
+	veil_style.bg_color = Color(0.010, 0.014, 0.026)
 	veil_style.set_corner_radius_all(218)
 	cloud_veil.add_theme_stylebox_override("panel", veil_style)
 	cloud_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1933,7 +2282,10 @@ func _add_cloud_layer(parent: Control, scope_center: Vector2) -> void:
 		cloud.texture = texture
 		cloud.size = texture.get_size()
 		cloud.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		cloud.visible = false  # virtual: position/size only feed attenuation
+		cloud.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		# Near-black wisps: clouds OCCLUDE starlight (the target goes patchy
+		# and dark as one drifts across), they do not glow white.
+		cloud.modulate = Color(0.012, 0.016, 0.030, 0.50 + alpha_for_tier * 0.40)
 		# Deterministic per-index seed: same level always drifts the same
 		# way, but the field still fills the scope circle unevenly.
 		var seed_angle: float = fmod(float(i) * 137.5 + effect_seed, 360.0) * PI / 180.0
@@ -2117,6 +2469,19 @@ func _pixel_button(text: String, min_size: Vector2 = Vector2(194, 32), font_size
 	return button
 
 
+func _hud_asset(path: String, rect: Rect2) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.texture = load(path) as Texture2D
+	icon.position = rect.position
+	icon.size = rect.size
+	add_child(icon)
+	return icon
+
+
 func _button_style(fill: Color, border: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
@@ -2152,6 +2517,10 @@ func _rect(parent: Control, pos: Vector2, size: Vector2, color: Color) -> ColorR
 
 
 func _plabel(text: String, pos: Vector2, size: Vector2, font_size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+	return _plabel_on(self, text, pos, size, font_size, color, align)
+
+
+func _plabel_on(parent: Control, text: String, pos: Vector2, size: Vector2, font_size: int, color: Color, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
 	var label := Label.new()
 	# autowrap BEFORE size, otherwise the text's minimum width clamps the
 	# label wider than the panel.
@@ -2163,7 +2532,7 @@ func _plabel(text: String, pos: Vector2, size: Vector2, font_size: int, color: C
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(label)
+	parent.add_child(label)
 	return label
 
 func _on_language_changed() -> void:

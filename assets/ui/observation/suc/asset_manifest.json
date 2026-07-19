@@ -1,0 +1,575 @@
+{
+  "source_directory": "C:\\Users\\tntsg\\Downloads\\tw\\suc",
+  "source_files_unchanged": true,
+  "runtime_filter": "nearest-neighbor",
+  "records": [
+    {
+      "source_name": "altitude_knob.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\altitude_knob.png",
+      "project_original": "assets/ui/observation/suc/source/altitude_knob.png",
+      "sha256": "1e3beca5d7862b141ab4f564dcef20b2c081947531b5be8a19524abc422d1d00",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "live altitude status knob",
+      "runtime_asset": "assets/ui/observation/suc/processed/altitude_knob.png",
+      "crop_rect": [
+        254,
+        83,
+        995,
+        1134
+      ],
+      "cropped_size": [
+        741,
+        1051
+      ],
+      "runtime_size": [
+        113,
+        160
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral background removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "altitude_pointer.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\altitude_pointer.png",
+      "project_original": "assets/ui/observation/suc/source/altitude_pointer.png",
+      "sha256": "e661ede35fd3ea55fe68d0ca9c8ea58c6eebd5806ff9fbdfb88da4faba68d7a5",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "vertical target-offset pointer (rotated at runtime)",
+      "runtime_asset": "assets/ui/observation/suc/processed/altitude_pointer.png",
+      "crop_rect": [
+        549,
+        98,
+        706,
+        1140
+      ],
+      "cropped_size": [
+        157,
+        1042
+      ],
+      "runtime_size": [
+        19,
+        128
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral background removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "altitude_scale_bar.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\altitude_scale_bar.png",
+      "project_original": "assets/ui/observation/suc/source/altitude_scale_bar.png",
+      "sha256": "cd52fee56974f8b37595a36944a838148a78c74fa2a4e743b37d714688313987",
+      "original_size": [
+        1024,
+        1536
+      ],
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        428,
+        109,
+        597,
+        1362
+      ],
+      "usage": "left altitude scale shell",
+      "runtime_asset": "assets/ui/observation/suc/processed/altitude_scale_bar.png",
+      "crop_rect": [
+        428,
+        109,
+        597,
+        1362
+      ],
+      "cropped_size": [
+        169,
+        1253
+      ],
+      "runtime_size": [
+        92,
+        680
+      ],
+      "runtime_has_alpha": true,
+      "processing": "alpha threshold + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "azimuth_knob.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\azimuth_knob.png",
+      "project_original": "assets/ui/observation/suc/source/azimuth_knob.png",
+      "sha256": "cb8778210343da90a1ee51f90b69500f616eda22efe49342920f5fe3cd849b36",
+      "original_size": [
+        1024,
+        1024
+      ],
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        238,
+        243,
+        786,
+        752
+      ],
+      "usage": "live azimuth status knob",
+      "runtime_asset": "assets/ui/observation/suc/processed/azimuth_knob.png",
+      "crop_rect": [
+        238,
+        243,
+        786,
+        752
+      ],
+      "cropped_size": [
+        548,
+        509
+      ],
+      "runtime_size": [
+        160,
+        149
+      ],
+      "runtime_has_alpha": true,
+      "processing": "alpha threshold + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "azimuth_pointer.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\azimuth_pointer.png",
+      "project_original": "assets/ui/observation/suc/source/azimuth_pointer.png",
+      "sha256": "61109010b34e31b4946aadf8cd314c83465bcbeb3ba63a91155aa958b1ce317c",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "horizontal target-offset pointer",
+      "runtime_asset": "assets/ui/observation/suc/processed/azimuth_pointer.png",
+      "crop_rect": [
+        546,
+        145,
+        709,
+        1115
+      ],
+      "cropped_size": [
+        163,
+        970
+      ],
+      "runtime_size": [
+        22,
+        128
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral background removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "azimuth_scale_bar.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\azimuth_scale_bar.png",
+      "project_original": "assets/ui/observation/suc/source/azimuth_scale_bar.png",
+      "sha256": "76c86fbb0beea77ecfed84a0da67329d581dadf45a23c055580588f8665c6bfd",
+      "original_size": [
+        1536,
+        1024
+      ],
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        87,
+        434,
+        1451,
+        578
+      ],
+      "usage": "top azimuth scale shell",
+      "runtime_asset": "assets/ui/observation/suc/processed/azimuth_scale_bar.png",
+      "crop_rect": [
+        87,
+        434,
+        1451,
+        578
+      ],
+      "cropped_size": [
+        1364,
+        144
+      ],
+      "runtime_size": [
+        760,
+        80
+      ],
+      "runtime_has_alpha": true,
+      "processing": "alpha threshold + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "ChatGPT Image 2026年7月18日 21_22_48.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\ChatGPT Image 2026年7月18日 21_22_48.png",
+      "project_original": "assets/ui/observation/suc/source/ChatGPT Image 2026年7月18日 21_22_48.png",
+      "sha256": "56f938ba7cbf6e1ec9f7cf4fd8c92671e9e055ed2cee6a935be37bad56268996",
+      "original_size": [
+        1283,
+        1226
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "layout reference only; contains baked values and text",
+      "runtime_asset": null,
+      "processing": "source archive only",
+      "reason_not_used": "Reference composite contains baked coordinates, values, and instructions."
+    },
+    {
+      "source_name": "focus_knob_ui.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\focus_knob_ui.png",
+      "project_original": "assets/ui/observation/suc/source/focus_knob_ui.png",
+      "sha256": "a10dc22ab8428d3c981bb4ff22736f28bd72268bcaed45d5daa82fde0816e8a0",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "telescope focus status knob",
+      "runtime_asset": "assets/ui/observation/suc/processed/focus_knob_ui.png",
+      "crop_rect": [
+        244,
+        198,
+        1037,
+        981
+      ],
+      "cropped_size": [
+        793,
+        783
+      ],
+      "runtime_size": [
+        192,
+        190
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral background removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "mode_eye_icon.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\mode_eye_icon.png",
+      "project_original": "assets/ui/observation/suc/source/mode_eye_icon.png",
+      "sha256": "403978681c30531a49f1bd17a6049a1c4b7815676c530bd42b5a058cc190ca35",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "Eye mode button icon",
+      "runtime_asset": "assets/ui/observation/suc/processed/mode_eye_icon.png",
+      "crop_rect": [
+        251,
+        392,
+        1010,
+        829
+      ],
+      "cropped_size": [
+        759,
+        437
+      ],
+      "runtime_size": [
+        192,
+        111
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral background removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "mode_finder_icon.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\mode_finder_icon.png",
+      "project_original": "assets/ui/observation/suc/source/mode_finder_icon.png",
+      "sha256": "9a56983ffdb15c9497ffefeb72bb4bcc8ccdad7e441b6f737a22e671aef8c081",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "Finder mode button icon",
+      "runtime_asset": "assets/ui/observation/suc/processed/mode_finder_icon.png",
+      "crop_rect": [
+        245,
+        243,
+        1062,
+        982
+      ],
+      "cropped_size": [
+        817,
+        739
+      ],
+      "runtime_size": [
+        192,
+        174
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral background removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "mode_scope_icon.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\mode_scope_icon.png",
+      "project_original": "assets/ui/observation/suc/source/mode_scope_icon.png",
+      "sha256": "77a2847b6f0d9ec4090c9ff253ae02bcd0cc3aba9ff966f5335c548db6b2b515",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "Scope mode button icon",
+      "runtime_asset": "assets/ui/observation/suc/processed/mode_scope_icon.png",
+      "crop_rect": [
+        131,
+        71,
+        1125,
+        1150
+      ],
+      "cropped_size": [
+        994,
+        1079
+      ],
+      "runtime_size": [
+        177,
+        192
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral background removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "target_approach_ring.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\target_approach_ring.png",
+      "project_original": "assets/ui/observation/suc/source/target_approach_ring.png",
+      "sha256": "ca1e66546a788267cb82b5af352f5ff6527d2b2b2d77ac1c0ea990f483fad36f",
+      "original_size": [
+        1024,
+        1024
+      ],
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        200,
+        188,
+        823,
+        796
+      ],
+      "usage": "near-target cyan ring",
+      "runtime_asset": "assets/ui/observation/suc/processed/target_approach_ring.png",
+      "crop_rect": [
+        200,
+        188,
+        823,
+        796
+      ],
+      "cropped_size": [
+        623,
+        608
+      ],
+      "runtime_size": [
+        256,
+        250
+      ],
+      "runtime_has_alpha": true,
+      "processing": "alpha threshold + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "target_lock_ring.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\target_lock_ring.png",
+      "project_original": "assets/ui/observation/suc/source/target_lock_ring.png",
+      "sha256": "aa10bf719cf157aad5b5d974b3ef2c97deb6fccfe1d58b21799de099e792220e",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "centered/success gold ring",
+      "runtime_asset": "assets/ui/observation/suc/processed/target_lock_ring.png",
+      "crop_rect": [
+        167,
+        110,
+        1085,
+        1032
+      ],
+      "cropped_size": [
+        918,
+        922
+      ],
+      "runtime_size": [
+        255,
+        256
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral background removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "tracking_enabled_icon.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\tracking_enabled_icon.png",
+      "project_original": "assets/ui/observation/suc/source/tracking_enabled_icon.png",
+      "sha256": "534fbaf9392ba81877351a79bff638c2ac362e44c9f7082b057dd1cb100e5df6",
+      "original_size": [
+        1536,
+        1024
+      ],
+      "original_mode": "RGBA",
+      "original_has_alpha": true,
+      "original_alpha_bbox_at_8": [
+        516,
+        236,
+        1021,
+        717
+      ],
+      "usage": "tracking-enabled status icon",
+      "runtime_asset": "assets/ui/observation/suc/processed/tracking_enabled_icon.png",
+      "crop_rect": [
+        516,
+        236,
+        1021,
+        717
+      ],
+      "cropped_size": [
+        505,
+        481
+      ],
+      "runtime_size": [
+        160,
+        152
+      ],
+      "runtime_has_alpha": true,
+      "processing": "alpha threshold + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": "tracking_rate_knob.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\tracking_rate_knob.png",
+      "project_original": "assets/ui/observation/suc/source/tracking_rate_knob.png",
+      "sha256": "b46f2817d13942101e4d6903925645ef7c9bab985eb39cd4455e48d4faeb3f83",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "tracking-rate status knob",
+      "runtime_asset": "assets/ui/observation/suc/processed/tracking_rate_knob.png",
+      "crop_rect": [
+        81,
+        64,
+        1174,
+        1157
+      ],
+      "cropped_size": [
+        1093,
+        1093
+      ],
+      "runtime_size": [
+        192,
+        192
+      ],
+      "runtime_has_alpha": true,
+      "processing": "neutral background removal + transparent trim",
+      "resize_filter": "nearest-neighbor"
+    },
+    {
+      "source_name": null,
+      "derived_from": "azimuth_scale_bar.png",
+      "runtime_asset": "assets/ui/observation/suc/processed/azimuth_scale_shell.png",
+      "runtime_size": [
+        760,
+        80
+      ],
+      "runtime_has_alpha": true,
+      "processing": "baked brass tick removal",
+      "resize_filter": "none",
+      "usage": "fixed top brass shell with baked ticks removed"
+    },
+    {
+      "source_name": null,
+      "derived_from": "altitude_scale_bar.png",
+      "runtime_asset": "assets/ui/observation/suc/processed/altitude_scale_shell.png",
+      "runtime_size": [
+        92,
+        680
+      ],
+      "runtime_has_alpha": true,
+      "processing": "baked brass tick removal",
+      "resize_filter": "none",
+      "usage": "fixed left brass shell with baked ticks removed"
+    },
+    {
+      "source_name": null,
+      "derived_from": "azimuth_scale_bar.png",
+      "runtime_asset": "assets/ui/observation/suc/processed/azimuth_tick_major.png",
+      "runtime_size": [
+        2,
+        9
+      ],
+      "runtime_has_alpha": true,
+      "processing": "pixel crop from supplied art",
+      "resize_filter": "none",
+      "usage": "live scrolling top major tick cropped from supplied art"
+    },
+    {
+      "source_name": null,
+      "derived_from": "azimuth_scale_bar.png",
+      "runtime_asset": "assets/ui/observation/suc/processed/azimuth_tick_minor.png",
+      "runtime_size": [
+        1,
+        6
+      ],
+      "runtime_has_alpha": true,
+      "processing": "pixel crop from supplied art",
+      "resize_filter": "none",
+      "usage": "live scrolling top minor tick cropped from supplied art"
+    },
+    {
+      "source_name": null,
+      "derived_from": "altitude_scale_bar.png",
+      "runtime_asset": "assets/ui/observation/suc/processed/altitude_tick_major.png",
+      "runtime_size": [
+        9,
+        2
+      ],
+      "runtime_has_alpha": true,
+      "processing": "pixel crop from supplied art",
+      "resize_filter": "none",
+      "usage": "live scrolling left major tick cropped from supplied art"
+    },
+    {
+      "source_name": null,
+      "derived_from": "altitude_scale_bar.png",
+      "runtime_asset": "assets/ui/observation/suc/processed/altitude_tick_minor.png",
+      "runtime_size": [
+        6,
+        1
+      ],
+      "runtime_has_alpha": true,
+      "processing": "pixel crop from supplied art",
+      "resize_filter": "none",
+      "usage": "live scrolling left minor tick cropped from supplied art"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "generated_with": "built-in image generation, chroma-key removal",
+  "temporary": true,
+  "atlas": "res://assets/telescope_parts/placeholders/advanced_family_atlas_placeholder.png",
+  "families": [
+    {
+      "family": "dobsonian",
+      "levels": [28, 29, 30],
+      "atlas_region": [0, 0, 626, 630],
+      "replacement_assets": ["dobsonian_tube.png", "dobsonian_rocker_box.png", "dobsonian_primary_mirror.png", "dobsonian_focuser.png", "dobsonian_30mm_eyepiece.png"]
+    },
+    {
+      "family": "cassegrain",
+      "levels": [31, 32, 33],
+      "atlas_region": [628, 0, 626, 630],
+      "replacement_assets": ["cassegrain_tube.png", "cassegrain_fork_mount.png", "cassegrain_primary.png", "cassegrain_convex_secondary.png", "cassegrain_rear_focuser.png"]
+    },
+    {
+      "family": "gregorian",
+      "levels": [34, 35, 36],
+      "atlas_region": [0, 632, 370, 622],
+      "replacement_assets": ["gregorian_tube.png", "gregorian_equatorial_mount.png", "gregorian_primary.png", "gregorian_concave_secondary.png", "gregorian_fine_focuser.png"]
+    },
+    {
+      "family": "space_segmented",
+      "levels": [37, 38, 39],
+      "atlas_region": [372, 632, 380, 622],
+      "replacement_assets": ["segmented_primary_array.png", "space_secondary.png", "infrared_instrument.png", "sunshield.png"]
+    },
+    {
+      "family": "fast_radio",
+      "levels": [40, 41, 42],
+      "atlas_region": [754, 632, 500, 622],
+      "replacement_assets": ["fast_active_dish.png", "fast_feed_cabin.png", "fast_signal_processor.png"]
+    }
+  ],
+  "art_direction": "transparent pixel-art PNGs, navy metal and brass for ground instruments, gold hex segments for the space mirror, no text, nearest-neighbor import, 512x384 rig and 128x128 component cards"
+}

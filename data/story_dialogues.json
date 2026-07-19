@@ -3,26 +3,56 @@
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Hey, you made it! Welcome to the Astronomy Club.",
-      "text_zh": "你来了！欢迎加入天文俱乐部。"
+      "text_en": "You made it! Welcome to the Astronomy Club. Let me show you around our little observatory.",
+      "text_zh": "你来了！欢迎加入天文俱乐部。让我带你认识一下我们的小观测基地。"
     },
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Before we touch any telescope, we start with the oldest observing tool we have.",
-      "text_zh": "在碰望远镜之前，我们先用最古老的观测工具。"
+      "text_en": "First, where we are: a ridge in the San Gabriel foothills, 34°N 118°W, 1100 m up - a suburban site, Bortle 5. Los Angeles glows 32 km to the southwest, which is why we face our telescopes north and east.",
+      "text_zh": "先说我们在哪：圣加布里埃尔山麓的一道山脊上，北纬 34°、西经 118°，海拔 1100 米——郊区观测点，光污染 Bortle 5 级。洛杉矶在西南 32 公里外发着光，所以我们的望远镜大多朝北和朝东看。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "This is the observation room. The Mission Board on the wall lists tonight's task — check it whenever you feel lost.",
+      "text_zh": "这里是观测室。墙上的任务公告板写着今晚的任务——迷路的时候随时去看它。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The Parts Cabinet stores every lens, mirror and mount we own. The Assembly Table next to it is where you build telescopes from those parts.",
+      "text_zh": "零件柜存放我们所有的透镜、镜子和支架。旁边的组装台就是你把零件装成望远镜的地方。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The Observation Pad in the middle is where we actually look at the sky. The Club Logbook keeps a record of every observation you make.",
+      "text_zh": "中间的观测台是我们真正看天空的地方。俱乐部日志会保存你的每一次观测记录。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "That terminal on the right is the Stats Terminal — it computes your telescope's magnification, light gathering and field of view from the parts you installed.",
+      "text_zh": "右边那台是数据终端——它会根据你安装的零件，计算望远镜的倍率、集光力和视场。"
     },
     {
       "speaker": "You",
-      "portrait": "player",
-      "text_en": "Our eyes?",
-      "text_zh": "我们的眼睛？"
+      "portrait": "you",
+      "text_en": "So where do we start?",
+      "text_zh": "那我们从哪里开始？"
     },
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Exactly. Tonight you'll learn how your eyes see the sky - and why astronomers build tools to see more.",
-      "text_zh": "没错。今晚你会先了解眼睛如何看天空，也会明白为什么天文学家需要制造更多观测工具。"
+      "text_en": "Before touching any telescope, we start with the oldest instrument of all: your own eyes.",
+      "text_zh": "在碰任何望远镜之前，我们先用最古老的观测工具：你自己的眼睛。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Tonight's goal: walk to the central Observation Pad and find the Moon with your naked eyes. I'll be right here.",
+      "text_zh": "今晚的目标：走到中央观测台，用肉眼找到月亮。我就在这儿。"
     }
   ],
   "level_1_before": [
@@ -229,18 +259,41 @@
       "text_zh": "宽视野用来找目标，窄视野用来看细节。"
     }
   ],
-  "level_7_before_assembly": [
+  "level_26_before_assembly": [
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Lenses are not the only way to gather light.",
-      "text_zh": "透镜不是收集光线的唯一方法。"
+      "text_en": "When we pushed the refractor toward very distant, high-contrast targets, you may have noticed colored fringes. A lens bends blue and red light by slightly different amounts, so they do not meet at exactly the same focus.",
+      "text_zh": "当我们用折射镜观测非常遥远、反差强烈的目标时，你可能注意到了彩色边缘。透镜对蓝光和红光的折射程度略有不同，因此它们不能在完全相同的位置聚焦。",
+      "image": "res://assets/learning_diagrams/refractor_light_path.png"
     },
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Some telescopes use mirrors. Tonight, you'll meet the Newtonian reflector.",
-      "text_zh": "有些望远镜使用镜子。今晚，你会认识牛顿反射望远镜。"
+      "text_en": "A Newtonian reflector replaces the objective lens with a curved primary mirror. Reflection sends all visible colors along the same geometric path, removing lens chromatic aberration.",
+      "text_zh": "牛顿反射镜用弯曲主镜代替物镜。反射让各种可见光沿同一条几何光路前进，因此不会产生透镜色差。",
+      "image": "res://assets/learning_diagrams/newtonian_light_path.png"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The primary mirror gathers and focuses the light. A small diagonal secondary redirects it to the side focuser and eyepiece. Study that path, then build it yourself.",
+      "text_zh": "主镜负责集光并聚焦，小型斜副镜再把光转向侧置调焦座和目镜。先看懂这条光路，然后亲手把它组装出来。",
+      "image": "res://assets/learning_diagrams/newtonian_light_path.png"
+    }
+  ],
+  "level_7_before_assembly": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The nebula you are hunting tonight is faint - and our 60mm lens is running out of light.",
+      "text_zh": "今晚要找的星云很暗——我们的 60mm 物镜快收集不到足够的光了。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "So we upgrade the front of the telescope: a 100mm objective gathers nearly three times the light. Equip it, rebuild, and aim for Orion.",
+      "text_zh": "所以我们升级望远镜的前端：100mm 物镜能收集接近三倍的光。装备它、重新组装，然后瞄准猎户座。"
     }
   ],
   "level_7_after": [
@@ -941,47 +994,28 @@
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Jupiter, fourth time - but tonight you don't touch the keys.",
-      "text_zh": "第四次看木星——但今晚你的手可以离开按键。"
+      "text_en": "Tonight the tracking mount does the holding - which frees your eyes for something I want you to see on Vega.",
+      "text_zh": "今晚由追踪支架负责稳住目标——这样你的眼睛就腾出来了，我要你在织女星上看一样东西。"
     },
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Tired arms? This mount turns at exactly the speed of the sky.",
-      "text_zh": "手酸了吧？这个支架会以和天空完全相同的速度转动。",
-      "image": "res://assets/learning_diagrams/tracking_mount_idea.png"
-    },
-    {
-      "speaker": "Maya",
-      "portrait": "maya",
-      "text_en": "A little thin cloud may drift past tonight too, same as before - don't let it distract you from the real lesson: dialing in the tracking rate.",
-      "text_zh": "今晚可能还会有薄云飘过，和之前一样——别让它分散你的注意力，今晚真正要学的是调准追踪速率。"
-    },
-    {
-      "speaker": "Maya",
-      "portrait": "maya",
-      "text_en": "Dial the tracking rate close to 1x so the mount cancels the drift for you.",
-      "text_zh": "把追踪速率调到接近 1 倍，让支架替你抵消漂移。"
+      "text_en": "Focus as carefully as you can, then stare at the star's edge. If you notice anything strange, it is NOT your mistake. Remember it.",
+      "text_zh": "尽你所能仔细调焦，然后盯住星的边缘。如果看到什么奇怪的东西，那不是你的失误。记住它。"
     }
   ],
   "level_23_after": [
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Now the machine fights the spin, and you just watch.",
-      "text_zh": "现在由机器对抗自转，你只管看。"
+      "text_en": "Red on one side, blue on the other - and no amount of focusing removed it. That fringe is chromatic aberration, born inside the lens itself.",
+      "text_zh": "一边红、一边蓝——再怎么调焦都消不掉。那圈彩边叫色差，它诞生在透镜内部。"
     },
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Get the rate wrong and the mount either lags behind the sky or overtakes it - both still drift, just slower. 1x is the one true answer.",
-      "text_zh": "速率调错了，支架要么跟不上天空，要么反而超过它——两种情况仍然会漂移，只是慢一点。1 倍才是唯一正确答案。"
-    },
-    {
-      "speaker": "Maya",
-      "portrait": "maya",
-      "text_en": "This is the last piece before tonight's finale: aperture, dark sky, navigation, and now tracking. All four in your toolbox.",
-      "text_zh": "这是通往今晚压轴任务的最后一块拼图：口径、暗空、导航，现在又加上追踪。四样都在你的工具箱里了。"
+      "text_en": "Finish your training first. But keep tonight's observation in your logbook - we will come back to it.",
+      "text_zh": "先完成你的训练。但把今晚的记录留在日志里——我们还会回到这个问题。"
     }
   ],
   "level_24_before": [
@@ -1040,6 +1074,12 @@
       "portrait": "maya",
       "text_en": "The club is proud of you, Senior Observer - and the sky doesn't end here. Keep looking up.",
       "text_zh": "俱乐部为你骄傲，高级观测员——但天空的故事不会到此为止。继续抬头看吧。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "One more thing, Senior Observer. We have met a problem the refractor cannot easily solve - and there may be another optical answer in the club storeroom.",
+      "text_zh": "还有一件事，高级观测员。我们遇到了折射镜无法轻易解决的问题——也许俱乐部储藏室里，还有另一种光学方案。"
     }
   ],
   "board_notes": {
@@ -1138,6 +1178,1546 @@
     "24": {
       "en": "The final watch. Hold Andromeda steady and finish the whole path.",
       "zh": "最后一次观测。稳住仙女座，走完整条路。"
+    },
+    "25": {
+      "en": "Repeat the Vega observation deliberately: focus, refocus, swap nothing - and confirm the fringe never leaves. ",
+      "zh": "有意重复织女星观测：调焦、再调焦、什么都不换——确认彩边永远不会消失。这是物理，不是失误。"
+    },
+    "26": {
+      "en": "Build the Newtonian: external supports on the main blueprint, mirrors inside the Optical Tube Assembly, then c",
+      "zh": "组装牛顿镜：主蓝图装外部支撑，镜筒组件里装镜面，完成准直后对准月球。"
+    },
+    "27": {
+      "en": "Same star as L23 and L25 - now through mirrors. Compare what the edge of Vega looks like tonight.",
+      "zh": "和 L23、L25 同一颗星——这次经过的是镜面。比较今晚织女星的边缘。"
+    },
+    "28": {
+      "en": "A Newtonian focuses by sliding the eyepiece on the side focuser. Find Jupiter and practice the different feel.",
+      "zh": "牛顿镜靠侧置调焦座移动目镜来合焦。找到木星，练习这种不同的手感。"
+    },
+    "29": {
+      "en": "A bright star is the harshest collimation test. Align the optical axis carefully before observing Sirius.",
+      "zh": "亮星是最严苛的准直考题。观测天狼星前，请把光轴校准到位。"
+    },
+    "30": {
+      "en": "Point the big mirror at the Orion Nebula and see what extra light-gathering really buys.",
+      "zh": "把大主镜对准猎户座大星云，看看更强的集光能力究竟带来什么。"
+    },
+    "31": {
+      "en": "Andromeda through the reflector: let your eyes adapt and use averted vision on the faint halo.",
+      "zh": "用反射镜看仙女座：让眼睛适应黑暗，用侧视法捕捉暗淡的光晕。"
+    },
+    "32": {
+      "en": "Earth still turns. Keep Jupiter centered - by hand or with the tracking rate - through the reflector.",
+      "zh": "地球仍在自转。通过反射镜让木星保持居中——用手修正,或调好追踪速率。"
+    },
+    "33": {
+      "en": "Mars sits low tonight with poor seeing. A big mirror does not cancel the atmosphere - pick your magnification ",
+      "zh": "今晚火星很低，视宁度糟糕。大口径抵消不了大气——明智地选择倍率。"
+    },
+    "34": {
+      "en": "Betelgeuse through mirrors: a deep orange-red giant with NO false fringe. A refractor would paint its edge blu",
+      "zh": "用镜面看参宿四：一颗深橙红色的巨星，没有任何虚假彩边。折射镜会给它的边缘涂上红蓝——你的牛顿镜展示的是恒星自己的颜色。"
+    },
+    "35": {
+      "en": "Final Newtonian exam: collimated optics, steady centering, a clean deep-sky observation. Then Maya opens the n",
+      "zh": "牛顿镜结业考：准直到位、稳定居中、一次干净的深空观测。然后 Maya 会打开下一个板条箱。"
+    },
+    "36": {
+      "en": "A Dobsonian is a Newtonian on the simplest possible base. Build it - count how few parts a rocker box needs - ",
+      "zh": "多布森就是放在最简底座上的牛顿镜。把它装起来——数数摇箱需要多少零件——然后用月球开光。"
+    },
+    "37": {
+      "en": "No motors, no tracking. Nudge the tube in altitude and azimuth to keep Jupiter centered.",
+      "zh": "没有马达，没有追踪。用手在高度和方位上轻推镜筒，让木星保持居中。"
+    },
+    "38": {
+      "en": "Longer hold, same hands. Find the push-wait-push rhythm every Dobsonian owner knows.",
+      "zh": "更长的保持时间，同一双手。找到每个多布森用户都懂的\"推-等-推\"节奏。"
+    },
+    "39": {
+      "en": "Observers call big Dobsonians \"light buckets\". Point yours at the Orion Nebula and see why.",
+      "zh": "观测者把大多布森叫作\"光之水桶\"。把它对准猎户座大星云，看看为什么。"
+    },
+    "40": {
+      "en": "The 30mm eyepiece gives a wide, bright field. Deep sky rarely wants maximum power - frame the whole galaxy ins",
+      "zh": "30mm 目镜给出又宽又亮的视场。深空很少需要最高倍率——把整个星系框进来。"
+    },
+    "41": {
+      "en": "Clouds drift through tonight. Watch the gaps, observe when the sky opens, and do not fight the weather.",
+      "zh": "今晚有云飘过。盯住云缝，天空放开时抓紧观测，不要和天气较劲。"
+    },
+    "42": {
+      "en": "Mars hugs the horizon. Apply the seeing lesson: drop the power, wait for still moments.",
+      "zh": "火星贴着地平线。用上视宁度那一课：降低倍率，等待大气平静的瞬间。"
+    },
+    "43": {
+      "en": "Focus, track by hand, and pick the right eyepiece - all in one session on Jupiter.",
+      "zh": "调焦、手动追踪、选对目镜——在一次木星观测里全部用上。"
+    },
+    "44": {
+      "en": "A long, steady hold on Andromeda with nothing but your fingertips. The hardest hands-on test in the club.",
+      "zh": "只靠指尖，对仙女座进行一次漫长而稳定的凝视。俱乐部里最难的手动考验。"
+    },
+    "45": {
+      "en": "Big mirror, simple box, your hands - prove you can drive it. Then Maya explains why some tubes fold their ligh",
+      "zh": "大主镜、简单摇箱、你的双手——证明你能驾驭它。然后 Maya 会解释为什么有些镜筒要折叠光路。"
+    },
+    "46": {
+      "en": "Build the Cassegrain: a long telescope hidden in a short tube. First light on the Moon through the rear focuse",
+      "zh": "组装卡塞格林：藏在短镜筒里的长望远镜。通过后置调焦座，用月球开光。"
+    },
+    "47": {
+      "en": "Long focal length means high magnification. Jupiter looks bigger than ever - if you can find it in the narrow ",
+      "zh": "长焦距意味着高倍率。木星比以往任何时候都大——前提是你能在窄视场里找到它。"
+    },
+    "48": {
+      "en": "A narrow field punishes sloppy aiming. Use the finder scope discipline you learned long ago.",
+      "zh": "窄视场惩罚粗糙的瞄准。用上你很久以前学会的寻星镜纪律。"
+    },
+    "49": {
+      "en": "Mars is tiny. The folded path gives you the scale - the atmosphere decides if you keep it.",
+      "zh": "火星很小。折叠光路给了你放大倍数——大气决定你能不能保住它。"
+    },
+    "50": {
+      "en": "High power amplifies every ripple of air. Wait for the still moments; drop power if they never come.",
+      "zh": "高倍率会放大每一丝大气抖动。等待平静的瞬间；等不到就降低倍率。"
+    },
+    "51": {
+      "en": "At high magnification the sky drifts FAST across the narrow field. Keep Mars centered.",
+      "zh": "高倍率下，天空在窄视场里漂移得飞快。让火星保持居中。"
+    },
+    "52": {
+      "en": "Turn the folded focal length on the Moon: single craters fill the eyepiece.",
+      "zh": "把折叠焦距对准月球：单个环形山就能填满目镜。"
+    },
+    "53": {
+      "en": "Same Jupiter, two mirrors: the Newtonian showed a wide bright disk, the Cassegrain a large detailed one. Neith",
+      "zh": "同一颗木星，两种镜子：牛顿镜给出宽而亮的圆面，卡塞格林给出大而细的圆面。没有谁全面更好。"
+    },
+    "54": {
+      "en": "Clouds cross a narrow field quickly and completely. Time your observation between them.",
+      "zh": "云穿过窄视场又快又彻底。在云缝之间安排你的观测。"
+    },
+    "55": {
+      "en": "Master the folded path under real conditions. Then Maya brings out an even stranger fold - centuries older.",
+      "zh": "在真实条件下驾驭折叠光路。然后 Maya 拿出一种更奇特的折叠——它还要古老几个世纪。"
+    },
+    "56": {
+      "en": "Build the Gregorian: light passes through a real focus BEFORE the concave secondary. Alignment must be stricte",
+      "zh": "组装格里高利镜：光线先穿过一个真实焦点，再到达凹面副镜。对准要求比以往任何一台都严格。"
+    },
+    "57": {
+      "en": "You observed Sirius with the refractor long ago. Feel where the Gregorian snaps into focus and compare.",
+      "zh": "很久以前你用折射镜看过天狼星。感受格里高利镜\"咔哒\"合焦的位置，并做比较。"
+    },
+    "58": {
+      "en": "The extra focus makes the image upright and high-contrast. Vega, once more, without any fringe.",
+      "zh": "多出的焦点让成像正立且高对比。再看一次织女星——依然没有任何彩边。"
+    },
+    "59": {
+      "en": "Small target, strict optics. Every arcsecond of alignment error shows on Mars.",
+      "zh": "小目标，严苛光学。每一角秒的对准误差都会显现在火星上。"
+    },
+    "60": {
+      "en": "Study Jupiter's cloud bands: the Gregorian's clean contrast is its quiet strength.",
+      "zh": "研究木星云带：干净的对比度是格里高利镜低调的强项。"
+    },
+    "61": {
+      "en": "Can the two-mirror fold handle a faint nebula? Find out on Orion.",
+      "zh": "双镜折叠能应付暗弱星云吗？在猎户座上找到答案。"
+    },
+    "62": {
+      "en": "Drift correction through a folded path: keep Sirius centered.",
+      "zh": "在折叠光路中做漂移修正：让天狼星保持居中。"
+    },
+    "63": {
+      "en": "Poor seeing on a strict instrument: learn which errors are yours and which are the sky's.",
+      "zh": "严苛仪器遇上糟糕视宁度：分清哪些误差是你的，哪些是天空的。"
+    },
+    "64": {
+      "en": "Newtonian, Cassegrain, Gregorian - each fold has a reason. Prove you can explain all three on golden Arcturus.",
+      "zh": "牛顿、卡塞格林、格里高利——每种折叠都有理由。用金色的大角星证明你能说清这三者。"
+    },
+    "65": {
+      "en": "The last ground telescope exam. Every mirror you own still fights one enemy: the atmosphere itself.",
+      "zh": "最后一场地面望远镜考试。你拥有的每一面镜子仍在对抗同一个敌人：大气本身。"
+    },
+    "66": {
+      "en": "Assemble the segmented space telescope: 18 mirror segments, an infrared instrument package, and a tennis-court",
+      "zh": "组装分段式空间望远镜：18 块镜片、红外仪器包，和一面网球场大小的遮阳板。"
+    },
+    "67": {
+      "en": "Infrared is not visible light. Point at Orion and ask a different question: not \"what shines\" but \"what is war",
+      "zh": "红外不是可见光。对准猎户座，问一个不同的问题：不是\"什么在发光\"，而是\"什么是温热的\"。"
+    },
+    "68": {
+      "en": "Dust blocks visible light but not infrared. Find the newborn stars hiding inside the nebula.",
+      "zh": "尘埃挡住可见光，却挡不住红外。找到藏在星云内部的新生恒星。"
+    },
+    "69": {
+      "en": "A warm infrared telescope observes only itself. Manage the sunshield so the instruments stay cold.",
+      "zh": "发热的红外望远镜只能观测它自己。用好遮阳板，让仪器保持低温。"
+    },
+    "70": {
+      "en": "Point the telescope AND keep Sun, Earth and Moon behind the shield - both at once.",
+      "zh": "既要指向目标，又要让太阳、地球和月亮全躲在遮阳板后——两者必须同时成立。"
+    },
+    "71": {
+      "en": "Andromeda in infrared shows warm dust lanes invisible from the ground. Map them.",
+      "zh": "红外下的仙女座露出地面看不见的温暖尘埃带。把它们描绘出来。"
+    },
+    "72": {
+      "en": "Compare tonight's Orion with your Newtonian records: what did the atmosphere steal from you?",
+      "zh": "把今晚的猎户座和你的牛顿镜记录对比：大气到底偷走了什么？"
+    },
+    "73": {
+      "en": "Betelgeuse is cool and red - a natural infrared beacon. Measure the giant.",
+      "zh": "参宿四又冷又红——天生的红外灯塔。测量这颗巨星。"
+    },
+    "74": {
+      "en": "Deploy, cool, point, observe: run a complete infrared session by yourself.",
+      "zh": "展开、降温、指向、观测：独立完成一次完整的红外观测。"
+    },
+    "75": {
+      "en": "You now observe light no eye can see. There is radiation even \"colder\" than infrared - and for that, we have a",
+      "zh": "你已能观测眼睛看不见的光。还有比红外\"更冷\"的辐射——为了它，我们在贵州有一个巨人。"
+    },
+    "76": {
+      "en": "Set up FAST: active dish, suspended feed cabin, signal processor. There is no eyepiece - there never will be.",
+      "zh": "搭建 FAST：主动反射面、悬吊馈源舱、信号处理器。这里没有目镜——永远不会有。"
+    },
+    "77": {
+      "en": "Sweep the frequency band until the pulsar's repeating pulse rises out of the noise.",
+      "zh": "扫过频段，直到脉冲星重复的脉冲从噪声中浮现。"
+    },
+    "78": {
+      "en": "Read the trace and measure the period: 0.714 seconds per revolution of a dead star.",
+      "zh": "读取轨迹并测量周期：一颗死亡恒星每 0.714 秒自转一圈。"
+    },
+    "79": {
+      "en": "A radio telescope points with signal strength. Move the feed until the pulse peaks - that is your pulsar.",
+      "zh": "射电望远镜靠信号强度指向。移动馈源直到脉冲最强——那就是你的脉冲星。"
+    },
+    "80": {
+      "en": "Tonight the pulse barely clears the noise floor. Tune finer, read more carefully.",
+      "zh": "今晚脉冲勉强高出噪声底。调得更细，读得更仔细。"
+    },
+    "81": {
+      "en": "Longer listening makes faint pulses add up. Radio astronomy rewards patience with certainty.",
+      "zh": "听得更久，微弱脉冲就会累加起来。射电天文用确定性回报耐心。"
+    },
+    "82": {
+      "en": "The feed cabin hangs from cables above the dish. Practice fine positioning against a moving sky.",
+      "zh": "馈源舱靠缆索悬在反射面上方。练习在移动的天空下做精细定位。"
+    },
+    "83": {
+      "en": "Interference is radio astronomy's light pollution. Learn to tell the pulsar from human noise.",
+      "zh": "干扰就是射电天文的光污染。学会把脉冲星和人造噪声区分开。"
+    },
+    "84": {
+      "en": "Tune, localize, measure, record - one complete radio observation, alone.",
+      "zh": "调谐、定位、测量、记录——独立完成一次完整的射电观测。"
+    },
+    "85": {
+      "en": "Data IS the observation - you have proven it. One question remains: what happens when every window opens at on",
+      "zh": "数据本身就是观测——你已经证明了这一点。只剩一个问题：当所有窗口同时打开，会发生什么？"
+    },
+    "86": {
+      "en": "One nebula, three observatories. Decide which instrument answers tonight's question.",
+      "zh": "一片星云，三座观测台。决定哪台仪器能回答今晚的问题。"
+    },
+    "87": {
+      "en": "Observe Orion in visible light and infrared, and note what each reveals that the other hides.",
+      "zh": "分别用可见光和红外观测猎户座，记下彼此揭示与隐藏的东西。"
+    },
+    "88": {
+      "en": "Stars in visible light, dust in infrared, cold gas in radio: three portraits of one galaxy.",
+      "zh": "可见光里的恒星、红外里的尘埃、射电里的冷气体：同一个星系的三幅肖像。"
+    },
+    "89": {
+      "en": "Lay the three records side by side. What claim does EVERY window support?",
+      "zh": "把三份记录并排放好。哪个结论是所有窗口都支持的？"
+    },
+    "90": {
+      "en": "No instructions this time. Pick the question, pick the instrument, run the observation.",
+      "zh": "这次没有指令。自己提问题、自己选仪器、自己完成观测。"
+    },
+    "91": {
+      "en": "Everything you have learned, in one report: one galaxy, every window of light, one supported conclusion.",
+      "zh": "把你学到的一切写进一份报告：一个星系、所有的光之窗口、一个被证据支持的结论。"
     }
-  }
+  },
+  "level_25_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Tonight's target is Vega — a brilliant blue-white star. Your refractor skills are solid now, so I want you to do something new: look CLOSELY at the star's edge.",
+      "text_zh": "今晚的目标是织女星——一颗明亮的蓝白色恒星。你的折射镜已经用得很熟练了，所以这次我要你做一件新的事：仔细看恒星的边缘。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Focus as carefully as you can. If you see anything strange around the star, don't assume you made a mistake. Just observe it, and remember it.",
+      "text_zh": "尽你所能仔细调焦。如果你在恒星周围看到什么奇怪的东西，不要以为是自己操作错了。观察它，记住它。"
+    }
+  ],
+  "level_25_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You saw it: a red fringe on one side, blue on the other. That is chromatic aberration — and it is NOT your fault.",
+      "text_zh": "你看到了：一侧偏红、一侧偏蓝的彩色边缘。这叫色差——而且这不是你的错。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A glass lens bends blue light more strongly than red light, so they can never land on exactly the same focal point. No eyepiece swap or focusing can fully fix it.",
+      "text_zh": "玻璃透镜对蓝光的偏折比红光更强，所以它们永远无法落在完全相同的焦点上。换目镜、再调焦都不能彻底解决。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "We can keep using the refractor — but if we want a cleaner image, we need a telescope that collects light WITHOUT passing it through a big lens. A reflector.",
+      "text_zh": "我们可以继续用折射镜——但如果想要更干净的图像，就需要一台不让光穿过大透镜的望远镜。反射式望远镜。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Check the Mission Board, then meet me at the Assembly Table. The Newtonian parts are already in the cabinet.",
+      "text_zh": "先看看任务板，然后到组装台找我。牛顿镜的零件已经放进零件柜了。"
+    }
+  ],
+  "first_tube_subassembly": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "One more thing before you touch that tube: the Optical Tube Assembly is a COMPONENT WITH AN INTERIOR. Click it to open the tube blueprint and install the mirrors inside.",
+      "text_zh": "碰那个镜筒之前再说一件事：光学镜筒是一个\"有内部结构的组件\"。点击它就能打开镜筒蓝图，在里面安装镜片。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Save the tube when it's complete and you'll come right back to this bench, with the tube shown as installed. You can reopen it anytime to check your work.",
+      "text_zh": "装完之后保存镜筒，你会直接回到这个装配台，镜筒会显示为已安装。之后你随时可以再点开它检查。"
+    }
+  ],
+  "first_collimation": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Before a reflector can observe, its mirrors must agree on ONE optical axis. That's collimation: tilting the primary and secondary until light lands dead center.",
+      "text_zh": "反射镜观测之前，它的几面镜子必须对齐在同一条光轴上。这就是准直：微调主镜和副镜，直到光线正中靶心。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A perfectly built Newtonian with bad collimation gives worse images than a cheap refractor. Take your time in there.",
+      "text_zh": "一台装配完美但准直糟糕的牛顿镜，成像还不如便宜的折射镜。进去以后慢慢来。"
+    }
+  ],
+  "level_27_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Same star, same sky — but no colored fringe this time. Mirrors reflect every color along the same path.",
+      "text_zh": "同一颗星，同一片天空——但这次没有彩色边缘了。镜面把所有颜色的光沿同一条路径反射。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "But notice what it cost you: you had to build a tube full of precision mirrors and then collimate them. A reflector is not better at everything — it trades lens color error for alignment work.",
+      "text_zh": "但也注意它的代价：你得装好一整筒精密镜片，还要给它们准直。反射镜不是所有方面都更好——它用准直工作换掉了透镜的色差。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Next, let's see what this mirror is REALLY good at: faint, deep-sky targets.",
+      "text_zh": "接下来，看看这面镜子真正擅长什么：暗弱的深空目标。"
+    }
+  ],
+  "level_30_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The Orion Nebula — a stellar nursery. With the refractor it was a faint smudge. Your Newtonian's mirror gathers far more light.",
+      "text_zh": "猎户座大星云——一片恒星育婴室。用折射镜看它只是一团淡斑。你的牛顿镜主镜能收集多得多的光。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Aperture is everything for deep sky: double the mirror diameter and you collect four times the light. Keep the nebula centered and let your eyes adapt.",
+      "text_zh": "对深空来说，口径就是一切：主镜直径翻倍，集光量就是四倍。把星云保持在视野中央，让眼睛慢慢适应黑暗。"
+    }
+  ],
+  "level_30_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Look at that structure — the wings, the bright core. THIS is why we built the reflector.",
+      "text_zh": "看看那些结构——延展的云翼、明亮的核心。这就是我们组装反射镜的原因。"
+    }
+  ],
+  "level_26_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "First light through mirrors - and the Moon never looked cleaner. Log it: this is what a collimated reflector gives you.",
+      "text_zh": "镜面的第一束光——月球从未这么干净过。记下来：这就是一台准直到位的反射镜给你的回报。"
+    }
+  ],
+  "level_27_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Back to Vega - the same star that betrayed the lens in L23. Look at its edge through mirrors this time.",
+      "text_zh": "回到织女星——就是在 L23 出卖了透镜的那颗星。这次透过镜面看它的边缘。"
+    }
+  ],
+  "level_28_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Why Jupiter tonight? Because focusing practice needs a target that PUNISHES bad focus - and Jupiter's big banded disk shows every miss instantly.",
+      "text_zh": "为什么今晚是木星？因为调焦练习需要一个会惩罚失误的目标——木星又大又满是条纹的圆面，会立刻暴露每一次没对准。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A side focuser feels different: you slide the eyepiece, not the objective. Find the snap point on Jupiter.",
+      "text_zh": "侧置调焦座手感不同：你移动的是目镜，不是物镜。在木星上找到合焦点。"
+    }
+  ],
+  "level_28_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Same physics, new hands. Every telescope family will re-teach you focusing in its own accent.",
+      "text_zh": "同样的物理，不同的手感。每个望远镜家族都会用自己的口音重新教你调焦。"
+    }
+  ],
+  "level_29_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Tonight I loosened your collimation on purpose. Fix the optical axis before Sirius - a bright star exposes every misalignment.",
+      "text_zh": "今晚我故意松动了你的准直。观测天狼星前把光轴校好——亮星会暴露每一点失准。"
+    }
+  ],
+  "level_29_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A perfectly built Newtonian with bad collimation is worse than a cheap refractor. Now you know it in your fingers, not just your notes.",
+      "text_zh": "装配完美但准直糟糕的牛顿镜，还不如便宜的折射镜。现在这句话长在你手上了，不只在笔记里。"
+    }
+  ],
+  "level_31_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Andromeda again - but tonight your mirror is bigger than any lens we own. Let your eyes adapt and use averted vision.",
+      "text_zh": "又是仙女座——但今晚你的主镜比我们任何一块透镜都大。让眼睛适应黑暗，用侧视法。"
+    }
+  ],
+  "level_31_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The halo reached further than ever. Aperture plus dark eyes - that is the whole recipe for deep sky.",
+      "text_zh": "光晕比以往延伸得都远。口径加上适应黑暗的眼睛——这就是深空观测的全部配方。"
+    }
+  ],
+  "level_32_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The Earth has not stopped turning just because your telescope got better. Keep Jupiter centered.",
+      "text_zh": "地球不会因为你的望远镜变好了就停止自转。让木星保持居中。"
+    }
+  ],
+  "level_32_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Drift correction is now muscle memory. Good - the next telescope will demand it constantly.",
+      "text_zh": "漂移修正已经成了肌肉记忆。很好——下一台望远镜会时时刻刻要求它。"
+    }
+  ],
+  "level_33_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Mars is low and the air is boiling. A big mirror does NOT cancel the atmosphere - choose your magnification like a meteorologist.",
+      "text_zh": "火星很低，大气在沸腾。大口径抵消不了大气——像气象学家一样选择你的倍率。"
+    }
+  ],
+  "level_33_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You dropped the power and won the detail. Remember: the atmosphere sets a ceiling no aperture can break.",
+      "text_zh": "你降低了倍率，反而赢得了细节。记住：大气设下的天花板，任何口径都砸不穿。"
+    }
+  ],
+  "level_91_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Your final task, Observer: a complete report on Andromeda. Choose your instruments, gather visible, infrared and radio evidence, and draw a conclusion the data supports.",
+      "text_zh": "你的最终任务，观测员：一份关于仙女座的完整报告。选择仪器，收集可见光、红外和无线电证据，写下数据支持的结论。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "From a naked eye on the Moon to a multi-wavelength report on a galaxy. Show me everything you've learned.",
+      "text_zh": "从用肉眼看月亮，到给一个星系写多波段报告。把你学到的一切展示给我看。"
+    }
+  ],
+  "level_91_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Report accepted. Signed, sealed, and entered into the club archive. You came here as a curious kid — you're leaving this program as an Observer.",
+      "text_zh": "报告通过。签字、盖章、存入俱乐部档案。你来的时候是个好奇的孩子——完成这个项目时，你已经是一名观测员了。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The sky doesn't end here. It never ends anywhere. Keep looking up.",
+      "text_zh": "天空不会在这里结束。它在任何地方都不会结束。继续抬头看吧。"
+    }
+  ],
+  "level_90_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "No instructions tonight. Choose the question, choose the instrument, run the session. Surprise me.",
+      "text_zh": "今晚没有指令。自己选问题、选仪器、完成观测。让我惊讶一次。"
+    }
+  ],
+  "level_90_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You designed an observation from nothing. That is the whole job, and you just did it.",
+      "text_zh": "你从零设计了一次观测。这就是这份工作的全部，而你刚刚完成了它。"
+    }
+  ],
+  "level_89_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Lay the three records side by side. Which claim does EVERY window support?",
+      "text_zh": "把三份记录并排放好。哪个结论是所有窗口都支持的？"
+    }
+  ],
+  "level_89_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "No single instrument saw the whole galaxy. Together, they did. Modern astronomy is exactly this: stitching one truth out of many kinds of light.",
+      "text_zh": "没有一台仪器看到了完整的星系，但它们合在一起做到了。现代天文学正是如此：用多种光拼出同一个真相。"
+    }
+  ],
+  "level_88_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Andromeda across the spectrum. Visible light shows its stars, infrared reveals its warm dust lanes, radio traces its cold hydrogen gas. Same galaxy — three different portraits.",
+      "text_zh": "横跨波谱看仙女座。可见光展示它的恒星，红外揭示温暖的尘埃带，无线电描出寒冷的氢气。同一个星系——三幅不同的肖像。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Collect the evidence from each window, then COMPARE. What does each one see that the others miss?",
+      "text_zh": "从每个窗口收集证据，然后比较。每一种波段看到了什么其他波段错过的东西？"
+    }
+  ],
+  "level_88_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Three portraits collected. Tomorrow we hang them side by side.",
+      "text_zh": "三幅肖像集齐了。明天我们把它们并排挂起来。"
+    }
+  ],
+  "level_87_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Observe Orion twice tonight - visible, then infrared. Write down what each window hides.",
+      "text_zh": "今晚观测猎户座两次——先可见光，后红外。写下每个窗口各自隐藏了什么。"
+    }
+  ],
+  "level_87_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Two windows, two truths, one nebula. Science begins where single answers end.",
+      "text_zh": "两个窗口，两个真相，一片星云。单一答案结束的地方，科学才开始。"
+    }
+  ],
+  "level_86_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The Orion Nebula, one last time. Tonight you choose the observatory. Ask yourself first: WHAT do I want to know? The glowing gas? The hidden newborn stars? Each instrument answers a different question.",
+      "text_zh": "最后一次猎户座大星云。今晚由你来选观测台。先问自己：我想知道什么？发光的气体？隐藏的新生恒星？每台设备回答的是不同的问题。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "There is no single 'best telescope'. There is only the right instrument for the question.",
+      "text_zh": "不存在唯一\"最好的望远镜\"，只有最适合这个问题的仪器。"
+    }
+  ],
+  "level_86_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You didn't just pick a device — you matched an instrument to a question. That's what a real observatory director does every night.",
+      "text_zh": "你不只是选了一台设备——你为一个问题匹配了一台仪器。这正是真正的天文台台长每天晚上做的事。"
+    }
+  ],
+  "level_85_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "FAST final: show me a complete, defensible radio detection.",
+      "text_zh": "FAST 结业考：给我一次完整的、经得起质疑的射电探测。"
+    }
+  ],
+  "level_85_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Visible, infrared, radio — you can now observe in three windows of the electromagnetic spectrum. One question remains: what happens when we point ALL of them at the same target?",
+      "text_zh": "可见光、红外、无线电——你现在能在电磁波谱的三个窗口观测了。只剩一个问题：如果把它们全部对准同一个目标，会发生什么？"
+    }
+  ],
+  "level_84_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Full radio session, solo: tune, localize, measure, record.",
+      "text_zh": "完整射电观测，独立完成：调谐、定位、测量、记录。"
+    }
+  ],
+  "level_84_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "From eyepieces to data traces - and you read both fluently now.",
+      "text_zh": "从目镜到数据轨迹——现在两种语言你都读得流利。"
+    }
+  ],
+  "level_83_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Interference is our light pollution: phones, satellites, engines. Learn the pulsar's voice among them.",
+      "text_zh": "干扰就是我们的光污染：手机、卫星、发动机。在其中认出脉冲星的声音。"
+    }
+  ],
+  "level_83_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Nature repeats precisely; humans repeat messily. Now you can hear the difference.",
+      "text_zh": "自然的重复精确，人造的重复杂乱。现在你听得出区别了。"
+    }
+  ],
+  "level_82_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The feed cabin hangs from six cables above the dish. Position it finely against a turning sky.",
+      "text_zh": "馈源舱靠六根缆索悬在反射面上方。在转动的天空下精细地调整它。"
+    }
+  ],
+  "level_82_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A 30-ton cabin, placed with millimeter care. Engineering is astronomy's other half.",
+      "text_zh": "三十吨的馈源舱，毫米级的安放。工程是天文学的另一半。"
+    }
+  ],
+  "level_81_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Let the trace accumulate. In radio astronomy, time literally adds up to certainty.",
+      "text_zh": "让轨迹慢慢累积。在射电天文里，时间真的会累加成确定性。"
+    }
+  ],
+  "level_81_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The longer you listened, the clearer the heartbeat. Patience is an instrument.",
+      "text_zh": "听得越久，心跳越清晰。耐心本身就是一台仪器。"
+    }
+  ],
+  "level_80_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Tonight the pulse barely clears the noise floor. Finer tuning, slower reading.",
+      "text_zh": "今晚脉冲勉强高出噪声底。调得更细，读得更慢。"
+    }
+  ],
+  "level_80_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Weak signals teach strong habits.",
+      "text_zh": "微弱的信号教出扎实的习惯。"
+    }
+  ],
+  "level_79_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Final radio exercise: localize the source. A radio telescope 'points' by moving its feed cabin and reading signal strength. Find where the pulse is strongest — that's your pulsar's position.",
+      "text_zh": "最后一次射电练习：给源定位。射电望远镜靠移动馈源舱、读取信号强度来\"指向\"。找到脉冲最强的位置——那就是脉冲星的方位。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "No stars to hop between this time. The signal meter is your finder scope.",
+      "text_zh": "这次没有可以跳转的星点。信号强度表就是你的寻星镜。"
+    }
+  ],
+  "level_79_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You pointed a telescope with a strength meter instead of your eyes. Welcome to radio astronomy.",
+      "text_zh": "你用信号强度表代替眼睛给望远镜指了向。欢迎来到射电天文学。"
+    }
+  ],
+  "level_78_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Pulsar B0329+54: a neutron star spinning at 1.4 revolutions per second. On your trace it appears as a repeating pulse. Tune the band, watch the peaks, measure the period.",
+      "text_zh": "脉冲星 B0329+54：一颗每秒自转 1.4 圈的中子星。在你的信号轨迹上，它表现为重复出现的脉冲。调谐频段，观察峰值，测量周期。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "There is no image here. The DATA is the observation.",
+      "text_zh": "这里没有图像。数据本身就是观测结果。"
+    }
+  ],
+  "level_78_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A rhythm from a city-sized star three thousand light-years away. When Jocelyn Bell first saw this pattern in 1967, her team jokingly labeled it LGM-1: 'Little Green Men'.",
+      "text_zh": "来自三千光年外一颗城市大小恒星的节拍。1967 年乔斯林·贝尔第一次看到这种信号时，团队开玩笑地把它标记为 LGM-1——\"小绿人一号\"。"
+    }
+  ],
+  "level_77_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Sweep the band slowly. Somewhere in the noise, a dead star is knocking.",
+      "text_zh": "慢慢扫过频段。噪声深处，一颗死去的恒星正在敲门。"
+    }
+  ],
+  "level_77_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "There it is - the knock. 1.4 times per second, for millions of years.",
+      "text_zh": "找到了——那声敲门。每秒 1.4 次，敲了几百万年。"
+    }
+  ],
+  "level_76_before_assembly": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "This is FAST — the Five-hundred-meter Aperture Spherical Telescope in Guizhou, China. The largest single dish on Earth. And it has NO eyepiece. Nothing to look through at all.",
+      "text_zh": "这是 FAST——位于中国贵州的五百米口径球面射电望远镜，地球上最大的单口径天线。它没有目镜，完全没有可以\"看\"的地方。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Radio waves from space are collected by the dish, focused onto the feed cabin hanging above it, and turned into electrical signals a processor can record.",
+      "text_zh": "来自太空的无线电波被反射面收集，聚焦到悬吊在上方的馈源舱，再转换成信号处理器可以记录的电信号。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Set up the link: active dish, feed cabin, signal processor. Forget focusing — from now on you TUNE, you don't focus.",
+      "text_zh": "把链路搭起来：主动反射面、馈源舱、信号处理器。忘掉调焦吧——从现在起，你要做的是调谐，不是对焦。"
+    }
+  ],
+  "level_76_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The link is live. Somewhere out there, a dead star is sweeping a radio beam across the Earth like a lighthouse. Tomorrow, we catch it.",
+      "text_zh": "链路开通了。在遥远的某处，一颗死去的恒星正像灯塔一样，用无线电波束扫过地球。明天，我们去抓住它。"
+    }
+  ],
+  "level_75_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Last infrared night. After this, we listen to the sky instead of looking at it.",
+      "text_zh": "最后一个红外之夜。在这之后，我们不再\"看\"天空，而是\"听\"它。"
+    }
+  ],
+  "level_75_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Cold instruments, clean signal. You now understand light our eyes can't see. But there's radiation even 'colder' than infrared — radio waves. And for those, we have a giant.",
+      "text_zh": "低温仪器，干净信号。你现在理解了眼睛看不见的光。但还有比红外\"更冷\"的辐射——无线电波。为了它们，我们有一个巨人。"
+    }
+  ],
+  "level_74_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Run tonight's infrared session yourself: deploy, cool, point, observe. I am only watching.",
+      "text_zh": "今晚的红外观测全由你来：部署、降温、指向、观测。我只旁观。"
+    }
+  ],
+  "level_74_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Flawless. You operate a space telescope the way you once operated a 60mm refractor.",
+      "text_zh": "无可挑剔。你操作空间望远镜,就像当年操作 60mm 折射镜一样自然。"
+    }
+  ],
+  "level_73_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Betelgeuse is cool, red, and enormous - a natural infrared beacon. Measure the giant.",
+      "text_zh": "参宿四又冷又红又巨大——天生的红外灯塔。测量这颗巨星。"
+    }
+  ],
+  "level_73_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A star too cool to dazzle your eyes, blazing in the infrared. Temperature is a point of view.",
+      "text_zh": "一颗冷得晃不了你眼睛的恒星,在红外里却光芒万丈。温度是一种视角。"
+    }
+  ],
+  "level_72_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Pull out your Newtonian records of Orion. Compare them with tonight and name what the atmosphere stole.",
+      "text_zh": "翻出你牛顿镜的猎户座记录。和今晚对比,说出大气偷走了什么。"
+    }
+  ],
+  "level_72_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Now you know exactly what leaving the atmosphere buys. It is written in your own two records.",
+      "text_zh": "现在你确切知道离开大气层买到了什么。答案写在你自己的两份记录里。"
+    }
+  ],
+  "level_71_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Map Andromeda's warm dust lanes tonight - structure no ground telescope of ours can touch.",
+      "text_zh": "今晚描绘仙女座温暖的尘埃带——我们任何地面望远镜都碰不到的结构。"
+    }
+  ],
+  "level_71_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A galaxy's skeleton, drawn in heat. Add it to the three portraits you are collecting.",
+      "text_zh": "用热画出的星系骨架。把它加进你正在收集的肖像里。"
+    }
+  ],
+  "level_70_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Today's lesson is the sunshield itself. Point the model so the shield blocks the Sun, Earth and Moon all at once. If the instruments warm up even slightly, their own heat drowns the signal.",
+      "text_zh": "今天的课程是遮阳板本身。调整姿态，让遮阳板同时挡住太阳、地球和月亮。哪怕仪器只是稍微变热，它们自身的热辐射就会淹没信号。"
+    }
+  ],
+  "level_70_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Pointing AND shading at once - now you think like a spacecraft operator.",
+      "text_zh": "指向和遮挡同时成立——你已经开始像航天器操作员一样思考了。"
+    }
+  ],
+  "level_69_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "An infrared telescope that isn't cold is just an expensive heater looking at itself.",
+      "text_zh": "一台不够冷的红外望远镜，只是一台看着自己发呆的昂贵加热器。"
+    }
+  ],
+  "level_69_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Cold instruments, clean signal. Heat management IS observation in the infrared.",
+      "text_zh": "低温仪器，干净信号。在红外世界里，热管理本身就是观测。"
+    }
+  ],
+  "level_68_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The Orion Nebula again — but in infrared this time. Visible light shows you the glowing gas. Infrared passes THROUGH the dust and shows you the newborn stars hiding inside.",
+      "text_zh": "又是猎户座大星云——但这次用红外线看。可见光给你看发光的气体，红外线则能穿透尘埃，让你看到藏在里面的新生恒星。"
+    }
+  ],
+  "level_68_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Stars that no eyepiece on Earth could ever show you — because their light never reaches the ground as visible light at all.",
+      "text_zh": "这些恒星是地球上任何目镜都永远看不到的——因为它们的光根本不会以可见光的形式到达地面。"
+    }
+  ],
+  "level_67_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You're not magnifying harder. You're asking a different question: not 'what shines?' but 'what is warm?'",
+      "text_zh": "你不是在放大得更狠，而是在问一个不同的问题：不是\"什么在发光\"，而是\"什么是温热的\"。"
+    }
+  ],
+  "level_67_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You asked 'what is warm' and the sky answered differently. Keep both answers.",
+      "text_zh": "你问了\"什么是温热的\"，天空给出了不同的回答。两个答案都留着。"
+    }
+  ],
+  "level_66_before_assembly": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "This is a model of a segmented space telescope — like the James Webb. Its primary mirror is 18 hexagonal segments that unfold in space, because no rocket can carry it in one piece.",
+      "text_zh": "这是一台分段式空间望远镜的模型——就像詹姆斯·韦布。它的主镜由 18 块六边形镜片组成，在太空中展开，因为没有火箭能整块运上去。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "It does not observe visible light. It sees INFRARED — heat radiation. That's why it carries a sunshield the size of a tennis court: the telescope itself must stay colder than its targets.",
+      "text_zh": "它观测的不是可见光，而是红外线——热辐射。这就是为什么它带着一面网球场大小的遮阳板：望远镜自身必须比它的目标更冷。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Assemble the segments, the instrument package, and the sunshield. Every piece here answers the question: how do you see heat without feeling your own?",
+      "text_zh": "把镜片阵列、仪器包和遮阳板装起来。这里的每个部件都在回答同一个问题：如何看见热，而不被自己的热干扰？"
+    }
+  ],
+  "level_66_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Segments aligned, sunshield deployed. In space this alignment took engineers three months. You get the idea in one evening — not bad.",
+      "text_zh": "镜片对齐，遮阳板展开。在太空中，工程师花了三个月做这次对齐。你一个晚上就理解了它的原理——不错。"
+    }
+  ],
+  "level_65_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Last night with the mirror family: Mars, with the Gregorian. Newtonian, Cassegrain, Gregorian — each fold has a reason. Tonight, prove you can drive any of them.",
+      "text_zh": "镜面家族的最后一晚：用格里高利式看火星。牛顿式、卡塞格林式、格里高利式——每一种折叠都有它的理由。今晚，证明你能驾驭它们中的任何一台。"
+    }
+  ],
+  "level_65_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You've mastered every ground-based mirror we own. But everything we did tonight fought the same enemy: the atmosphere itself. Turbulence, clouds, glow.",
+      "text_zh": "我们拥有的每一台地面反射镜你都掌握了。但今晚我们做的一切都在对抗同一个敌人：大气本身。湍流、云层、天光。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "What if the telescope simply... left the atmosphere behind? Come back tomorrow. I have something special to show you.",
+      "text_zh": "如果望远镜干脆……离开大气层呢？明天再来。我有特别的东西给你看。"
+    }
+  ],
+  "level_64_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Golden Arcturus, and a review: Newtonian, Cassegrain, Gregorian. Tell me why each fold exists.",
+      "text_zh": "金色的大角星，加一场复习：牛顿、卡塞格林、格里高利。告诉我每种折叠为什么存在。"
+    }
+  ],
+  "level_64_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Three folds, three reasons, one observer who understands all of them.",
+      "text_zh": "三种折叠、三个理由、一个全都理解的观测者。"
+    }
+  ],
+  "level_63_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Poor seeing on the strictest instrument we own. Learn which errors are yours and which belong to the sky.",
+      "text_zh": "最严苛的仪器遇上糟糕的视宁度。分清哪些误差是你的，哪些属于天空。"
+    }
+  ],
+  "level_63_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Tonight you separated instrument error from atmosphere. Few observers ever learn the difference.",
+      "text_zh": "今晚你分清了仪器误差和大气误差。很多观测者一辈子都没学会。"
+    }
+  ],
+  "level_62_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Drift correction through a folded path now. Keep Sirius centered.",
+      "text_zh": "现在在折叠光路里做漂移修正。让天狼星保持居中。"
+    }
+  ],
+  "level_62_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Steady through the fold. Your corrections are getting invisible - that is the goal.",
+      "text_zh": "折叠光路中依然稳定。你的修正正在变得不可察觉——这正是目标。"
+    }
+  ],
+  "level_61_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Can a strict two-mirror fold handle a faint nebula? Tonight we find out.",
+      "text_zh": "严苛的双镜折叠能应付暗弱星云吗？今晚见分晓。"
+    }
+  ],
+  "level_61_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "It held. Precision and light-gathering are not enemies - just an expensive friendship.",
+      "text_zh": "它扛住了。精密和集光并不敌对——只是这份友谊比较昂贵。"
+    }
+  ],
+  "level_60_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Study Jupiter's cloud bands tonight. Contrast - not size - is what this design defends.",
+      "text_zh": "今晚研究木星云带。这个设计守护的不是大小，是对比度。"
+    }
+  ],
+  "level_60_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The bands separated cleanly. Contrast is a quality you feel before you can measure it.",
+      "text_zh": "云带分得干干净净。对比度是一种先感觉到、后测量到的品质。"
+    }
+  ],
+  "level_59_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Mars tolerates no sloppiness through this instrument. Check your alignment before you blame the sky.",
+      "text_zh": "这台仪器上,火星不容忍任何马虎。怪天空之前先检查你的对准。"
+    }
+  ],
+  "level_59_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Strict optics teach honest observers. You are becoming one.",
+      "text_zh": "严苛的光学教出诚实的观测者。你正在成为其中之一。"
+    }
+  ],
+  "level_58_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Vega one more time. Upright, high-contrast, fringe-free - the Gregorian's quiet signature.",
+      "text_zh": "再看一次织女星。正立、高对比、无彩边——这是格里高利镜低调的签名。"
+    }
+  ],
+  "level_58_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Three telescopes have now shown you the same star three ways. Keep all three records.",
+      "text_zh": "三台望远镜已经用三种方式给你看了同一颗星。三份记录都留好。"
+    }
+  ],
+  "level_57_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Sirius again — you observed it with the refractor long ago. Same star, different physics. Pay attention to where the focus 'snaps in' compared to what you remember.",
+      "text_zh": "又是天狼星——很久以前你用折射镜看过它。同一颗星，不同的物理。注意它\"咔哒\"合焦的位置和你记忆中的差别。"
+    }
+  ],
+  "level_57_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A tighter, cleaner point than the refractor ever gave you — and no purple halo. Focus position is a property of the OPTICS, not just of your fingers.",
+      "text_zh": "比折射镜给过你的更紧致、更干净的星点——而且没有紫色光晕。合焦位置是光学系统的属性，不只是你手指的功劳。"
+    }
+  ],
+  "level_56_before_assembly": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The Gregorian uses a CONCAVE secondary mirror placed BEYOND the primary's focus. The light comes to a focus, spreads out again, and only then hits the secondary.",
+      "text_zh": "格里高利式使用一面凹面副镜，放在主镜焦点的更远处。光先聚成一个焦点，再散开，然后才碰到副镜。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "That extra focus point makes the image upright — sailors loved it centuries ago — but it demands stricter alignment: two curved mirrors AND a mid-air focal point must all agree.",
+      "text_zh": "多出来的这个焦点让成像是正立的——几百年前的航海家很喜欢这一点——但它对光轴要求更严格：两面曲面镜和一个悬在半空的焦点必须完全一致。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "This is not 'a fancier telescope'. It's a different geometry with its own price. Assemble it and feel the difference.",
+      "text_zh": "这不是\"更高级的望远镜\"，而是一种有自己代价的不同几何。装好它，体会那种差别。"
+    }
+  ],
+  "level_56_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Two curved mirrors, one mid-air focus, zero fringe. Feel how much stricter the alignment wanted to be.",
+      "text_zh": "两面曲面镜、一个悬空焦点、零彩边。感受一下它的对准要求严格了多少。"
+    }
+  ],
+  "level_55_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Cassegrain final: folded optics under real conditions. Everything counts tonight.",
+      "text_zh": "卡塞格林结业考：真实条件下的折叠光学。今晚每一项都算分。"
+    }
+  ],
+  "level_55_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You've now used mirrors two ways: straight through (Newtonian) and folded back (Cassegrain). There's a third, stranger fold — the Gregorian. It's older than both.",
+      "text_zh": "你已经用过两种镜面布局：直通的牛顿式和折返的卡塞格林式。还有第三种更奇特的折叠——格里高利式。它比前两种都古老。"
+    }
+  ],
+  "level_54_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Clouds cross a narrow field fast and completely. Time your observation between them.",
+      "text_zh": "云穿过窄视场又快又彻底。在云缝之间安排观测。"
+    }
+  ],
+  "level_54_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Narrow field, narrow windows. You used both well.",
+      "text_zh": "窄视场,窄窗口。你两个都用好了。"
+    }
+  ],
+  "level_53_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Same Jupiter, two mirrors. Compare your Newtonian log with tonight - honestly.",
+      "text_zh": "同一颗木星，两种镜子。把牛顿镜的记录和今晚的对比——要诚实。"
+    }
+  ],
+  "level_53_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Wide and bright versus large and detailed. Neither wins everywhere - instruments are choices, not upgrades.",
+      "text_zh": "宽而亮对阵大而细。没有全场获胜者——仪器是选择，不是升级。"
+    }
+  ],
+  "level_52_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Turn all that focal length on the Moon. Single craters will fill your eyepiece.",
+      "text_zh": "把这一整段焦距对准月球。单个环形山就能填满你的目镜。"
+    }
+  ],
+  "level_52_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You walked the rim of a single crater tonight. That is what folded focal length buys.",
+      "text_zh": "今晚你沿着一座环形山的边缘走了一圈。这就是折叠焦距买来的东西。"
+    }
+  ],
+  "level_51_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "At this magnification the sky RACES across the field. Keep Mars centered - corrections small and quick.",
+      "text_zh": "在这个倍率下，天空在视场里飞奔。让火星保持居中——修正要小要快。"
+    }
+  ],
+  "level_51_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Drift scales with power. You just proved it with your own hands.",
+      "text_zh": "漂移随倍率放大。你刚用自己的手证明了这一点。"
+    }
+  ],
+  "level_50_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "High power is a deal with the atmosphere. Tonight the air is against you - negotiate.",
+      "text_zh": "高倍率是和大气做的交易。今晚大气不配合——去谈判吧。"
+    }
+  ],
+  "level_50_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You waited for the still moments and they came. High power rewards patience, not force.",
+      "text_zh": "你等到了平静的瞬间。高倍率回报的是耐心，不是蛮力。"
+    }
+  ],
+  "level_49_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Mars is small and low tonight — the harshest test for a folded telescope. Use everything you know: careful finding, patient focus, waiting out the turbulence.",
+      "text_zh": "今晚的火星又小又低——这是对折叠望远镜最苛刻的考验。用上你会的一切：仔细寻星、耐心调焦、等待大气平静。"
+    }
+  ],
+  "level_49_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Small disk, long focus, honest result. Log what the air allowed.",
+      "text_zh": "小圆面、长焦距、诚实的结果。把大气允许你看到的记下来。"
+    }
+  ],
+  "level_48_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A narrow field punishes sloppy aiming. Tonight the finder scope earns its keep again.",
+      "text_zh": "窄视场惩罚粗糙的瞄准。今晚寻星镜又要立功了。"
+    }
+  ],
+  "level_48_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Found it clean. Old skills never expire - they just meet harder telescopes.",
+      "text_zh": "干净利落地找到了。老本事不会过期——它们只是遇到了更难的望远镜。"
+    }
+  ],
+  "level_47_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Jupiter under long focal length: the disk will look bigger than you've ever seen it. But the narrow field means careful finding, and the seeing will shimmer at high power.",
+      "text_zh": "长焦距下的木星：圆面会比你以往见过的都大。但窄视场意味着寻星要更仔细，而且高倍率下大气视宁度会让它微微晃动。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "If the image boils, don't fight it — wait for the still moments.",
+      "text_zh": "如果图像在\"沸腾\"，别硬扛——等那些短暂的稳定瞬间。"
+    }
+  ],
+  "level_47_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Cloud bands at high power — worth every bit of careful aiming. High magnification is a deal with the atmosphere: it shows more only when the air allows.",
+      "text_zh": "高倍率下的云带——所有仔细的瞄准都值了。高倍率是和大气做的交易：只有空气允许时，它才让你看到更多。"
+    }
+  ],
+  "level_46_before_assembly": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A Cassegrain hides a long telescope inside a short tube. The primary mirror sends light to a convex secondary, which bounces it BACK through a hole in the primary.",
+      "text_zh": "卡塞格林把一台长望远镜藏进短镜筒里。主镜把光送到一面凸面副镜上，副镜再把光反射回来，穿过主镜中央的开孔。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Folding the path doubles up the focal length in a compact body. Long focal length means high magnification with the same eyepieces.",
+      "text_zh": "折叠光路让长焦距装进紧凑的机身。长焦距意味着同样的目镜能得到更高的倍率。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The catch: a narrow field of view, and high power magnifies every wobble and every ripple of the atmosphere. Build it, then aim carefully.",
+      "text_zh": "代价是：视场很窄，而且高倍率会放大每一次晃动和大气的每一丝抖动。先装好它，然后瞄准时要格外仔细。"
+    }
+  ],
+  "level_46_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Compact outside, long inside. Now let us see what a folded light path does to a planet.",
+      "text_zh": "外面紧凑，里面很长。现在看看折叠光路对行星能做什么。"
+    }
+  ],
+  "level_45_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Dobsonian final: big mirror, simple box, your hands. Prove the combination.",
+      "text_zh": "多布森结业考：大主镜、简单摇箱、你的双手。证明这个组合。"
+    }
+  ],
+  "level_45_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "There's a trick: fold the light path. That's the Cassegrain, and it's next.",
+      "text_zh": "有一个妙招：把光路折叠起来。那就是卡塞格林——我们的下一台望远镜。"
+    }
+  ],
+  "level_44_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The marathon: hold Andromeda steady longer than ever, fingertips only.",
+      "text_zh": "马拉松来了：只用指尖，让仙女座稳定得比以往任何时候都久。"
+    }
+  ],
+  "level_44_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A galaxy, held steady by hand. But you also felt the limit: for tiny planetary detail we need MORE focal length, and a Dobsonian tube would grow absurdly long.",
+      "text_zh": "一个星系，被你用手稳稳看住。但你也感到了极限：想看行星的微小细节需要更长的焦距，而多布森的镜筒会因此变得长得离谱。"
+    }
+  ],
+  "level_43_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Everything at once tonight: focus, track, choose the eyepiece. No single skill - a session.",
+      "text_zh": "今晚全都要：调焦、追踪、选目镜。考的不是单项，是一整场观测。"
+    }
+  ],
+  "level_43_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "That was a real observer's session, start to finish.",
+      "text_zh": "这是一场真正观测者的完整观测。"
+    }
+  ],
+  "level_42_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Low Mars again - apply the discipline: lower power, wait for the still air.",
+      "text_zh": "又是低空火星——拿出纪律：降低倍率，等大气平静。"
+    }
+  ],
+  "level_42_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Same lesson, new telescope, better hands.",
+      "text_zh": "同一课，换了望远镜，手上功夫更好了。"
+    }
+  ],
+  "level_41_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Clouds tonight. Do not fight them - watch the gaps and strike when the sky opens.",
+      "text_zh": "今晚有云。不要跟它们较劲——盯住云缝，天空放开时果断出手。"
+    }
+  ],
+  "level_41_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Patience beat the weather. That skill transfers to every telescope you will ever own.",
+      "text_zh": "耐心赢了天气。这个本事在你未来的每一台望远镜上都用得上。"
+    }
+  ],
+  "level_40_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The Andromeda Galaxy is huge but faint — perfect for the Dobsonian's wide field and big mirror. Relax your eyes and take in the whole glow.",
+      "text_zh": "仙女座星系又大又暗——正适合多布森的宽视场和大主镜。放松眼睛，把整片光晕收进视野。"
+    }
+  ],
+  "level_40_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "The whole galaxy in one field. Wide and bright beats big and dim - for targets like this.",
+      "text_zh": "整个星系装进一个视场。对这样的目标，又宽又亮胜过又大又暗。"
+    }
+  ],
+  "level_39_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Observers call these big Dobsonians 'light buckets'. Point yours at Orion and see why the nickname stuck.",
+      "text_zh": "观测者把大多布森叫作\"光之水桶\"。把它对准猎户座，看看这外号是怎么来的。"
+    }
+  ],
+  "level_39_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A bucket of light, held by hand. Deep sky was never about fancy mounts.",
+      "text_zh": "满满一桶光，用手捧着。深空观测从来不靠花哨的支架。"
+    }
+  ],
+  "level_38_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Longer hold tonight. Push, wait, push - let the rhythm become boring. Boring means mastered.",
+      "text_zh": "今晚保持得更久。推、等、推——让节奏变得无聊。无聊就意味着掌握。"
+    }
+  ],
+  "level_38_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Eight steady seconds by hand. The sky moved; you answered.",
+      "text_zh": "手动稳稳保持八秒。天空在动,你在回应。"
+    }
+  ],
+  "level_37_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Why Jupiter for your first hand-tracking night? It drifts fast and rewards you with detail only while centered - the perfect target to train your hands on.",
+      "text_zh": "为什么第一次手动追踪选木星？它漂移得快，而且只有居中时才把细节给你看——正是训练双手的完美靶子。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Jupiter tonight. Earth's rotation will slide it out of your view again and again. With a Dobsonian you nudge the tube by hand — small, gentle pushes.",
+      "text_zh": "今晚看木星。地球自转会一次又一次把它滑出你的视野。用多布森，你要用手轻推镜筒——小幅、轻柔地修正。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Push too hard and you'll overshoot; wait too long and it drifts away. Find the rhythm.",
+      "text_zh": "推得太猛会过头；等得太久它就漂走了。找到那个节奏。"
+    }
+  ],
+  "level_37_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You kept a planet centered with nothing but your fingertips. Every Dobsonian owner in the world knows that rhythm.",
+      "text_zh": "你只靠指尖让一颗行星保持居中。全世界每个多布森用户都懂这种节奏。"
+    }
+  ],
+  "level_36_before_assembly": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "A Dobsonian is a Newtonian mirror in the simplest possible cradle: a rocker box that swivels left-right and tilts up-down. No tripod, no counterweights.",
+      "text_zh": "多布森就是把牛顿镜的镜筒放进最简单的摇篮：一个能左右旋转、上下俯仰的摇箱底座。没有三脚架，也没有配重。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "That simplicity buys you a BIG mirror for very little money and setup time. The price: nothing tracks the sky for you. Your hands are the motor.",
+      "text_zh": "这种简单换来的是：用很少的钱和时间就能架起一面大镜子。代价是：没有任何东西替你追踪天空。你的双手就是马达。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Build it on the Assembly Table — you'll notice how few parts it needs.",
+      "text_zh": "去组装台把它装起来——你会注意到它需要的零件有多少。"
+    }
+  ],
+  "level_36_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Assembled in minutes — that's the Dobsonian promise. Now let's find out what 'no tracking' really means at the eyepiece.",
+      "text_zh": "几分钟就装好了——这就是多布森的承诺。现在去目镜后面体会一下\"没有追踪\"到底意味着什么。"
+    }
+  ],
+  "level_35_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Newtonian final exam: collimate, center, hold, observe. Show me everything from the last nine lessons.",
+      "text_zh": "牛顿镜结业考：准直、居中、保持、观测。把过去九课的东西全部拿出来。"
+    }
+  ],
+  "level_35_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Graduated. The Newtonian gave you color-free light and a big cheap mirror - at the price of collimation and care.",
+      "text_zh": "毕业了。牛顿镜给了你无色差的光和便宜的大口径——代价是准直和维护。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "But its equatorial mount is heavy and fussy. Next crate: a design that throws all of that away. The Dobsonian.",
+      "text_zh": "但它的赤道式支架又重又麻烦。下一个板条箱里，是把这些全部扔掉的设计：多布森。"
+    }
+  ],
+  "level_34_before": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Tonight, Betelgeuse - a red supergiant. Through the old refractor its edge would bleed blue and red. Look at what your mirror shows instead.",
+      "text_zh": "今晚看参宿四——一颗红超巨星。透过旧折射镜，它的边缘会渗出红蓝杂色。看看你的镜面给出的是什么。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "That deep orange is the star's OWN color: a surface cooler than our Sun. No lens is lying to you anymore.",
+      "text_zh": "那种深橙色是恒星自己的颜色：一个比太阳更冷的表面。再没有透镜对你说谎了。"
+    }
+  ],
+  "level_34_after": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "You just read a star's temperature with your eyes - possible only because the mirror adds no false color. Tomorrow: your Newtonian final.",
+      "text_zh": "你刚用眼睛读出了一颗恒星的温度——这只有在镜面不添加虚假颜色时才可能。明天：牛顿镜结业考。"
+    }
+  ]
 }

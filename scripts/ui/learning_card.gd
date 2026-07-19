@@ -80,20 +80,32 @@ func _build_mission_complete(data: Dictionary) -> void:
 	_mission_texture(MISSION_PARCHMENT, Vector2(180, 78), Vector2(664, 528), TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
 
 	var object_name := _dict_inline(obj, "name")
-	_paper_label(object_name, Vector2(250, 96), Vector2(524, 38), 25, PAPER_INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_paper_label(object_name, Vector2(250, 94), Vector2(524, 42), 28, PAPER_INK, HORIZONTAL_ALIGNMENT_CENTER)
 	var subtitle := _target_subtitle(obj)
 	if subtitle != "":
-		var subtitle_label := _paper_label(subtitle, Vector2(250, 132), Vector2(524, 28), 12, PAPER_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+		var subtitle_label := _paper_label(subtitle, Vector2(250, 134), Vector2(524, 26), 14, PAPER_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 		subtitle_label.max_lines_visible = 2
 
 	_mission_section_line(Vector2(228, 162), 568)
-	_observation_image(obj)
+	_observation_image(obj, level, observation)
 	_quality_panel(observation, data.get("stats", {}))
 	_learned_panel(obj, level, observation, data, concept)
 	_rewards_panel(level, concept)
+	var next_route := GameManager.current_room_route()
+	var next_step := _label(
+		GameManager.text("NEXT: ", "下一步：") + str(next_route.get("action", "")),
+		Vector2(170, 610), Vector2(684, 28), 15, GOLD, HORIZONTAL_ALIGNMENT_CENTER
+	)
+	next_step.clip_text = true
 
 	var continue_button: Button = _mission_button(GameManager.text("Continue", "继续"), Vector2(298, 650), Vector2(210, 50), Color(0.08, 0.38, 0.20))
 	continue_button.pressed.connect(func() -> void:
+		GameManager.update_room_guidance_for_level()
+		# Family-arc levels close with a short Maya epilogue (summary plus the
+		# motivation for the next stage) before returning to the lobby.
+		var completed_level_number: int = int(level.get("level_number", 0))
+		if GameManager.try_story_epilogue(completed_level_number, "observatory"):
+			return
 		GameManager.go("observatory")
 	)
 
@@ -113,11 +125,14 @@ func _mission_bg() -> void:
 
 func _title_banner() -> void:
 	_dark_panel(Vector2(362, 14), Vector2(300, 54), Color(0.025, 0.045, 0.080, 0.96), GOLD)
-	_label(GameManager.text("MISSION COMPLETE", "观测完成"), Vector2(362, 22), Vector2(300, 32), 23, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_label(GameManager.text("MISSION COMPLETE", "观测完成"), Vector2(362, 20), Vector2(300, 36), 26, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 
 
-func _observation_image(obj: Dictionary) -> void:
+func _observation_image(obj: Dictionary, level: Dictionary, observation: Dictionary) -> void:
 	_dark_panel(Vector2(220, 176), Vector2(330, 158), Color(0.025, 0.025, 0.030, 0.88), Color(0.50, 0.34, 0.16))
+	if bool(level.get("requires_focus", false)):
+		_focus_comparison_image(obj, observation)
+		return
 	var path := _mission_object_image(obj)
 	if path != "":
 		_mission_texture(path, Vector2(232, 186), Vector2(306, 138), TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
@@ -126,8 +141,67 @@ func _observation_image(obj: Dictionary) -> void:
 	_label("✓", Vector2(204, 158), Vector2(40, 36), 28, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 
 
+func _focus_comparison_image(obj: Dictionary, observation: Dictionary) -> void:
+	var clear_path := _mission_object_state_image(obj, "clear")
+	var blurry_path := _mission_object_state_image(obj, "blurry")
+	if clear_path == "" or blurry_path == "":
+		var fallback_path := _mission_object_image(obj)
+		if fallback_path != "":
+			_mission_texture(fallback_path, Vector2(232, 186), Vector2(306, 138), TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+		return
+
+	var states := [
+		{
+			"label": _inline_text("Out of Focus", "失焦"),
+			"border": Color(0.72, 0.24, 0.12),
+			"clear_alpha": 0.0,
+			"blur_alpha": 1.0
+		},
+		{
+			"label": _inline_text("Near Focus", "接近焦点"),
+			"border": Color(0.82, 0.56, 0.12),
+			"clear_alpha": 0.52,
+			"blur_alpha": 0.58
+		},
+		{
+			"label": _inline_text("In Focus", "准焦"),
+			"border": Color(0.20, 0.56, 0.24),
+			"clear_alpha": 1.0,
+			"blur_alpha": 0.0
+		}
+	]
+	var start_x := 228.0
+	var cell_size := Vector2(100, 140)
+	for index in range(states.size()):
+		var state: Dictionary = states[index]
+		var cell_pos := Vector2(start_x + float(index) * 106.0, 184)
+		_dark_panel(cell_pos, cell_size, Color(0.018, 0.022, 0.030, 0.96), state["border"])
+		var image_pos := cell_pos + Vector2(5, 5)
+		var image_size := Vector2(90, 103)
+		var blur_alpha := float(state["blur_alpha"])
+		if blur_alpha > 0.0:
+			var blurry := _mission_texture(blurry_path, image_pos, image_size, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+			blurry.modulate.a = blur_alpha
+		var clear_alpha := float(state["clear_alpha"])
+		if clear_alpha > 0.0:
+			var clear := _mission_texture(clear_path, image_pos, image_size, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+			clear.modulate.a = clear_alpha
+		var label := _label(str(state["label"]), cell_pos + Vector2(3, 111), Vector2(94, 24), 10, state["border"], HORIZONTAL_ALIGNMENT_CENTER)
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.max_lines_visible = 2
+
+	# A completed focus mission records the successful state. Mark that state
+	# without covering the clear target image.
+	var focus_error := float(observation.get("focus_error", 0.0))
+	var focus_tolerance := maxf(float(observation.get("focus_tolerance", 0.06)), 0.001)
+	if focus_error <= focus_tolerance:
+		var badge := _dark_panel(Vector2(510, 180), Vector2(34, 22), Color(0.08, 0.30, 0.12, 0.96), Color(0.34, 0.76, 0.34))
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_label("OK", Vector2(510, 180), Vector2(34, 20), 10, Color(0.72, 1.0, 0.70), HORIZONTAL_ALIGNMENT_CENTER)
+
+
 func _quality_panel(observation: Dictionary, stats: Dictionary) -> void:
-	_paper_label(_inline_text("Observation Quality", "观测质量"), Vector2(584, 184), Vector2(220, 22), 13, PAPER_INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_paper_label(_inline_text("Observation Quality", "观测质量"), Vector2(584, 182), Vector2(220, 24), 16, PAPER_INK, HORIZONTAL_ALIGNMENT_CENTER)
 	_mission_section_line(Vector2(596, 210), 194)
 	var scores := _quality_scores(observation, stats)
 	var rows := [
@@ -137,28 +211,28 @@ func _quality_panel(observation: Dictionary, stats: Dictionary) -> void:
 	]
 	var y := 222.0
 	for row in rows:
-		_paper_label(str(row["name"]), Vector2(594, y), Vector2(92, 18), 10, PAPER_INK)
-		_paper_label(_star_string(int(row["score"])), Vector2(688, y - 3.0), Vector2(112, 20), 16, Color(0.80, 0.48, 0.08))
+		_paper_label(str(row["name"]), Vector2(594, y), Vector2(92, 20), 13, PAPER_INK)
+		_paper_label(_star_string(int(row["score"])), Vector2(688, y - 4.0), Vector2(112, 24), 20, Color(0.80, 0.48, 0.08))
 		y += 32.0
 	var quality := str(observation.get("quality", "Good"))
-	_paper_label(quality, Vector2(592, 308), Vector2(198, 18), 12, _paper_quality_color(quality), HORIZONTAL_ALIGNMENT_CENTER)
+	_paper_label(quality, Vector2(592, 306), Vector2(198, 22), 14, _paper_quality_color(quality), HORIZONTAL_ALIGNMENT_CENTER)
 
 
 func _learned_panel(obj: Dictionary, level: Dictionary, observation: Dictionary, data: Dictionary, concept: Dictionary) -> void:
 	_mission_section_line(Vector2(228, 354), 568)
-	_paper_label(_inline_text("What We Learned", "本次学到"), Vector2(312, 342), Vector2(400, 24), 15, PAPER_INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_paper_label(_inline_text("What We Learned", "本次学到"), Vector2(312, 340), Vector2(400, 26), 18, PAPER_INK, HORIZONTAL_ALIGNMENT_CENTER)
 	var lines := _learned_lines(obj, level, observation, data, concept)
-	var y := 372.0
+	var y := 370.0
 	for line_value in lines:
 		var line: String = str(line_value)
-		var label := _paper_label("✦ " + line, Vector2(286, y), Vector2(492, 31), 9, PAPER_INK)
-		label.max_lines_visible = 2
-		y += 35.0
+		var label := _paper_label("✦ " + line, Vector2(272, y), Vector2(520, 28), 12, PAPER_INK)
+		label.max_lines_visible = 1
+		y += 32.0
 
 
 func _rewards_panel(level: Dictionary, concept: Dictionary) -> void:
 	_mission_section_line(Vector2(228, 486), 568)
-	_paper_label(_inline_text("Rewards Unlocked", "奖励解锁"), Vector2(312, 474), Vector2(400, 24), 15, PAPER_INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_paper_label(_inline_text("Rewards Unlocked", "奖励解锁"), Vector2(312, 474), Vector2(400, 24), 18, PAPER_INK, HORIZONTAL_ALIGNMENT_CENTER)
 	var rewards := _reward_items(level, concept)
 	var count: int = max(1, rewards.size())
 	var slot_w := 144.0
@@ -176,10 +250,10 @@ func _reward_slot(reward: Dictionary, pos: Vector2) -> void:
 		_mission_texture(icon_path, pos + Vector2(43, 0), Vector2(44, 44), TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
 	var title := str(reward.get("title", ""))
 	var detail := str(reward.get("detail", ""))
-	var title_label := _paper_label(title, pos + Vector2(2, 42), Vector2(126, 18), 9, PAPER_INK, HORIZONTAL_ALIGNMENT_CENTER)
-	title_label.max_lines_visible = 2
-	var detail_label := _paper_label(detail, pos + Vector2(2, 58), Vector2(126, 24), 8, PAPER_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-	detail_label.max_lines_visible = 2
+	var title_label := _paper_label(title, pos + Vector2(2, 42), Vector2(126, 20), 11, PAPER_INK, HORIZONTAL_ALIGNMENT_CENTER)
+	title_label.max_lines_visible = 1
+	var detail_label := _paper_label(detail, pos + Vector2(2, 60), Vector2(126, 20), 10, PAPER_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	detail_label.max_lines_visible = 1
 
 
 func _reward_items(level: Dictionary, concept: Dictionary) -> Array:
@@ -379,6 +453,8 @@ func _mission_object_image(obj: Dictionary) -> String:
 			path = "res://assets/telescope_view/mars_clear.png"
 		"jupiter":
 			path = "res://assets/telescope_view/jupiter_clear.png"
+		"vega":
+			path = "res://assets/telescope_view/vega_user_clear.png"
 		"orion_nebula":
 			path = "res://assets/telescope_view/orion_nebula_clear.png"
 		"andromeda":
@@ -400,6 +476,16 @@ func _mission_object_image(obj: Dictionary) -> String:
 	if path != "" and ResourceLoader.exists(path):
 		return path
 	return ""
+
+
+func _mission_object_state_image(obj: Dictionary, state: String) -> String:
+	var clear_path := _mission_object_image(obj)
+	if clear_path == "" or state == "clear":
+		return clear_path
+	var state_path := clear_path.replace("_clear.png", "_%s.png" % state)
+	if ResourceLoader.exists(state_path):
+		return state_path
+	return clear_path
 
 
 func _mission_section_line(pos: Vector2, width: float) -> void:

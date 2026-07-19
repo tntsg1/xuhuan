@@ -14,39 +14,28 @@ extends Node
 
 const DIALOGUES_PATH := "res://data/story_dialogues.json"
 
-# trigger -> level_number -> event id
-const TRIGGER_EVENTS := {
-	"before_observation": {
-		1: "level_1_before",
-		2: "level_2_before",
-		5: "level_5_before",
-		6: "level_6_before",
-		8: "level_8_before",
-		9: "level_9_before",
-		10: "level_10_before",
-		11: "level_11_before",
-		12: "level_12_before",
-		13: "level_13_before",
-		14: "level_14_before",
-		15: "level_15_before",
-		16: "level_16_before",
-		17: "level_17_before",
-		18: "level_18_before",
-		19: "level_19_before",
-		20: "level_20_before",
-		21: "level_21_before",
-		22: "level_22_before",
-		23: "level_23_before",
-		24: "level_24_before"
-	},
-	"before_assembly": {
-		3: "level_3_before_assembly",
-		7: "level_7_before_assembly"
-	},
-	"before_focus": {
-		4: "level_4_before_focus"
-	}
+# Events are found by naming convention against the loaded dialogue data:
+#   before_observation -> "level_N_before"
+#   before_assembly    -> "level_N_before_assembly"
+#   before_focus       -> "level_N_before_focus"
+# A level has a story for a trigger exactly when that key exists in
+# story_dialogues.json - no hardcoded per-level table to maintain.
+const TRIGGER_SUFFIXES := {
+	"before_observation": "level_%d_before",
+	"before_assembly": "level_%d_before_assembly",
+	"before_focus": "level_%d_before_focus"
 }
+
+# Semantic mechanic name -> first-time story event. UI scenes ask by mechanic
+# name; they never hardcode event ids.
+const MECHANIC_EVENTS := {
+	"tube_subassembly": "first_tube_subassembly",
+	"collimation": "first_collimation"
+}
+
+# Levels whose "level_N_after" lines play as a short epilogue dialogue after
+# the Mission Complete card (L25+ family arcs). L1-24 keep recap-only behavior.
+const EPILOGUE_MIN_LEVEL := 25
 
 var dialogues: Dictionary = {}
 var active_event_id := ""
@@ -64,9 +53,46 @@ func _ready() -> void:
 
 func get_dialogue(event_id: String) -> Array:
 	var lines: Variant = dialogues.get(event_id, [])
-	if lines is Array:
+	if lines is Array and not lines.is_empty():
 		return lines
-	return []
+	return _advanced_fallback_dialogue(event_id)
+
+
+func _advanced_fallback_dialogue(event_id: String) -> Array:
+	if not event_id.begins_with("level_"):
+		return []
+	var gm := _game_manager()
+	if gm == null:
+		return []
+	var family := str(gm.current_level().get("telescope_family", ""))
+	var target: String = str(gm.dict_text(gm.current_target(), "name"))
+	var line_en := ""
+	var line_zh := ""
+	match family:
+		"newtonian":
+			line_en = "This reflector uses mirrors in a new light path. Build it in order, then align it before Orion."
+			line_zh = "这台反射镜使用新的光路。按顺序组装，再为猎户座完成准直。"
+		"dobsonian":
+			line_en = "A Dobsonian is simple and bright, but your hands provide the tracking. Use gentle corrections."
+			line_zh = "多布森结构简单而明亮，但追踪要靠你的双手。请使用轻微修正。"
+		"cassegrain":
+			line_en = "This compact tube folds a long focal length with two mirrors. The narrow view rewards careful aiming."
+			line_zh = "这台紧凑镜筒用两面镜子折叠长焦距，狭窄视场需要更仔细地对准。"
+		"gregorian":
+			line_en = "This two-mirror layout is not a power upgrade. Trace where the light focuses and compare it deliberately."
+			line_zh = "这套双镜布局不是单纯性能升级。追踪光线在哪里聚焦，再有目的地比较它。"
+		"space_segmented":
+			line_en = "A segmented mirror and cold infrared instruments reveal signals that visible light misses."
+			line_zh = "分段主镜和低温红外仪器能揭示可见光错过的信号。"
+		"fast_radio":
+			line_en = "This time there is no eyepiece image. A dish, receiver, and data trace will guide you to the source."
+			line_zh = "这次没有目镜图像。天线、接收机和数据轨迹会引导你找到目标。"
+		"multi_device":
+			line_en = "Choose the observatory that measures the signal needed for " + target + "."
+			line_zh = "请选择能测量 " + target + " 所需信号的观测台。"
+		_:
+			return []
+	return [{"speaker": "Maya", "portrait": "maya", "text_en": line_en, "text_zh": line_zh}]
 
 
 func has_seen(event_id: String, progress: Dictionary) -> bool:
@@ -74,8 +100,13 @@ func has_seen(event_id: String, progress: Dictionary) -> bool:
 
 
 func event_for_trigger(trigger: String, level_number: int) -> String:
-	var by_level: Dictionary = TRIGGER_EVENTS.get(trigger, {})
-	return str(by_level.get(level_number, ""))
+	var pattern := str(TRIGGER_SUFFIXES.get(trigger, ""))
+	if pattern == "":
+		return ""
+	var event_id := pattern % level_number
+	if dialogues.has(event_id):
+		return event_id
+	return ""
 
 
 func recap_for_level(level_number: int) -> Dictionary:
@@ -116,6 +147,21 @@ func begin_event(event_id: String, scene_key: String, follow_trigger: String = "
 	pending_trigger = follow_trigger
 	gm.go("story")
 	return true
+
+
+func begin_mechanic_event(mechanic: String, scene_key: String, follow_trigger: String = "") -> bool:
+	# First-time introduction for a game mechanic (tube sub-assembly,
+	# collimation, ...). Replays never happen thanks to seen_story_events.
+	return begin_event(str(MECHANIC_EVENTS.get(mechanic, "")), scene_key, follow_trigger)
+
+
+func begin_epilogue(level_number: int, scene_key: String) -> bool:
+	# Post-mission Maya dialogue for advanced levels: summary + motivation for
+	# the next stage. The same lines' first entry stays the recap on the
+	# Mission Complete card.
+	if level_number < EPILOGUE_MIN_LEVEL:
+		return false
+	return begin_event("level_%d_after" % level_number, scene_key)
 
 
 func begin_event_for_trigger(trigger: String, scene_key: String) -> bool:

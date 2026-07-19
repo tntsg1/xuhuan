@@ -29,7 +29,9 @@ const PART_ICON_TEXTURES := {
 	"objective_100mm": "res://assets/telescope_parts/objective_100mm.png",
 	"stable_mount": "res://assets/telescope_parts/stable_mount.png",
 	"tracking_mount": "res://assets/telescope_parts/tracking_mount.png",
-	"basic_focus_knob": "res://assets/telescope_parts/basic_focus_knob.png"
+	"basic_focus_knob": "res://assets/telescope_parts/basic_focus_knob.png",
+	"gregorian_equatorial_mount": "res://assets/telescope_parts/gregorian_equatorial_mount.png",
+	"gregorian_18mm_eyepiece": "res://assets/telescope_parts/gregorian_18mm_eyepiece.png"
 }
 
 const CATEGORY_ORDER := ["Support", "Optics", "Aiming", "Control"]
@@ -59,6 +61,22 @@ var feedback_color := GOLD
 var parts_box: VBoxContainer
 var parts_scroll: ScrollContainer
 var next_step_part_type := ""
+var selected_family := ""
+var auto_equip_popup: Control
+
+# Family tabs shown above the parts list. "" = All.
+const FAMILY_TABS := [
+	["all", "All", "全部"],
+	["refractor", "Refractor", "折射式"],
+	["newtonian", "Newtonian", "牛顿式"],
+	["dobsonian", "Dobsonian", "多布森"],
+	["cassegrain", "Cassegrain", "卡塞格林"],
+	["gregorian", "Gregorian", "格里高利"],
+	["space_segmented", "Infrared Space", "红外空间"],
+	["fast_radio", "FAST Radio", "FAST 射电"],
+]
+# Universal ("" family) parts are compatible with these ground optical tabs.
+const UNIVERSAL_COMPAT := ["refractor", "newtonian", "dobsonian"]
 
 
 func _ready() -> void:
@@ -73,6 +91,9 @@ func _build() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	custom_minimum_size = SCREEN_SIZE
 	next_step_part_type = _next_step_part_type()
+	if selected_family == "":
+		var current_family := str(GameManager.current_level().get("telescope_family", ""))
+		selected_family = current_family if current_family != "" else "refractor"
 
 	_rect(Vector2.ZERO, SCREEN_SIZE, Color(0.010, 0.016, 0.032))
 	_draw_star_grid()
@@ -82,6 +103,7 @@ func _build() -> void:
 		return
 	_draw_summary_panel()
 	_draw_parts_list()
+	_draw_family_tabs()
 
 
 func _draw_title_bar() -> void:
@@ -95,6 +117,122 @@ func _draw_title_bar() -> void:
 		GameManager.go("observatory")
 	)
 	add_child(back)
+
+	if GameManager.current_equipment_stage() != "eye":
+		var auto_button := _button(GameManager.text("Auto Equip Best", "一键装备最佳组合"), Vector2(652, 22), Vector2(182, 40))
+		auto_button.add_theme_font_size_override("font_size", 13)
+		auto_button.pressed.connect(_show_auto_equip_preview)
+		add_child(auto_button)
+
+
+func _show_auto_equip_preview() -> void:
+	# Preview first; nothing is written until the player confirms.
+	var plan: Array = GameManager.auto_equip_plan()
+	if plan.is_empty():
+		_show_feedback(GameManager.text("No compatible parts to equip.", "没有可装备的兼容零件。"), WARNING)
+		return
+	if auto_equip_popup != null:
+		auto_equip_popup.queue_free()
+	auto_equip_popup = Control.new()
+	auto_equip_popup.set_anchors_preset(Control.PRESET_FULL_RECT)
+	auto_equip_popup.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(auto_equip_popup)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.62)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	auto_equip_popup.add_child(dim)
+	var height := minf(150.0 + float(plan.size()) * 48.0, 700.0)
+	var panel := Panel.new()
+	panel.position = Vector2(232, (768.0 - height) * 0.5)
+	panel.size = Vector2(560, height)
+	panel.add_theme_stylebox_override("panel", _style(Color(0.035, 0.055, 0.10, 0.98), GOLD, 2, 6))
+	auto_equip_popup.add_child(panel)
+	_label_to(panel, GameManager.text("Auto Equip Preview", "一键装备预览"), Vector2(20, 14), Vector2(520, 26), 18, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_label_to(panel, GameManager.text("Chosen for the current target. Confirm to equip.", "已按当前目标选择。确认后才会装备。"), Vector2(20, 44), Vector2(520, 18), 11, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	var y := 72.0
+	for entry_value in plan:
+		var entry: Dictionary = entry_value
+		var changed := bool(entry.get("changed", false))
+		var pinned := bool(entry.get("pinned", false))
+		var row_text := GameManager.text(str(entry.get("name_en", "")), str(entry.get("name_zh", "")))
+		if pinned:
+			row_text += GameManager.text("  [lesson-required]", "【本关指定】")
+		else:
+			row_text += GameManager.text("  (change)", "（更换）") if changed else GameManager.text("  (kept)", "（保持）")
+		_label_to(panel, row_text, Vector2(34, y), Vector2(500, 20), 12, WARNING if pinned else (GOLD if changed else Color(0.72, 0.80, 0.86)))
+		var reason := GameManager.text(str(entry.get("reason_en", "")), str(entry.get("reason_zh", "")))
+		if reason != "":
+			var reason_label := _label_to(panel, GameManager.text("Why: ", "原因：") + reason, Vector2(50, y + 20), Vector2(492, 18), 10, Color(0.62, 0.72, 0.80))
+			reason_label.clip_text = true
+		y += 48.0
+	var confirm := _button(GameManager.text("Confirm", "确认装备"), Vector2(120, height - 56), Vector2(140, 38))
+	confirm.pressed.connect(func() -> void:
+		var applied: int = GameManager.apply_auto_equip(plan)
+		auto_equip_popup.queue_free()
+		auto_equip_popup = null
+		_show_feedback(GameManager.text("Equipped %d parts. Reassemble at the Assembly Table.", "已更换 %d 件零件。请回组装台重新安装。") % applied, GREEN)
+	)
+	panel.add_child(confirm)
+	var cancel := _button(GameManager.text("Cancel", "取消"), Vector2(300, height - 56), Vector2(140, 38))
+	cancel.pressed.connect(func() -> void:
+		auto_equip_popup.queue_free()
+		auto_equip_popup = null
+	)
+	panel.add_child(cancel)
+
+
+func _show_feedback(message: String, color: Color) -> void:
+	feedback_text = message
+	feedback_color = color
+	_build()
+
+
+func _draw_family_tabs() -> void:
+	var x := LIST_RECT.position.x + 10.0
+	var y := LIST_RECT.position.y + 8.0
+	for tab_value in FAMILY_TABS:
+		var tab_id := str(tab_value[0])
+		var tab_text := GameManager.text(str(tab_value[1]), str(tab_value[2]))
+		var locked := not _family_unlocked(tab_id)
+		if locked:
+			tab_text += " 🔒"
+		var tab := Button.new()
+		tab.text = tab_text
+		tab.position = Vector2(x, y)
+		tab.size = Vector2(114, 30)
+		tab.add_theme_font_size_override("font_size", 11)
+		tab.focus_mode = Control.FOCUS_NONE
+		var active := selected_family == tab_id
+		var style := _style(Color(0.10, 0.16, 0.26) if active else Color(0.045, 0.062, 0.10), GOLD if active else (Color(0.24, 0.28, 0.34) if locked else BLUE_EDGE), 2, 4)
+		tab.add_theme_stylebox_override("normal", style)
+		tab.add_theme_stylebox_override("hover", style)
+		tab.add_theme_stylebox_override("pressed", style)
+		tab.add_theme_color_override("font_color", GOLD if active else (Color(0.52, 0.56, 0.62) if locked else Color(0.80, 0.86, 0.92)))
+		tab.pressed.connect(func() -> void:
+			selected_family = tab_id
+			_build()
+		)
+		add_child(tab)
+		x += 118.0
+
+
+func _part_visible_in_tab(part_family: String) -> bool:
+	if selected_family == "all":
+		return true
+	if part_family == selected_family:
+		return true
+	if part_family == "":
+		return selected_family in UNIVERSAL_COMPAT
+	return false
+
+
+func _family_unlocked(family: String) -> bool:
+	if family in ["all", "refractor", ""]:
+		return true
+	for part in GameManager.parts_data:
+		if str(part.get("telescope_family", "")) == family and _is_unlocked(str(part.get("id", ""))):
+			return true
+	return false
 
 
 func _draw_empty_eye_stage() -> void:
@@ -132,8 +270,8 @@ func _draw_summary_panel() -> void:
 func _draw_parts_list() -> void:
 	_panel(LIST_RECT.position, LIST_RECT.size, PANEL_DARK, BLUE_EDGE)
 	parts_scroll = ScrollContainer.new()
-	parts_scroll.position = LIST_RECT.position + Vector2(14, 16)
-	parts_scroll.size = LIST_RECT.size - Vector2(28, 30)
+	parts_scroll.position = LIST_RECT.position + Vector2(14, 48)
+	parts_scroll.size = LIST_RECT.size - Vector2(28, 62)
 	parts_scroll.clip_contents = true
 	parts_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	parts_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -143,6 +281,12 @@ func _draw_parts_list() -> void:
 	parts_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parts_box.add_theme_constant_override("separation", 10)
 	parts_scroll.add_child(parts_box)
+
+	if not _family_unlocked(selected_family):
+		var notice := Control.new()
+		notice.custom_minimum_size = Vector2(CARD_SIZE.x, 26)
+		_label_to(notice, GameManager.text("This family is not unlocked yet - later missions will open it. Parts below are preview only.", "该望远镜家族尚未解锁——完成后续任务后开放。以下零件仅供预览。"), Vector2(8, 2), Vector2(880, 22), 12, WARNING)
+		parts_box.add_child(notice)
 
 	var grouped := _grouped_parts()
 	for category in CATEGORY_ORDER:
@@ -170,6 +314,9 @@ func _part_card(part: Dictionary) -> Control:
 	var type_info: Dictionary = {"en": _type_label(part_type, "en"), "zh": _type_label(part_type, "zh"), "role": _type_label(part_type, "role")}
 	var unlocked := _is_unlocked(part_id)
 	var equipped := GameManager.equipped_part_id(part_type) == part_id
+	var exact_required_id := _required_id_for_type(part_type)
+	var exact_required := exact_required_id == part_id
+	var incompatible_equipped := equipped and exact_required_id != "" and not exact_required
 	var recommended := _is_recommended(part)
 	var is_next_step := part_type == next_step_part_type
 
@@ -179,10 +326,13 @@ func _part_card(part: Dictionary) -> Control:
 
 	var bg := CARD_BG
 	var border := BLUE_EDGE
-	if equipped:
+	if incompatible_equipped:
+		bg = Color(0.18, 0.075, 0.045)
+		border = WARNING
+	elif equipped:
 		bg = CARD_EQUIPPED
 		border = GREEN
-	elif recommended or is_next_step:
+	elif exact_required or recommended or is_next_step:
 		border = GOLD
 	elif not unlocked:
 		bg = CARD_LOCKED
@@ -191,21 +341,32 @@ func _part_card(part: Dictionary) -> Control:
 	var panel := Panel.new()
 	panel.position = Vector2.ZERO
 	panel.size = CARD_SIZE
-	panel.add_theme_stylebox_override("panel", _style(bg, border, 2 if not recommended else 3, 5))
+	panel.add_theme_stylebox_override("panel", _style(bg, border, 3 if incompatible_equipped or exact_required or recommended else 2, 5))
 	root.add_child(panel)
 	_panel_corners_to(root, Vector2.ZERO, CARD_SIZE, border)
 
-	if recommended:
+	if incompatible_equipped:
+		_badge_to(root, GameManager.text("Equipped, but not accepted by this mission", "已装备，但不符合本关指定"), Vector2(122, 10), Vector2(322, 22), WARNING)
+	elif exact_required:
+		_badge_to(root, GameManager.text("Lesson-required: this level teaches this device", "本关指定零件——本关正在学习/要求该设备"), Vector2(122, 10), Vector2(380, 22), GOLD)
+	elif recommended:
 		_badge_to(root, GameManager.text("Recommended for current mission", "当前任务推荐"), Vector2(122, 10), Vector2(322, 22), GOLD)
+	elif unlocked and GameManager.pinned_part_id(part_type) == "" and str(GameManager.best_part_for_type(part_type).get("id", "")) == part_id:
+		_badge_to(root, GameManager.text("Best available for this mission", "本关可用的最佳零件"), Vector2(122, 10), Vector2(300, 22), GOLD)
 	elif is_next_step:
 		_badge_to(root, GameManager.text("Next assembly step", "下一步安装"), Vector2(122, 10), Vector2(220, 22), WARNING)
+	# Free-slot upgrade warning: equipped part beaten by an unlocked one.
+	if equipped and GameManager.pinned_part_id(part_type) == "":
+		var best_part: Dictionary = GameManager.best_part_for_type(part_type)
+		if not best_part.is_empty() and str(best_part.get("id", "")) != part_id:
+			_badge_to(root, GameManager.text("Better available: ", "可用更佳设备：") + GameManager.dict_text(best_part, "name"), Vector2(446, 10), Vector2(286, 22), Color(1.0, 0.55, 0.40))
 
 	var icon_box := _rect_to(root, Vector2(18, 34), Vector2(70, 70), Color(0.070, 0.090, 0.120))
 	icon_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_draw_icon(root, part, Vector2(18, 34), Vector2(70, 70), unlocked)
 
 	var text_x := 106.0
-	var title_y := 36.0 if not recommended and not is_next_step else 34.0
+	var title_y := 36.0 if not incompatible_equipped and not exact_required and not recommended and not is_next_step else 34.0
 	var name_color := WARM_TEXT if unlocked else Color(0.52, 0.58, 0.62)
 	_label_to(root, GameManager.dict_text(part, "name"), Vector2(text_x, title_y), Vector2(370, 20), 15, name_color)
 	_label_to(root, _type_label(str(part.get("type", "")), "role"), Vector2(text_x, title_y + 22), Vector2(370, 18), 13, Color(0.78, 0.88, 0.88) if unlocked else Color(0.46, 0.52, 0.54))
@@ -216,17 +377,20 @@ func _part_card(part: Dictionary) -> Control:
 	desc_label.max_lines_visible = 2
 
 	_draw_stat_chips(root, part, Vector2(18, 132), unlocked)
-	_draw_action_column(root, part, unlocked, equipped)
+	_draw_action_column(root, part, unlocked, equipped, incompatible_equipped)
 	return root
 
 
-func _draw_action_column(root: Control, part: Dictionary, unlocked: bool, equipped: bool) -> void:
+func _draw_action_column(root: Control, part: Dictionary, unlocked: bool, equipped: bool, incompatible_equipped: bool) -> void:
 	var part_id := str(part.get("id", ""))
 	var part_type := str(part.get("type", ""))
 	var column_x := CARD_SIZE.x - 174.0
 	var badge_text := GameManager.text("Locked", "未解锁")
 	var badge_color := Color(0.42, 0.46, 0.50)
-	if equipped:
+	if incompatible_equipped:
+		badge_text = GameManager.text("Wrong for mission", "不符合本关")
+		badge_color = WARNING
+	elif equipped:
 		badge_text = GameManager.text("Equipped", "已装备")
 		badge_color = GREEN
 	elif unlocked:
@@ -240,10 +404,10 @@ func _draw_action_column(root: Control, part: Dictionary, unlocked: bool, equipp
 	button.add_theme_font_size_override("font_size", 12)
 	button.focus_mode = Control.FOCUS_NONE
 	if equipped:
-		button.text = GameManager.text("Equipped", "已装备")
+		button.text = GameManager.text("Replace required", "请换指定件") if incompatible_equipped else GameManager.text("Equipped", "已装备")
 		button.disabled = true
-		button.add_theme_stylebox_override("disabled", _style(Color(0.07, 0.14, 0.10), GREEN, 2, 3))
-		button.add_theme_color_override("font_disabled_color", Color(0.72, 1.0, 0.76))
+		button.add_theme_stylebox_override("disabled", _style(Color(0.18, 0.075, 0.045), WARNING, 2, 3) if incompatible_equipped else _style(Color(0.07, 0.14, 0.10), GREEN, 2, 3))
+		button.add_theme_color_override("font_disabled_color", Color(1.0, 0.78, 0.48) if incompatible_equipped else Color(0.72, 1.0, 0.76))
 	elif not unlocked:
 		button.text = GameManager.text("Locked", "未解锁")
 		button.disabled = true
@@ -258,7 +422,7 @@ func _draw_action_column(root: Control, part: Dictionary, unlocked: bool, equipp
 			if GameManager.equip_part(part_id):
 				feedback_color = GREEN
 				feedback_text = GameManager.text("Equipped %s. Reassembly required." % str(part.get("name_en", part_id)), "已装备%s。请回组装台重新安装。" % _safe_zh_name(part, str(part_type)))
-				GameManager.set_room_guidance("assembly", "Maya: Assembly Table", GameManager.text("Reassemble the telescope with the new part.", "使用新零件重新组装望远镜。"))
+				GameManager.update_room_guidance_for_level()
 				_build()
 				call_deferred("_scroll_to_part_type", part_type)
 		)
@@ -287,7 +451,8 @@ func _draw_stat_chips(parent: Control, part: Dictionary, pos: Vector2, unlocked:
 
 func _draw_icon(parent: Control, part: Dictionary, box_pos: Vector2, box_size: Vector2, unlocked: bool = true) -> void:
 	var part_id := str(part.get("id", ""))
-	var texture_path := str(PART_ICON_TEXTURES.get(part_id, ""))
+	# Advanced parts (Newtonian etc.) carry their icon in the data file.
+	var texture_path := str(PART_ICON_TEXTURES.get(part_id, str(part.get("icon_path", ""))))
 	if texture_path != "" and ResourceLoader.exists(texture_path):
 		var texture: Texture2D = load(texture_path)
 		var native_size := texture.get_size()
@@ -368,6 +533,8 @@ func _grouped_parts() -> Dictionary:
 	)
 	for part_value in parts:
 		var part: Dictionary = part_value
+		if not _part_visible_in_tab(str(part.get("telescope_family", ""))):
+			continue
 		var category := _category_for_part(part)
 		if not grouped.has(category):
 			grouped[category] = []
@@ -406,10 +573,15 @@ func _unlocked_count() -> int:
 
 func _is_recommended(part: Dictionary) -> bool:
 	var part_id := str(part.get("id", ""))
+	var part_type := str(part.get("type", ""))
 	var level := GameManager.current_level()
+	var exact_required_id := _required_id_for_type(part_type)
+	# A prescribed experiment takes priority over generic target advice. Do
+	# not mark a higher-stat mount as recommended when this level explicitly
+	# asks the player to compare using a different mount.
+	if exact_required_id != "":
+		return part_id == exact_required_id
 	if _array_has_string(level.get("recommended_part_ids", []), part_id):
-		return true
-	if _array_has_string(level.get("required_part_ids", []), part_id):
 		return true
 	var target_id := str(level.get("target_object_id", ""))
 	if target_id in ["orion_nebula", "andromeda"] and part_id in ["objective_100mm", "stable_mount", "eyepiece_20mm", "tracking_mount"]:
@@ -419,6 +591,15 @@ func _is_recommended(part: Dictionary) -> bool:
 	if target_id == "moon" and part_id == "eyepiece_10mm":
 		return _is_unlocked(part_id)
 	return false
+
+
+func _required_id_for_type(part_type: String) -> String:
+	for required_id_value in GameManager.current_level().get("required_part_ids", []):
+		var required_id := str(required_id_value)
+		var required_part := GameManager.get_part(required_id)
+		if str(required_part.get("type", "")) == part_type:
+			return required_id
+	return ""
 
 
 func _array_has_string(values: Variant, needle: String) -> bool:
@@ -530,8 +711,24 @@ func _stage_label(stage: String) -> String:
 			return GameManager.text("Simple Refractor", "基础折射镜")
 		"refractor_with_finder":
 			return GameManager.text("Refractor + Finder", "折射镜 + 寻星镜")
-		"newtonian_basic":
-			return GameManager.text("Reflector Practice", "反射镜练习")
+		"refractor_upgraded", "newtonian_basic":
+			return GameManager.text("Upgraded Refractor", "大口径折射镜")
+		"refractor_advanced":
+			return GameManager.text("Advanced Refractor", "进阶折射镜")
+		"newtonian_reflector":
+			return GameManager.text("Newtonian Reflector", "牛顿反射镜")
+		"dobsonian":
+			return GameManager.text("Dobsonian", "多布森望远镜")
+		"cassegrain":
+			return GameManager.text("Cassegrain", "卡塞格林望远镜")
+		"gregorian":
+			return GameManager.text("Gregorian", "格里高利望远镜")
+		"space_segmented":
+			return GameManager.text("Infrared Space Telescope", "红外空间望远镜")
+		"fast_radio":
+			return GameManager.text("FAST Radio Telescope", "FAST 射电望远镜")
+		"observatory_network":
+			return GameManager.text("Observatory Network", "联合观测网络")
 		"advanced":
 			return GameManager.text("Advanced Kit", "高级设备")
 	return stage

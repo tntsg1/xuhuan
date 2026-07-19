@@ -20,6 +20,16 @@
     "fallback_y": 330
   },
   {
+    "id": "vega",
+    "name": "Vega",
+    "type": "star",
+    "ra_hours": 18.6156,
+    "dec_degrees": 38.7837,
+    "icon_type": "blue_star",
+    "fallback_x": 520,
+    "fallback_y": 190
+  },
+  {
     "id": "betelgeuse",
     "name": "Betelgeuse",
     "type": "star",

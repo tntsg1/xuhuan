@@ -8,7 +8,13 @@ static func calculate(parts: Dictionary, assembly_state: Dictionary) -> Dictiona
 	var tripod: Dictionary = _dict_value(parts.get("tripod", {}))
 	var mount: Dictionary = _dict_value(parts.get("mount", {}))
 	var tube: Dictionary = _dict_value(parts.get("tube", {}))
+	var reflector_tube: Dictionary = _dict_value(parts.get("reflector_tube", {}))
+	if not reflector_tube.is_empty():
+		tube = reflector_tube
 	var objective: Dictionary = _dict_value(parts.get("objective", {}))
+	var primary_mirror: Dictionary = _dict_value(parts.get("primary_mirror", {}))
+	if not primary_mirror.is_empty():
+		objective = primary_mirror
 	var eyepiece: Dictionary = _dict_value(parts.get("eyepiece", {}))
 	if objective.is_empty() or eyepiece.is_empty():
 		return _empty_stats()
@@ -38,6 +44,10 @@ static func calculate(parts: Dictionary, assembly_state: Dictionary) -> Dictiona
 	# player can focus in the telescope view. 0 when not installed.
 	var focus_knob: Dictionary = _dict_value(parts.get("focus_knob", {}))
 	var focus_knob_state: Dictionary = _dict_value(assembly_state.get("focus_knob", {}))
+	var focuser: Dictionary = _dict_value(parts.get("focuser", {}))
+	if not focuser.is_empty():
+		focus_knob = focuser
+		focus_knob_state = _dict_value(assembly_state.get("focuser", {}))
 	var focus_sensitivity := 0.0
 	var focus_stability := 0.0
 	var focus_control_score := 0.0
@@ -62,14 +72,10 @@ static func calculate(parts: Dictionary, assembly_state: Dictionary) -> Dictiona
 
 static func get_assembly_score(assembly_state: Dictionary) -> float:
 	var scores: Array[float] = []
-	for part_type in CORE_PARTS:
-		var entry: Dictionary = _dict_value(assembly_state.get(part_type, {}))
+	for part_type_value in assembly_state.keys():
+		var entry: Dictionary = _dict_value(assembly_state.get(part_type_value, {}))
 		if bool(entry.get("installed", false)):
 			scores.append(float(entry.get("alignment_score", 0.0)))
-	for optional_type in ["finder_scope", "focus_knob"]:
-		var optional: Dictionary = _dict_value(assembly_state.get(optional_type, {}))
-		if bool(optional.get("installed", false)):
-			scores.append(float(optional.get("alignment_score", 0.0)))
 	if scores.is_empty():
 		return 0.0
 	var total: float = 0.0

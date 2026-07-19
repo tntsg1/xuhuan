@@ -71,7 +71,14 @@ PlayerCharacter/
 *.swp
 *.swo
 *.bak
+*.bak[0-9]*
 *.cache
+
+# Local automation and isolated Godot test profiles
+/.playwright-cli/
+/.tmp_user_parts/
+/artifacts/*appdata*/
+/artifacts/observation_ui_isolated_tests/appdata_*/
 
 # Save files
 *.sav

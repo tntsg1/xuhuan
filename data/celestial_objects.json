@@ -63,6 +63,27 @@
     "apparent_magnitude": -1.46
   },
   {
+	"id": "vega",
+	"name_en": "Vega",
+	"name_zh": "织女星",
+	"type_en": "Blue-white star",
+	"type_zh": "蓝白色恒星",
+	"x": 610,
+	"y": 205,
+	"brightness": 88,
+	"color": "blue white",
+	"difficulty": 3,
+	"required_light_score": 30,
+	"required_clarity": 48,
+	"required_stability": 38,
+	"short_hint_en": "Find the bright blue-white star high in the summer sky.",
+	"short_hint_zh": "寻找夏季高空中明亮的蓝白色恒星。",
+	"learning_text_en": "Vega is about 25 light-years away. Its bright point makes colored fringes from a simple refractor easy to notice, while a reflector shows the same star without lens chromatic aberration.",
+	"learning_text_zh": "织女星距离我们约 25 光年。它明亮的星点容易显出简单折射镜的彩色边缘，而反射镜观察同一颗星时不会产生透镜色差。",
+	"naked_eye_visible": true,
+	"apparent_magnitude": 0.03
+  },
+  {
     "id": "mars",
     "name_en": "Mars",
     "name_zh": "火星",
@@ -250,5 +271,27 @@
     "learning_text_zh": "比邻星是离太阳最近的恒星，却完全无法用肉眼看见——红矮星又小又暗。离得近不等于看得亮。",
     "naked_eye_visible": false,
     "apparent_magnitude": 11.13
+  },
+  {
+    "id": "pulsar_b0329",
+    "name_en": "PSR B0329+54",
+    "name_zh": "脉冲星 PSR B0329+54",
+    "type_en": "Radio Pulsar",
+    "type_zh": "无线电脉冲星",
+    "x": 540,
+    "y": 210,
+    "brightness": 0,
+    "color": "radio",
+    "difficulty": 7,
+    "required_light_score": 0,
+    "required_clarity": 0,
+    "required_stability": 0,
+    "short_hint_en": "A repeating radio pulse, detected as data rather than a visible point.",
+    "short_hint_zh": "重复的无线电脉冲，以数据而不是可见光点的形式被探测。",
+    "learning_text_en": "A pulsar is a rapidly rotating neutron star. Its radio beam can appear as a precisely repeating pulse when it sweeps past Earth.",
+    "learning_text_zh": "脉冲星是快速旋转的中子星。当它的无线电束扫过地球时，会表现为精确重复的脉冲。",
+    "naked_eye_visible": false,
+    "apparent_magnitude": 99.0,
+    "radio_visible": true
   }
 ]

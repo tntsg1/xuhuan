@@ -9,7 +9,8 @@
     "cost": 0,
     "unlock_level": 1,
     "description_en": "A simple tripod that supports the whole telescope.",
-    "description_zh": "支撑整台望远镜的基础三脚架。"
+    "description_zh": "支撑整台望远镜的基础三脚架。",
+    "icon_path": "res://assets/telescope_parts/basic_tripod.png"
   },
   {
     "id": "basic_mount",
@@ -21,7 +22,8 @@
     "cost": 0,
     "unlock_level": 1,
     "description_en": "A simple mount. It works, but it can shake at high magnification.",
-    "description_zh": "简单支架，可以使用，但高倍率时会更容易抖动。"
+    "description_zh": "简单支架，可以使用，但高倍率时会更容易抖动。",
+    "icon_path": "res://assets/telescope_parts/basic_mount.png"
   },
   {
     "id": "starter_tube",
@@ -71,7 +73,8 @@
     "cost": 0,
     "unlock_level": 5,
     "description_en": "A small scope that helps aim the main telescope.",
-    "description_zh": "帮助主望远镜瞄准的小型寻星镜。"
+    "description_zh": "帮助主望远镜瞄准的小型寻星镜。",
+    "icon_path": "res://assets/telescope_parts/basic_finder_scope.png"
   },
   {
     "id": "eyepiece_10mm",
