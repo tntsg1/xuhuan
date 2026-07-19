@@ -2,6 +2,7 @@ extends SceneTree
 
 const OUT_ASSEMBLY := "user://parts_asset_assembly.png"
 const OUT_BASIC := "user://parts_asset_assembly_basic.png"
+const OUT_MIXED := "res://artifacts/assembly_texture_regression/mixed_upgrade_parts.png"
 
 
 func _initialize() -> void:
@@ -54,4 +55,19 @@ func _initialize() -> void:
 	await process_frame
 	root.get_texture().get_image().save_png(OUT_BASIC)
 	print("saved ", OUT_BASIC)
+
+	scene.queue_free()
+	await process_frame
+	gm.progress["unlocked_parts"].append_array(["dobsonian_rocker_mount", "dobsonian_30mm_eyepiece"])
+	gm.progress["selected_parts"]["mount"] = "dobsonian_rocker_mount"
+	gm.progress["selected_parts"]["objective"] = "objective_100mm"
+	gm.progress["selected_parts"]["eyepiece"] = "dobsonian_30mm_eyepiece"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_MIXED).get_base_dir())
+	scene = load("res://scenes/telescope_assembly.tscn").instantiate()
+	root.add_child(scene)
+	current_scene = scene
+	await process_frame
+	await process_frame
+	root.get_texture().get_image().save_png(OUT_MIXED)
+	print("saved ", OUT_MIXED)
 	quit()

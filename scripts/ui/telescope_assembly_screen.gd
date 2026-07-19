@@ -393,7 +393,7 @@ func _scroll_parts_to(value: int) -> void:
 
 
 func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selected: bool, pos: Vector2) -> void:
-	var shared_texture_path := str(PART_TEXTURES.get(str(part.get("id", "")), part.get("icon_path", "")))
+	var shared_texture_path := _part_texture_path(part)
 	var shared_texture := load(shared_texture_path) as Texture2D if shared_texture_path != "" and ResourceLoader.exists(shared_texture_path) else null
 	var template_card := AssemblyUITemplate.add_part_card(
 		parts_list,
@@ -467,22 +467,31 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 	parts_list.add_child(click)
 
 
-func _draw_part_texture(parent: Control, part: Dictionary, pos: Vector2, texture_size: Vector2, alpha: float = 1.0) -> bool:
+func _part_texture_path(part: Dictionary) -> String:
 	var part_id := str(part.get("id", ""))
-	var texture_path := str(PART_TEXTURES.get(part_id, ""))
-	if texture_path == "" or not ResourceLoader.exists(texture_path):
+	var legacy_path := str(PART_TEXTURES.get(part_id, ""))
+	if legacy_path != "" and ResourceLoader.exists(legacy_path):
+		return legacy_path
+	var icon_path := str(part.get("icon_path", ""))
+	if icon_path != "" and ResourceLoader.exists(icon_path):
+		return icon_path
+	return ""
+
+
+func _draw_part_texture(parent: Control, part: Dictionary, pos: Vector2, texture_size: Vector2, alpha: float = 1.0) -> bool:
+	var texture_path := _part_texture_path(part)
+	if texture_path == "":
 		return false
-	var texture: Texture2D = load(texture_path)
-	var native_size := texture.get_size()
-	var scale := minf(texture_size.x / native_size.x, texture_size.y / native_size.y)
-	var draw_size := native_size * scale
+	var texture := load(texture_path) as Texture2D
+	if texture == null:
+		return false
 	var icon := TextureRect.new()
-	icon.texture = texture
-	icon.position = pos + (texture_size - draw_size) * 0.5
-	icon.size = native_size
-	icon.scale = Vector2.ONE * scale
-	icon.stretch_mode = TextureRect.STRETCH_KEEP
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.texture = texture
+	icon.position = pos
+	icon.size = texture_size
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon.modulate = Color(1, 1, 1, alpha)
 	parent.add_child(icon)
@@ -918,8 +927,7 @@ func _try_install(slot_type: String) -> void:
 
 func _capture_part_animation(part_type: String) -> Dictionary:
 	var part := _part_for_type(part_type)
-	var part_id := str(part.get("id", ""))
-	var path := str(PART_TEXTURES.get(part_id, part.get("icon_path", "")))
+	var path := _part_texture_path(part)
 	var source := part_card_controls.get(part_type) as Control
 	var target := slot_controls.get(part_type) as Control
 	if source == null or target == null or path == "" or not ResourceLoader.exists(path):
