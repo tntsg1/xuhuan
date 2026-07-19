@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pixel-observatory-web",
+  "main": "cloudflare/worker.mjs",
+  "compatibility_date": "2026-07-19",
+  "workers_dev": true,
+  "r2_buckets": [
+    {
+      "binding": "GAME_ASSETS",
+      "bucket_name": "pixel-observatory-game-assets"
+    }
+  ],
+  "assets": {
+    "directory": "./build/cloudflare",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  }
+}
