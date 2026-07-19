@@ -19,19 +19,24 @@ function with_isolation_headers(response) {
 export default {
 	async fetch(request, env) {
 		const url = new URL(request.url);
-		if (url.pathname === "/index.pck") {
-			const pack = await env.GAME_ASSETS.get("index.pck");
-			if (!pack) {
+		const large_game_files = {
+			"/index.pck": "application/octet-stream",
+			"/index.side.wasm": "application/wasm",
+		};
+		if (large_game_files.hasOwnProperty(url.pathname)) {
+			const key = url.pathname.slice(1);
+			const asset = await env.GAME_ASSETS.get(key);
+			if (!asset) {
 				return new Response("Game data is unavailable.", { status: 404 });
 			}
 
 			const headers = new Headers();
-			pack.writeHttpMetadata(headers);
-			headers.set("Content-Type", "application/octet-stream");
-			headers.set("Content-Length", String(pack.size));
-			headers.set("ETag", pack.httpEtag);
+			asset.writeHttpMetadata(headers);
+			headers.set("Content-Type", large_game_files[url.pathname]);
+			headers.set("Content-Length", String(asset.size));
+			headers.set("ETag", asset.httpEtag);
 			headers.set("Cache-Control", "public, max-age=31536000, immutable");
-			return with_isolation_headers(new Response(pack.body, { headers }));
+			return with_isolation_headers(new Response(asset.body, { headers }));
 		}
 
 		return with_isolation_headers(await env.ASSETS.fetch(request));
