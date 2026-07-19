@@ -23,6 +23,12 @@
 
 The screen rect is `VIEW_RECT (88, 103, 630, 560)` plus local `AIM_RETICLE_RECT (110, 75, 410, 410)`. Its center is `(403, 383)`, exactly matching the celestial projection center. All three centers are transparent; Scope also has no gray/black square or opaque optical disk. The reticles stop above the guidance band.
 
+Final mode variants:
+
+- Eye uses `eye_large_center.png` (`550x560`): latest `1.2` artwork with only its center aperture enlarged to about 78 source pixels.
+- Finder uses `finder_second_ring.png` (`560x560`): only the second circle remains; the outer circle, center gold circle, crosshair, ticks, dots, and ornaments are transparent.
+- Scope continues to use `3.png` only on the sky aiming page. The detailed `Telescope View` deliberately has no barrel/reticle overlay, crosshair, or center circle.
+
 ## Scales and pointers
 
 - Top shell: screen `Rect2(80, 33, 630, 66)`.
@@ -40,7 +46,7 @@ The supplied bars are used as source art. Their fixed decorative ticks are remov
 
 All 17 individual controls are integrated: three reticles; azimuth/altitude bars, pointers, and knobs; three mode icons; approach/lock rings; focus knob; tracking knob; and tracking-enabled icon. All were transparent-trimmed and size-limited with nearest-neighbor resizing. Exact values are in the manifest.
 
-The long `ChatGPT Image 2026...png` composite remains archive-only because it contains baked coordinates, instructions, values, and a fixed reticle. No supplied cloud/seeing overlay exists, so the existing project cloud textures and turbulence shader remain in use; no placeholder was generated.
+The `ChatGPT Image 2026...png` reference composites remain archive-only because they contain baked coordinates, instructions, values, or fixed reticles. No supplied cloud/seeing overlay exists, so the existing project cloud textures and turbulence shader remain in use; no placeholder was generated.
 
 ## Modes and state logic
 
@@ -50,6 +56,7 @@ The long `ChatGPT Image 2026...png` composite remains archive-only because it co
 - Target outside view: direction guidance, no strong target ring, Observe disabled.
 - Target near center: cyan approach ring follows the projected target, Observe disabled.
 - Target centered: approach ring is replaced by the gold lock ring, Observe enabled.
+- Approach and lock rings share one target-derived size. Their diameter is always larger than the rendered celestial texture, with mode-specific padding.
 - Tracking: Off, Matched 1x, Too slow, and Too fast are distinct; rates below/above 1x preserve forward/reverse residual drift.
 - Focus: target blur/ghosting and the focus knob use the same `focus_error` and tolerance used by quality evaluation.
 

@@ -4,44 +4,6 @@
   "runtime_filter": "nearest-neighbor",
   "records": [
     {
-      "source_name": "1.2.png",
-      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\1.2.png",
-      "project_original": "assets/ui/observation/suc/source/1.2.png",
-      "sha256": "e4eb046ead7378ba69222b892f43e0b99cfdd4a1ea6177a735361c9bef7500f0",
-      "original_size": [
-        1024,
-        1024
-      ],
-      "original_mode": "RGBA",
-      "original_has_alpha": true,
-      "original_alpha_bbox_at_8": [
-        10,
-        0,
-        1007,
-        1016
-      ],
-      "usage": "Naked Eye central transparent aiming overlay",
-      "runtime_asset": "assets/ui/observation/suc/processed/1.png",
-      "runtime_name": "1.png",
-      "crop_rect": [
-        10,
-        0,
-        1007,
-        1016
-      ],
-      "cropped_size": [
-        997,
-        1016
-      ],
-      "runtime_size": [
-        550,
-        560
-      ],
-      "runtime_has_alpha": true,
-      "processing": "native alpha threshold + transparent trim",
-      "resize_filter": "nearest-neighbor"
-    },
-    {
       "source_name": "2.png",
       "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\2.png",
       "project_original": "assets/ui/observation/suc/source/2.png",
@@ -328,6 +290,23 @@
       "original_size": [
         1283,
         1226
+      ],
+      "original_mode": "RGB",
+      "original_has_alpha": false,
+      "original_alpha_bbox_at_8": null,
+      "usage": "layout reference only; contains baked values and text",
+      "runtime_asset": null,
+      "processing": "source archive only",
+      "reason_not_used": "Reference composite contains baked coordinates, values, and instructions."
+    },
+    {
+      "source_name": "ChatGPT Image 2026年7月19日 08_24_02.png",
+      "source_path": "C:\\Users\\tntsg\\Downloads\\tw\\suc\\ChatGPT Image 2026年7月19日 08_24_02.png",
+      "project_original": "assets/ui/observation/suc/source/ChatGPT Image 2026年7月19日 08_24_02.png",
+      "sha256": "7c93403705a39538372fab781f671373c651ae1b02c146824fe0d1ad0d82a5af",
+      "original_size": [
+        1254,
+        1254
       ],
       "original_mode": "RGB",
       "original_has_alpha": false,
@@ -688,6 +667,32 @@
       "processing": "pixel crop from supplied art",
       "resize_filter": "none",
       "usage": "live scrolling left minor tick cropped from supplied art"
+    },
+    {
+      "source_name": null,
+      "derived_from": "1.2.png + generated center-ring crop",
+      "runtime_asset": "assets/ui/observation/suc/processed/eye_large_center.png",
+      "runtime_size": [
+        550,
+        560
+      ],
+      "runtime_has_alpha": true,
+      "processing": "generated edit + chroma removal + nearest-neighbor compositing",
+      "resize_filter": "nearest-neighbor",
+      "usage": "Eye overlay with enlarged transparent target aperture"
+    },
+    {
+      "source_name": null,
+      "derived_from": "generated crop from 2.png",
+      "runtime_asset": "assets/ui/observation/suc/processed/finder_second_ring.png",
+      "runtime_size": [
+        560,
+        560
+      ],
+      "runtime_has_alpha": true,
+      "processing": "generated edit + chroma removal + nearest-neighbor compositing",
+      "resize_filter": "nearest-neighbor",
+      "usage": "Finder overlay retaining only the second circle"
     }
   ]
 }

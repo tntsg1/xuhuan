@@ -20,6 +20,7 @@ func _initialize() -> void:
 
 	var telescope: Control = load("res://scenes/telescope_view.tscn").instantiate()
 	await _replace_scene(telescope)
+	_check(telescope.find_child("ObservationReticleOverlay", true, false) == null, "detailed telescope view has no barrel, crosshair, or center-circle overlay")
 	var guide: Control = telescope.get("quiz_brief_overlay")
 	var choices: VBoxContainer = telescope.get("choices_box")
 	var ids: Array[String] = telescope.get("identify_choice_ids")

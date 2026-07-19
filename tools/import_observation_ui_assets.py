@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageFilter
@@ -195,6 +197,28 @@ def create_scale_derivatives(records: list[dict]) -> None:
         })
 
 
+def create_reticle_variants(records: list[dict]) -> None:
+    subprocess.run([sys.executable, str(PROJECT_DIR / "tools" / "build_aim_reticle_variants.py")], check=True)
+    variants = {
+        "eye_large_center.png": ("1.2.png + generated center-ring crop", "Eye overlay with enlarged transparent target aperture"),
+        "finder_second_ring.png": ("generated crop from 2.png", "Finder overlay retaining only the second circle"),
+    }
+    for name, (derived_from, usage) in variants.items():
+        path = PROCESSED_DIR / name
+        with Image.open(path) as image:
+            runtime_size = list(image.size)
+        records.append({
+            "source_name": None,
+            "derived_from": derived_from,
+            "runtime_asset": path.relative_to(PROJECT_DIR).as_posix(),
+            "runtime_size": runtime_size,
+            "runtime_has_alpha": True,
+            "processing": "generated edit + chroma removal + nearest-neighbor compositing",
+            "resize_filter": "nearest-neighbor",
+            "usage": usage,
+        })
+
+
 def main() -> None:
     ORIGINAL_DIR.mkdir(parents=True, exist_ok=True)
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
@@ -219,7 +243,12 @@ def main() -> None:
                 "original_mode": original_mode,
                 "original_has_alpha": has_alpha,
                 "original_alpha_bbox_at_8": list(original_alpha_bbox) if original_alpha_bbox else None,
-                "usage": USAGE.get(source.name, "unclassified"),
+                "usage": USAGE.get(
+                    source.name,
+                    "layout reference only; contains baked values and text"
+                    if source.name.startswith("ChatGPT Image ")
+                    else "unclassified",
+                ),
             }
 
             if source.name not in RUNTIME_LIMITS:
@@ -267,6 +296,7 @@ def main() -> None:
             records.append(record)
 
     create_scale_derivatives(records)
+    create_reticle_variants(records)
     manifest = {
         "source_directory": str(SOURCE_DIR),
         "source_files_unchanged": True,
@@ -275,7 +305,7 @@ def main() -> None:
     }
     manifest_path = ASSET_ROOT / "asset_manifest.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Imported {len(list(SOURCE_DIR.glob('*.png')))} source PNG files and {len(DERIVED_USAGE)} derived runtime files")
+    print(f"Imported {len(list(SOURCE_DIR.glob('*.png')))} source PNG files and {len(DERIVED_USAGE) + 2} derived runtime files")
     print(manifest_path)
 
 

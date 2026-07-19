@@ -44,7 +44,7 @@ func _setup_level() -> void:
 func _test_assets_and_layers() -> void:
 	_check(str(ProjectSettings.get_setting("display/window/stretch/aspect", "")) == "keep", "window scaling preserves pixel-art aspect ratio")
 	var names := [
-		"1.png", "2.png", "3.png",
+		"1.png", "2.png", "3.png", "eye_large_center.png", "finder_second_ring.png",
 		"azimuth_scale_shell.png", "altitude_scale_shell.png",
 		"azimuth_tick_major.png", "azimuth_tick_minor.png",
 		"altitude_tick_major.png", "altitude_tick_minor.png",
@@ -65,10 +65,14 @@ func _test_assets_and_layers() -> void:
 	var reticle := view.get("scope_reticle_layer") as TextureRect
 	_check(reticle != null and reticle.get_rect().get_center().distance_to(Vector2(315.0, 280.0)) < 0.1, "reticle center matches the celestial projection center")
 	_check(reticle != null and reticle.position.y + reticle.size.y <= 486.0, "reticle stays above the bottom guidance band")
-	for file_name in ["1.png", "2.png", "3.png", "target_approach_ring.png", "target_lock_ring.png"]:
+	for file_name in ["eye_large_center.png", "finder_second_ring.png", "3.png", "target_approach_ring.png", "target_lock_ring.png"]:
 		var image: Image = (load(ASSET_DIR + file_name) as Texture2D).get_image()
 		var center := Vector2i(image.get_width() / 2, image.get_height() / 2)
 		_check(image.get_pixelv(center).a < 0.15, "%s keeps the celestial target center transparent" % file_name)
+	var finder_image: Image = (load(ASSET_DIR + "finder_second_ring.png") as Texture2D).get_image()
+	_check(_visible_pixels_outside_annulus(finder_image, 105.0, 122.0) == 0, "Finder artwork contains only the second circular ring")
+	var eye_image: Image = (load(ASSET_DIR + "eye_large_center.png") as Texture2D).get_image()
+	_check(_visible_pixels_in_annulus(eye_image, 31.0, 44.0) > 80, "Eye artwork contains the enlarged center aperture")
 	var object_icons: Dictionary = view.get("object_icons")
 	if not object_icons.is_empty():
 		var first_icon := object_icons.values()[0] as TextureRect
@@ -146,7 +150,7 @@ func _test_modes() -> void:
 		var info: Dictionary = view.call("_object_visual_for_mode", target_object)
 		target_sizes.append(float(info.get("size_px", 0.0)))
 		var reticle := view.get("scope_reticle_layer") as TextureRect
-		var expected_path := "res://assets/ui/observation/suc/processed/%s.png" % ({"naked_eye": "1", "finder": "2", "telescope": "3"}[mode])
+		var expected_path := "res://assets/ui/observation/suc/processed/%s.png" % ({"naked_eye": "eye_large_center", "finder": "finder_second_ring", "telescope": "3"}[mode])
 		_check(reticle != null and reticle.texture != null and reticle.texture.resource_path == expected_path, "%s uses exactly one supplied reticle texture" % mode)
 	_check(fovs == [120.0, 28.0, 6.0], "Eye/Finder/Scope FOV values remain 120/28/6")
 	_check(target_sizes[0] < target_sizes[1] and target_sizes[1] < target_sizes[2], "target is smallest in Eye and largest in Scope")
@@ -174,6 +178,7 @@ func _test_target_lock_alignment() -> void:
 	view.set("telescope_azimuth", wrapf(float(target.get("azimuth", 180.0)) + 1.0, 0.0, 360.0))
 	view.call("_rebuild_view")
 	var approach_ring := view.get("target_state_ring") as TextureRect
+	var approach_size := approach_ring.size if approach_ring != null else Vector2.ZERO
 	_check(str(view.get("target_lock_state")) == "approach" and approach_ring != null and approach_ring.texture.resource_path.ends_with("target_approach_ring.png"), "near target shows only the approach ring")
 	_check((view.get("observe_button") as Button).disabled, "Observe stays disabled before target lock")
 
@@ -188,6 +193,8 @@ func _test_target_lock_alignment() -> void:
 		var ring_center := ring.position + ring.size * 0.5
 		_check(icon_center.distance_to(ring_center) < 1.5, "target lock ring matches the projected celestial position")
 		_check(ring.texture.resource_path.ends_with("target_lock_ring.png"), "centered target replaces approach with the lock ring")
+		_check(ring.size.x > maxf(icon.size.x * icon.scale.x, icon.size.y * icon.scale.y), "lock ring remains larger than the rendered celestial target")
+		_check(ring.size == approach_size, "approach and lock states keep one consistent target-derived frame size")
 	_check(not (view.get("observe_button") as Button).disabled, "Observe enables from the same centered-target condition")
 
 
@@ -213,3 +220,25 @@ func _check(condition: bool, label: String) -> void:
 	else:
 		failures += 1
 		print("  FAIL: " + label)
+
+
+func _visible_pixels_in_annulus(image: Image, inner_radius: float, outer_radius: float) -> int:
+	var center := Vector2(image.get_width(), image.get_height()) * 0.5
+	var count := 0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var radius := Vector2(x + 0.5, y + 0.5).distance_to(center)
+			if radius >= inner_radius and radius <= outer_radius and image.get_pixel(x, y).a >= 0.1:
+				count += 1
+	return count
+
+
+func _visible_pixels_outside_annulus(image: Image, inner_radius: float, outer_radius: float) -> int:
+	var center := Vector2(image.get_width(), image.get_height()) * 0.5
+	var count := 0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var radius := Vector2(x + 0.5, y + 0.5).distance_to(center)
+			if (radius < inner_radius or radius > outer_radius) and image.get_pixel(x, y).a >= 0.1:
+				count += 1
+	return count

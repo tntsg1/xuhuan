@@ -109,8 +109,7 @@ const CONTENT_W := 194.0
 const FOCUS_ADJUST_SPEED := 0.22
 const OBS_UI_DIR := "res://assets/ui/observation/suc/processed/"
 const Z_MODAL_OVERLAY := 1000
-const EYE_RETICLE_TEXTURE := OBS_UI_DIR + "1.png"
-const SCOPE_RETICLE_TEXTURE := OBS_UI_DIR + "3.png"
+const EYE_RETICLE_TEXTURE := OBS_UI_DIR + "eye_large_center.png"
 
 var feedback_label: Label
 var quality_label: Label
@@ -1901,17 +1900,22 @@ func _scope_visual() -> Control:
 		occluder.material = occluder_mat
 		clipper.add_child(occluder)
 		root.add_child(clipper)
-	_add_observation_reticle(root, center)
+	# The detailed telescope image stays optically clean: no barrel artwork,
+	# crosshair, or center circle over the observed object. Naked-eye sessions
+	# retain their dedicated wide-field reference overlay.
+	if observation_mode == "naked_eye":
+		_add_observation_reticle(root, center)
 	return root
 
 
 func _add_observation_reticle(parent: Control, center: Vector2) -> void:
 	var overlay := TextureRect.new()
+	overlay.name = "ObservationReticleOverlay"
 	overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.texture = load(EYE_RETICLE_TEXTURE if observation_mode == "naked_eye" else SCOPE_RETICLE_TEXTURE) as Texture2D
+	overlay.texture = load(EYE_RETICLE_TEXTURE) as Texture2D
 	overlay.position = center - Vector2(280, 280)
 	overlay.size = Vector2(560, 560)
 	parent.add_child(overlay)

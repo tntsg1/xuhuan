@@ -30,8 +30,8 @@ const ALT_POINTER_TEXTURE := OBS_UI_DIR + "altitude_pointer.png"
 const APPROACH_RING_TEXTURE := OBS_UI_DIR + "target_approach_ring.png"
 const LOCK_RING_TEXTURE := OBS_UI_DIR + "target_lock_ring.png"
 const MODE_RETICLE_TEXTURES := {
-	"naked_eye": OBS_UI_DIR + "1.png",
-	"finder": OBS_UI_DIR + "2.png",
+	"naked_eye": OBS_UI_DIR + "eye_large_center.png",
+	"finder": OBS_UI_DIR + "finder_second_ring.png",
 	"telescope": OBS_UI_DIR + "3.png"
 }
 
@@ -1747,7 +1747,13 @@ func _update_marker_frames() -> void:
 		var offset := _center_offset(target_id)
 		var centered_limit := CENTER_TOLERANCE_TELESCOPE if view_mode == "telescope" else (CENTER_TOLERANCE_FINDER if view_mode == "finder" else fov_x * 0.05)
 		var centered := offset <= centered_limit
-		var ring_size := 38.0 if view_mode == "naked_eye" else (54.0 if view_mode == "finder" else 76.0)
+		# Approach and lock use the same target-derived footprint. The feedback
+		# ring must always surround the rendered object instead of shrinking
+		# inside large Moon/planet/deep-sky textures.
+		var target_diameter := maxf(target_rect.size.x, target_rect.size.y)
+		var ring_minimum := 72.0 if view_mode == "naked_eye" else (92.0 if view_mode == "finder" else 112.0)
+		var ring_padding := 28.0 if view_mode == "naked_eye" else (36.0 if view_mode == "finder" else 44.0)
+		var ring_size := maxf(ring_minimum, target_diameter + ring_padding)
 		var ring_path := LOCK_RING_TEXTURE if centered else APPROACH_RING_TEXTURE
 		var alpha := 1.0 if centered else (0.52 if view_mode == "finder" else (0.40 if view_mode == "naked_eye" else 0.64))
 		next_state = "locked" if centered else ("approach" if offset <= maxf(fov_x, fov_y) * 0.22 else "search")
