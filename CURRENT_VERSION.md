@@ -2,8 +2,8 @@
 
 ## Version Identity
 
-- Version name: `current-version-2026-07-19`
-- Updated: 2026-07-19
+- Version name: `current-version-2026-07-20`
+- Updated: 2026-07-20
 - Godot version: 4.7 stable
 - Original snapshot commit: `cb9f5c8`
 - Latest included feature commit: `c254d56`
@@ -12,7 +12,8 @@
 
 ## Included State
 
-- Pixel Observatory progression and developer level controls through the current 45-level data set.
+- Pixel Observatory progression and developer level controls through the current 131-entry campaign order.
+- The 131-entry order is backed by `data/levels.json`, `data/advanced_levels.json`, `data/expansion/levels.json`, and `data/campaign_order.json`.
 - Refractor, Newtonian, Dobsonian, Gregorian/Cassegrain, radio, infrared, multi-observation, collimation, and tube-subassembly frameworks currently present in the workspace.
 - Refractor chromatic-aberration comparison, Vega art, Newtonian motivation/tutorial sequence, assembly, collimation, and observation progression.
 - Complete observation HUD integration from `C:/Users/tntsg/Downloads/tw/suc`, including native-alpha replacement assets.
@@ -24,6 +25,8 @@
 - Shared interaction animations, first-use guidance, reduced-motion support, assembly snap feedback, collimation feedback, and observation success/failure feedback.
 - English/Chinese localization fixes, pre-quiz celestial-object guide, randomized A-D answers, and modal layer ordering fixes.
 - Current acceptance screenshots and regression tools under `artifacts/` and `tools/`.
+- Mobile Controller Mode with virtual joystick, touch interaction, scope switching, focus controls, and collimation controls; see `docs/mobile_controller_mode.md`.
+- Web deployment configuration for `pixelobservatorygame.com` through Cloudflare Worker/R2 and generated builds under `build/web/` and `build/cloudflare-public/`.
 
 ## Asset Provenance
 
@@ -59,9 +62,17 @@
 - Assembly texture regression: passed.
 - Core task, story, teaching, and full-flow regressions: passed.
 
+## Website Check
+
+- Checked: 2026-07-20
+- URL: <https://pixelobservatorygame.com>
+- Result: HTTP 200; the returned page title is `Pixel Observatory` and the Godot Web entry page is reachable.
+- Deployment note: the website serves a built Web export. Local source changes require a new Web export and deployment before they appear online.
+
 ## Notes
 
 - Core level order, story conditions, observation calculations, and save schema were not changed by the HUD and feedback integration.
 - Local saves, credentials, generated Godot caches, isolated test profiles, and temporary backup files remain excluded from Git.
 - Detailed release history is maintained in `docs/VERSION_HISTORY.md`.
 - Detailed observation HUD evidence is maintained in `artifacts/observation_ui_acceptance/report.md`.
+- Project overview, current limitations, and website status are maintained in `docs/PROJECT_STATUS.md`.
