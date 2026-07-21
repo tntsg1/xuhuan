@@ -25,6 +25,24 @@ func _initialize() -> void:
 			print("FAIL L", level_number, ": no target")
 			failures += 1
 			break
+		# Campaign order weaves expansion lessons (constellation nights and
+		# technique-driven telescope targets) between legacy lessons. Their
+		# mechanics have dedicated tests (observation_expansion_test); here
+		# they complete synthetically so the ORDER itself stays under test.
+		if level_number > 91:
+			for step_value in gm.mission_steps():
+				gm.mark_mission_step_done(str((step_value as Dictionary).get("id", "")))
+			var expansion_observation := {
+				"success": true, "quality": "Good", "visual_effect": "clear",
+				"observation_mode": str(level.get("observation_mode", "telescope")),
+				"ratios": {"light": 1.0, "clarity": 1.0, "stability": 1.0}
+			}
+			if not gm.complete_current_mission(target_id, expansion_observation):
+				print("FAIL L", level_number, ": expansion mission not completed")
+				failures += 1
+				break
+			print("L", level_number, " expansion ", target_id, " completed=true")
+			continue
 		var needs_telescope: bool = bool(level.get("requires_telescope", true))
 		if needs_telescope:
 			# Auto-equip best unlocked part per type (upgrade path)
@@ -85,7 +103,8 @@ func _initialize() -> void:
 			break
 	var completed: Array = gm.progress.get("completed_levels", [])
 	var badges: Array = gm.progress.get("badges", [])
-	gm.progress["current_level"] = max_level
+	var last_completed: int = int(completed[completed.size() - 1]) if not completed.is_empty() else max_level
+	gm.progress["current_level"] = last_completed
 	var final_level: Dictionary = gm.current_level()
 	var final_target_id: String = gm.current_target_object_id()
 	gm.selected_object_id = final_target_id

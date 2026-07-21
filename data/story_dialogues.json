@@ -229,26 +229,38 @@
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Now that your telescope zooms in, finding targets gets harder.",
-      "text_zh": "现在你的望远镜能放大了，但找目标反而更难了。"
+      "text_en": "Now that your telescope zooms in, finding targets gets much harder - the view is a tiny keyhole.",
+      "text_zh": "望远镜放大之后，找目标变得难多了——视野只有针孔那么小。"
     },
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "That's why observers use a finder scope.",
-      "text_zh": "这就是为什么观测者会使用寻星镜。"
+      "text_en": "That is why observers add a FINDER SCOPE. It shows a much WIDER patch of sky than the main telescope.",
+      "text_zh": "所以观测者会加装一支寻星镜。它显示的天区比主望远镜宽得多。"
     },
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Sirius is a proper star, not a planet - fusing hydrogen in its core about 8.6 light-years away, one of our closest stellar neighbors.",
-      "text_zh": "天狼星是一颗真正的恒星，不是行星——它在约 8.6 光年外用核心的氢聚变发光，是离我们最近的恒星邻居之一。"
+      "text_en": "The finder is only for FINDING and CENTERING a target. It gives no planet detail - it is a pointer, not a magnifier.",
+      "text_zh": "寻星镜只用来寻找和把目标移到中心。它看不到行星细节——它是瞄准器，不是放大镜。"
     },
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "It actually has a hidden companion: a white dwarf, the crushed leftover core of a star that already died. Sirius is technically a two-star system.",
-      "text_zh": "它其实还有一个隐藏的伴星：一颗白矮星，是另一颗已经死亡的恒星留下的压缩核心。天狼星其实是一个双星系统。"
+      "text_en": "The routine is: aim with the wide finder first, center the target, THEN switch to the main telescope to observe it up close.",
+      "text_zh": "流程是：先用宽视野的寻星镜瞄准、把目标移到中心，再切换到主望远镜细看。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "But a finder is only trustworthy once it POINTS THE SAME WAY as the main scope. Tonight you will calibrate it on Sirius.",
+      "text_zh": "但寻星镜只有在与主镜指向一致时才可靠。今晚你要在天狼星上校准它。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Sirius is a real star 8.6 light-years away - and secretly a two-star system, with a dead white-dwarf companion.",
+      "text_zh": "天狼星是一颗 8.6 光年外的真实恒星——而且暗藏玄机，是个双星系统，有一颗死亡后的白矮星伴星。"
     }
   ],
   "level_6_after": [
@@ -2718,6 +2730,32 @@
       "portrait": "maya",
       "text_en": "You just read a star's temperature with your eyes - possible only because the mirror adds no false color. Tomorrow: your Newtonian final.",
       "text_zh": "你刚用眼睛读出了一颗恒星的温度——这只有在镜面不添加虚假颜色时才可能。明天：牛顿镜结业考。"
+    }
+  ],
+  "first_below_horizon": [
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Hold on - before you blame the telescope, look at the mission panel. Tonight's target is below the horizon.",
+      "text_zh": "等一下——先别怪望远镜。看任务面板：今晚的目标此刻在地平线以下。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Nothing is broken. The Earth is turning, and from our latitude this target simply hasn't risen right now.",
+      "text_zh": "什么都没坏。地球在自转，从我们所在的纬度看，这个目标此刻根本还没升起来。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Which stars are up depends on WHERE you stand on Earth and WHEN. Your latitude sets how high a target can ever climb.",
+      "text_zh": "天上有哪些星，取决于你站在地球的哪个位置、什么时刻。你的纬度决定了目标最高能升到多高。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "So we do what real astronomers do: travel. Let's open the world map and find a site where it has already risen.",
+      "text_zh": "所以我们就照真正的天文学家那样做：出发。打开世界地图，找一个它已经升起的观测点。"
     }
   ]
 }

@@ -862,7 +862,10 @@ func _install_main_part(part_type: String) -> void:
 		return
 	install_animation_active = true
 	var animation := _capture_part_animation(part_type)
-	GameManager.install_part(part_type, 0)
+	if GameManager.install_part(part_type, 0) < 0:
+		install_animation_active = false
+		status_label.text = GameManager.install_part_block_reason(part_type)
+		return
 	GameManager.sync_newtonian_installed_equipment()
 	selected_type = ""
 	install_animation_active = false
@@ -1033,7 +1036,10 @@ func _install_at_slot(slot_type: String) -> void:
 		return
 	install_animation_active = true
 	var animation := _capture_part_animation(slot_type)
-	GameManager.install_part(slot_type, 0)
+	if GameManager.install_part(slot_type, 0) < 0:
+		install_animation_active = false
+		status_label.text = GameManager.install_part_block_reason(slot_type)
+		return
 	selected_type = ""
 	install_animation_active = false
 	status_label.text = GameManager.text("Installed. The reflected light path is taking shape.", "已安装，反射光路正在成形。")

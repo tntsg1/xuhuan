@@ -1,0 +1,587 @@
+[
+ {
+  "id": "ursa_major",
+  "name_en": "Big Dipper",
+  "name_zh": "北斗七星",
+  "visible_seasons": [
+   "spring"
+  ],
+  "azimuth": 15,
+  "altitude": 58,
+  "stars": [
+   {
+    "id": "ursa_major_1",
+    "x": 0.12,
+    "y": 0.62,
+    "magnitude": 2
+   },
+   {
+    "id": "ursa_major_2",
+    "x": 0.27,
+    "y": 0.52,
+    "magnitude": 1
+   },
+   {
+    "id": "ursa_major_3",
+    "x": 0.42,
+    "y": 0.56,
+    "magnitude": 1
+   },
+   {
+    "id": "ursa_major_4",
+    "x": 0.55,
+    "y": 0.46,
+    "magnitude": 1
+   },
+   {
+    "id": "ursa_major_5",
+    "x": 0.68,
+    "y": 0.38,
+    "magnitude": 1
+   },
+   {
+    "id": "ursa_major_6",
+    "x": 0.79,
+    "y": 0.28,
+    "magnitude": 1
+   },
+   {
+    "id": "ursa_major_7",
+    "x": 0.9,
+    "y": 0.34,
+    "magnitude": 1
+   }
+  ],
+  "connection_order": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "navigation_tip_en": "Use the bowl's pointer stars to find Polaris.",
+  "navigation_tip_zh": "利用斗口两颗指极星寻找北极星。",
+  "ra_hours": 11.0622,
+  "dec_degrees": 61.751
+ },
+ {
+  "id": "cassiopeia",
+  "name_en": "Cassiopeia",
+  "name_zh": "仙后座",
+  "visible_seasons": [
+   "autumn"
+  ],
+  "azimuth": 25,
+  "altitude": 66,
+  "stars": [
+   {
+    "id": "cassiopeia_1",
+    "x": 0.12,
+    "y": 0.52,
+    "magnitude": 2
+   },
+   {
+    "id": "cassiopeia_2",
+    "x": 0.3,
+    "y": 0.34,
+    "magnitude": 1
+   },
+   {
+    "id": "cassiopeia_3",
+    "x": 0.48,
+    "y": 0.58,
+    "magnitude": 1
+   },
+   {
+    "id": "cassiopeia_4",
+    "x": 0.68,
+    "y": 0.3,
+    "magnitude": 1
+   },
+   {
+    "id": "cassiopeia_5",
+    "x": 0.88,
+    "y": 0.5,
+    "magnitude": 1
+   }
+  ],
+  "connection_order": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "navigation_tip_en": "Recognize the W shape opposite the Big Dipper.",
+  "navigation_tip_zh": "辨认与北斗七星隔北极星相望的 W 形。",
+  "ra_hours": 0.9451,
+  "dec_degrees": 60.7167
+ },
+ {
+  "id": "cygnus",
+  "name_en": "Cygnus",
+  "name_zh": "天鹅座",
+  "visible_seasons": [
+   "summer"
+  ],
+  "azimuth": 205,
+  "altitude": 62,
+  "stars": [
+   {
+    "id": "cygnus_1",
+    "x": 0.5,
+    "y": 0.1,
+    "magnitude": 2
+   },
+   {
+    "id": "cygnus_2",
+    "x": 0.5,
+    "y": 0.28,
+    "magnitude": 1
+   },
+   {
+    "id": "cygnus_3",
+    "x": 0.5,
+    "y": 0.48,
+    "magnitude": 1
+   },
+   {
+    "id": "cygnus_4",
+    "x": 0.5,
+    "y": 0.7,
+    "magnitude": 1
+   },
+   {
+    "id": "cygnus_5",
+    "x": 0.5,
+    "y": 0.9,
+    "magnitude": 1
+   },
+   {
+    "id": "cygnus_6",
+    "x": 0.22,
+    "y": 0.47,
+    "magnitude": 1
+   },
+   {
+    "id": "cygnus_7",
+    "x": 0.78,
+    "y": 0.47,
+    "magnitude": 1
+   }
+  ],
+  "connection_order": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   3,
+   5,
+   3,
+   6
+  ],
+  "navigation_tip_en": "Follow the Northern Cross through the Milky Way.",
+  "navigation_tip_zh": "沿银河辨认北十字。",
+  "ra_hours": 20.6905,
+  "dec_degrees": 45.2803
+ },
+ {
+  "id": "lyra",
+  "name_en": "Lyra",
+  "name_zh": "天琴座",
+  "visible_seasons": [
+   "summer"
+  ],
+  "azimuth": 245,
+  "altitude": 70,
+  "stars": [
+   {
+    "id": "lyra_1",
+    "x": 0.2,
+    "y": 0.22,
+    "magnitude": 2
+   },
+   {
+    "id": "lyra_2",
+    "x": 0.52,
+    "y": 0.34,
+    "magnitude": 1
+   },
+   {
+    "id": "lyra_3",
+    "x": 0.72,
+    "y": 0.5,
+    "magnitude": 1
+   },
+   {
+    "id": "lyra_4",
+    "x": 0.55,
+    "y": 0.76,
+    "magnitude": 1
+   },
+   {
+    "id": "lyra_5",
+    "x": 0.3,
+    "y": 0.62,
+    "magnitude": 1
+   }
+  ],
+  "connection_order": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   1
+  ],
+  "navigation_tip_en": "Start at bright Vega, then trace the small parallelogram.",
+  "navigation_tip_zh": "从明亮织女星开始，再描出小平行四边形。",
+  "ra_hours": 18.6156,
+  "dec_degrees": 38.7837
+ },
+ {
+  "id": "aquila",
+  "name_en": "Aquila",
+  "name_zh": "天鹰座",
+  "visible_seasons": [
+   "summer"
+  ],
+  "azimuth": 185,
+  "altitude": 54,
+  "stars": [
+   {
+    "id": "aquila_1",
+    "x": 0.12,
+    "y": 0.52,
+    "magnitude": 2
+   },
+   {
+    "id": "aquila_2",
+    "x": 0.3,
+    "y": 0.48,
+    "magnitude": 1
+   },
+   {
+    "id": "aquila_3",
+    "x": 0.48,
+    "y": 0.5,
+    "magnitude": 1
+   },
+   {
+    "id": "aquila_4",
+    "x": 0.67,
+    "y": 0.35,
+    "magnitude": 1
+   },
+   {
+    "id": "aquila_5",
+    "x": 0.86,
+    "y": 0.25,
+    "magnitude": 1
+   },
+   {
+    "id": "aquila_6",
+    "x": 0.67,
+    "y": 0.66,
+    "magnitude": 1
+   },
+   {
+    "id": "aquila_7",
+    "x": 0.86,
+    "y": 0.78,
+    "magnitude": 1
+   }
+  ],
+  "connection_order": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   3,
+   2,
+   5,
+   6
+  ],
+  "navigation_tip_en": "Use Altair as the center of the Summer Triangle route.",
+  "navigation_tip_zh": "以牛郎星为夏季大三角导航中心。",
+  "ra_hours": 19.8464,
+  "dec_degrees": 8.8683
+ },
+ {
+  "id": "taurus",
+  "name_en": "Taurus",
+  "name_zh": "金牛座",
+  "visible_seasons": [
+   "winter"
+  ],
+  "azimuth": 105,
+  "altitude": 48,
+  "stars": [
+   {
+    "id": "taurus_1",
+    "x": 0.15,
+    "y": 0.25,
+    "magnitude": 2
+   },
+   {
+    "id": "taurus_2",
+    "x": 0.35,
+    "y": 0.43,
+    "magnitude": 1
+   },
+   {
+    "id": "taurus_3",
+    "x": 0.5,
+    "y": 0.55,
+    "magnitude": 1
+   },
+   {
+    "id": "taurus_4",
+    "x": 0.65,
+    "y": 0.42,
+    "magnitude": 1
+   },
+   {
+    "id": "taurus_5",
+    "x": 0.86,
+    "y": 0.22,
+    "magnitude": 1
+   },
+   {
+    "id": "taurus_6",
+    "x": 0.5,
+    "y": 0.55,
+    "magnitude": 1
+   },
+   {
+    "id": "taurus_7",
+    "x": 0.72,
+    "y": 0.75,
+    "magnitude": 1
+   }
+  ],
+  "connection_order": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   3,
+   2,
+   5,
+   6
+  ],
+  "navigation_tip_en": "Trace the V-shaped Hyades and then locate the Pleiades.",
+  "navigation_tip_zh": "描出毕宿星团的 V 形，再定位昴星团。",
+  "ra_hours": 4.5987,
+  "dec_degrees": 16.5093
+ },
+ {
+  "id": "scorpius",
+  "name_en": "Scorpius",
+  "name_zh": "天蝎座",
+  "visible_seasons": [
+   "summer"
+  ],
+  "azimuth": 175,
+  "altitude": 26,
+  "stars": [
+   {
+    "id": "scorpius_1",
+    "x": 0.14,
+    "y": 0.2,
+    "magnitude": 2
+   },
+   {
+    "id": "scorpius_2",
+    "x": 0.3,
+    "y": 0.28,
+    "magnitude": 1
+   },
+   {
+    "id": "scorpius_3",
+    "x": 0.42,
+    "y": 0.42,
+    "magnitude": 1
+   },
+   {
+    "id": "scorpius_4",
+    "x": 0.5,
+    "y": 0.57,
+    "magnitude": 1
+   },
+   {
+    "id": "scorpius_5",
+    "x": 0.58,
+    "y": 0.7,
+    "magnitude": 1
+   },
+   {
+    "id": "scorpius_6",
+    "x": 0.72,
+    "y": 0.8,
+    "magnitude": 1
+   },
+   {
+    "id": "scorpius_7",
+    "x": 0.88,
+    "y": 0.7,
+    "magnitude": 1
+   }
+  ],
+  "connection_order": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "navigation_tip_en": "Follow the curved tail from red Antares near the horizon.",
+  "navigation_tip_zh": "从低空红色心宿二沿弯曲蝎尾追踪。",
+  "ra_hours": 16.4901,
+  "dec_degrees": -26.432
+ },
+ {
+  "id": "orion_constellation",
+  "name_en": "Orion",
+  "name_zh": "猎户座",
+  "visible_seasons": [
+   "winter"
+  ],
+  "azimuth": 135,
+  "altitude": 42,
+  "stars": [
+   {
+    "id": "orion_constellation_1",
+    "x": 0.2,
+    "y": 0.15,
+    "magnitude": 2
+   },
+   {
+    "id": "orion_constellation_2",
+    "x": 0.78,
+    "y": 0.18,
+    "magnitude": 1
+   },
+   {
+    "id": "orion_constellation_3",
+    "x": 0.35,
+    "y": 0.45,
+    "magnitude": 1
+   },
+   {
+    "id": "orion_constellation_4",
+    "x": 0.5,
+    "y": 0.48,
+    "magnitude": 1
+   },
+   {
+    "id": "orion_constellation_5",
+    "x": 0.65,
+    "y": 0.45,
+    "magnitude": 1
+   },
+   {
+    "id": "orion_constellation_6",
+    "x": 0.25,
+    "y": 0.82,
+    "magnitude": 1
+   },
+   {
+    "id": "orion_constellation_7",
+    "x": 0.76,
+    "y": 0.8,
+    "magnitude": 1
+   }
+  ],
+  "connection_order": [
+   0,
+   2,
+   3,
+   4,
+   1,
+   4,
+   6,
+   5,
+   2
+  ],
+  "navigation_tip_en": "Use the three belt stars to orient the hourglass.",
+  "navigation_tip_zh": "用腰带三星确定沙漏形方向。",
+  "ra_hours": 5.6036,
+  "dec_degrees": -1.2019
+ },
+ {
+  "id": "leo",
+  "name_en": "Leo",
+  "name_zh": "狮子座",
+  "visible_seasons": [
+   "spring"
+  ],
+  "azimuth": 225,
+  "altitude": 50,
+  "stars": [
+   {
+    "id": "leo_1",
+    "x": 0.18,
+    "y": 0.65,
+    "magnitude": 2
+   },
+   {
+    "id": "leo_2",
+    "x": 0.3,
+    "y": 0.45,
+    "magnitude": 1
+   },
+   {
+    "id": "leo_3",
+    "x": 0.42,
+    "y": 0.3,
+    "magnitude": 1
+   },
+   {
+    "id": "leo_4",
+    "x": 0.56,
+    "y": 0.38,
+    "magnitude": 1
+   },
+   {
+    "id": "leo_5",
+    "x": 0.5,
+    "y": 0.56,
+    "magnitude": 1
+   },
+   {
+    "id": "leo_6",
+    "x": 0.68,
+    "y": 0.65,
+    "magnitude": 1
+   },
+   {
+    "id": "leo_7",
+    "x": 0.88,
+    "y": 0.62,
+    "magnitude": 1
+   }
+  ],
+  "connection_order": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   0,
+   5,
+   6
+  ],
+  "navigation_tip_en": "Find the sickle first, then extend east along the body.",
+  "navigation_tip_zh": "先找到镰刀形，再向东延伸狮身。",
+  "ra_hours": 10.1395,
+  "dec_degrees": 11.9672
+ }
+]

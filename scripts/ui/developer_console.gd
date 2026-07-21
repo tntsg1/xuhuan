@@ -106,7 +106,7 @@ func _build() -> void:
 	var prep := _action_button(GameManager.text("Prepare Equipment", "准备本关设备"), Vector2(398, 428), Vector2(250, 42), Color(0.16, 0.24, 0.12))
 	prep.pressed.connect(func() -> void:
 		GameManager.debug_jump_to_level(selected_level, true)
-		status_label.text = GameManager.text("Equipment prepared. Choose a test entry.", "设备已准备完成，请选择测试入口。")
+		status_label.text = _readiness_text()
 		_refresh_selected_label()
 	)
 	panel.add_child(prep)
@@ -124,6 +124,28 @@ func _build() -> void:
 	var close := _action_button(GameManager.text("Close", "关闭"), Vector2(632, 590), Vector2(150, 32), Color(0.12, 0.14, 0.20))
 	close.pressed.connect(_close)
 	panel.add_child(close)
+
+
+func _readiness_text() -> String:
+	var report := GameManager.prepared_readiness_report()
+	if not bool(report.get("needs_telescope", true)):
+		return GameManager.text(
+			"Test setup ready. Naked-eye night - no rig required. Observation entry: OPEN.",
+			"测试设备已就绪。肉眼观测之夜，无需装配。观测入口：已开放。")
+	var main_ok: bool = bool(report.get("main_assembly", false))
+	var tube_ok: bool = bool(report.get("tube_interior", false))
+	var collimation: float = float(report.get("collimation", -1.0))
+	var open_ok: bool = bool(report.get("observation_open", false))
+	var main_line := GameManager.text("Main assembly: done." if main_ok else "Main assembly: MISSING %s." % ", ".join(report.get("main_missing", [])),
+		"主装配：完成。" if main_ok else "主装配：缺少 %s。" % ", ".join(report.get("main_missing", [])))
+	var tube_line := GameManager.text("Tube interior: done." if tube_ok else "Tube interior: incomplete.",
+		"镜筒内部：完成。" if tube_ok else "镜筒内部：未完成。")
+	var collimation_line := ""
+	if collimation >= 0.0:
+		collimation_line = GameManager.text("Collimation: %d%%. " % int(round(collimation)), "准直：%d%%。" % int(round(collimation)))
+	var open_line := GameManager.text("Observation entry: OPEN." if open_ok else "Observation entry: BLOCKED.",
+		"观测入口：已开放。" if open_ok else "观测入口：未开放。")
+	return GameManager.text("Test rig fully prepared. ", "当前测试设备已完整准备。") + main_line + " " + tube_line + " " + collimation_line + open_line
 
 
 func _refresh_selected_label() -> void:

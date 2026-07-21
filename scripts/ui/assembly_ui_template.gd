@@ -200,6 +200,32 @@ static func add_slot_hit_target(parent: Control, rect: Rect2, on_pressed: Callab
 	hit.focus_mode = Control.FOCUS_NONE
 	hit.pressed.connect(on_pressed)
 	parent.add_child(hit)
+	# Soft gold hover glow: clickable blueprint slots answer the cursor with
+	# a gentle fade instead of staying inert until clicked.
+	var glow := Panel.new()
+	glow.position = rect.position - Vector2(3, 3)
+	glow.size = rect.size + Vector2(6, 6)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var glow_style := StyleBoxFlat.new()
+	glow_style.bg_color = Color(1.0, 0.82, 0.36, 0.06)
+	glow_style.border_color = Color(1.0, 0.82, 0.36, 0.85)
+	glow_style.set_border_width_all(2)
+	glow_style.set_corner_radius_all(4)
+	glow.add_theme_stylebox_override("panel", glow_style)
+	glow.modulate.a = 0.0
+	parent.add_child(glow)
+	hit.mouse_entered.connect(func() -> void:
+		if is_instance_valid(glow):
+			var feedback: Node = hit.get_node_or_null("/root/InteractionFeedback")
+			var quick: bool = feedback != null and bool(feedback.call("is_reduced_motion"))
+			var tween := glow.create_tween()
+			tween.tween_property(glow, "modulate:a", 1.0, 0.05 if quick else 0.14)
+	)
+	hit.mouse_exited.connect(func() -> void:
+		if is_instance_valid(glow):
+			var tween := glow.create_tween()
+			tween.tween_property(glow, "modulate:a", 0.0, 0.18)
+	)
 	return hit
 
 

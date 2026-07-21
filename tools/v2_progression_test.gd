@@ -59,7 +59,8 @@ func _initialize() -> void:
 	_check(gm.progress.get("unlocked_equipment_stages", []).has("refractor_basic"), "L2 unlocks refractor_basic stage")
 
 	# --- Level 3: refractor required -----------------------------------------
-	_check(int(gm.progress.get("current_level", 0)) == 3, "advanced to level 3")
+	_check(int(gm.progress.get("current_level", 0)) == root.get_node("/root/MissionManager").next_level_number(2), "advanced along campaign order after L2")
+	gm.debug_jump_to_level(3, false)
 	_check(gm.current_observation_mode() == "telescope", "L3 observation_mode telescope")
 	_check(gm.current_requires_telescope() == true, "L3 requires telescope")
 	_check(gm.should_show_concept_brief_for_current_level(), "L3 should show refractor brief before assembly")
@@ -83,7 +84,12 @@ func _initialize() -> void:
 	_check(gm.progress.get("unlocked_parts", []).has("basic_focus_knob"), "L3 unlocks the basic focus knob")
 
 	# --- Level 4: focus training ---------------------------------------------
-	_check(int(gm.progress.get("current_level", 0)) == 4, "advanced to level 4")
+	_check(int(gm.progress.get("current_level", 0)) == root.get_node("/root/MissionManager").next_level_number(3), "advanced along campaign order after L3")
+	gm.debug_jump_to_level(4, false)
+	# The jump resets assembly; rebuild the base rig but leave the Focus Knob
+	# uninstalled - that untouched gap is exactly what L4 teaches.
+	for rebuilt_part in ["tripod", "mount", "tube", "objective", "eyepiece"]:
+		gm.install_part(rebuilt_part, 0)
 	_check(gm.current_requires_focus() == true, "L4 requires_focus true")
 	_check(gm.should_show_concept_brief_for_current_level(), "L4 should show focus brief before telescope view")
 	gm.mark_concept_brief_seen("focus_focal_plane")

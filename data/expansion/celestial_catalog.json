@@ -1,0 +1,120 @@
+[
+ {
+  "id": "mercury",
+  "fallback_altitude": 12,
+  "fallback_azimuth": 35,
+  "naked_eye_visible": true,
+  "apparent_magnitude": -0.4,
+  "planet_body": "mercury"
+ },
+ {
+  "id": "venus",
+  "fallback_altitude": 19,
+  "fallback_azimuth": 66,
+  "naked_eye_visible": true,
+  "apparent_magnitude": -4.2,
+  "planet_body": "venus"
+ },
+ {
+  "id": "saturn",
+  "fallback_altitude": 26,
+  "fallback_azimuth": 97,
+  "naked_eye_visible": true,
+  "apparent_magnitude": 0.6,
+  "planet_body": "saturn"
+ },
+ {
+  "id": "uranus",
+  "fallback_altitude": 33,
+  "fallback_azimuth": 128,
+  "naked_eye_visible": false,
+  "apparent_magnitude": 5.7,
+  "planet_body": "uranus"
+ },
+ {
+  "id": "neptune",
+  "fallback_altitude": 40,
+  "fallback_azimuth": 159,
+  "naked_eye_visible": false,
+  "apparent_magnitude": 7.8,
+  "planet_body": "neptune"
+ },
+ {
+  "id": "moon_crater_copernicus",
+  "fallback_altitude": 47,
+  "fallback_azimuth": 190,
+  "naked_eye_visible": false,
+  "apparent_magnitude": 5,
+  "follows": "moon"
+ },
+ {
+  "id": "moon_mare_tranquillitatis",
+  "fallback_altitude": 54,
+  "fallback_azimuth": 221,
+  "naked_eye_visible": false,
+  "apparent_magnitude": 5,
+  "follows": "moon"
+ },
+ {
+  "id": "moon_terminator",
+  "fallback_altitude": 61,
+  "fallback_azimuth": 252,
+  "naked_eye_visible": false,
+  "apparent_magnitude": 5,
+  "follows": "moon"
+ },
+ {
+  "id": "albireo",
+  "fallback_altitude": 68,
+  "fallback_azimuth": 283,
+  "naked_eye_visible": true,
+  "apparent_magnitude": 3.1,
+  "ra_hours": 19.5124,
+  "dec_degrees": 27.9597
+ },
+ {
+  "id": "pleiades",
+  "fallback_altitude": 75,
+  "fallback_azimuth": 314,
+  "naked_eye_visible": true,
+  "apparent_magnitude": 1.6,
+  "ra_hours": 3.791,
+  "dec_degrees": 24.117
+ },
+ {
+  "id": "m13",
+  "fallback_altitude": 14,
+  "fallback_azimuth": 345,
+  "naked_eye_visible": false,
+  "apparent_magnitude": 5.8,
+  "ra_hours": 16.6949,
+  "dec_degrees": 36.4613
+ },
+ {
+  "id": "ring_nebula",
+  "fallback_altitude": 21,
+  "fallback_azimuth": 16,
+  "naked_eye_visible": false,
+  "apparent_magnitude": 8.8,
+  "ra_hours": 18.8931,
+  "dec_degrees": 33.029
+ },
+ {
+  "id": "lagoon_nebula",
+  "fallback_altitude": 28,
+  "fallback_azimuth": 47,
+  "naked_eye_visible": false,
+  "apparent_magnitude": 6,
+  "ra_hours": 18.0603,
+  "dec_degrees": -24.3867
+ },
+ {
+  "id": "sombrero_galaxy",
+  "fallback_altitude": 35,
+  "fallback_azimuth": 78,
+  "naked_eye_visible": false,
+  "apparent_magnitude": 8,
+  "ra_hours": 12.6665,
+  "dec_degrees": -11.6231
+ }
+]

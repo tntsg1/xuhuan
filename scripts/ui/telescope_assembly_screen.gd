@@ -91,6 +91,7 @@ const PART_COLORS := {
 }
 
 var selected_part_type := ""
+var selected_part_id := ""
 var wrong_attempts: Dictionary = {}
 
 var parts_scroll: ScrollContainer
@@ -115,6 +116,17 @@ func _ready() -> void:
 
 
 func _show_assembly_tutorial() -> void:
+	# On the first level that adds the finder scope, point straight at its slot
+	# so the finder lesson (started by the story) continues into the bench.
+	var finder_required: bool = GameManager.current_level().get("required_parts", []).has("finder_scope")
+	if finder_required and not _is_installed("finder_scope") and not InteractionFeedback.was_tutorial_seen("first_finder_slot"):
+		var finder_slot: Control = slot_controls.get("finder_scope") as Control
+		if finder_slot != null:
+			InteractionFeedback.tutorial_highlight_once(finder_slot, "first_finder_slot", GameManager.text(
+				"New part tonight: install the Finder Scope in this top slot after the core parts.",
+				"今晚的新零件：装完核心零件后，把寻星镜装到这个顶部槽位。"
+			), self)
+			return
 	InteractionFeedback.tutorial_highlight_once(blueprint_layer, "first_refractor_assembly", GameManager.text(
 		"Choose a part card, then install it in the matching blueprint slot.",
 		"选择零件卡片，再安装到蓝图中的对应槽位。"
@@ -395,12 +407,13 @@ func _scroll_parts_to(value: int) -> void:
 func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selected: bool, pos: Vector2) -> void:
 	var shared_texture_path := _part_texture_path(part)
 	var shared_texture := load(shared_texture_path) as Texture2D if shared_texture_path != "" and ResourceLoader.exists(shared_texture_path) else null
+	var state := GameManager.part_slot_state(part_type, str(part.get("id", "")))
 	var template_card := AssemblyUITemplate.add_part_card(
 		parts_list,
 		pos,
 		GameManager.dict_text(part, "name"),
 		str(_part_label(part_type, "role")),
-		GameManager.text("Installed", "已安装") if installed else GameManager.text("Not Installed", "未安装"),
+		_state_status_text(state),
 		shared_texture,
 		installed,
 		selected,
@@ -465,6 +478,15 @@ func _draw_part_card(part_type: String, part: Dictionary, installed: bool, selec
 	click.focus_mode = Control.FOCUS_NONE
 	click.pressed.connect(_select_part.bind(part_type))
 	parts_list.add_child(click)
+
+
+func _state_status_text(state: String) -> String:
+	match state:
+		"installed": return GameManager.text("Installed  OK", "已安装  OK")
+		"equipped": return GameManager.text("Equipped - not installed", "已装备 · 未安装")
+		"unlocked": return GameManager.text("Unlocked - not installed", "已解锁 · 未安装")
+		"incompatible": return GameManager.text("Wrong telescope family", "望远镜类型不兼容")
+		_: return GameManager.text("Locked", "未解锁")
 
 
 func _part_texture_path(part: Dictionary) -> String:
@@ -784,7 +806,21 @@ func _refresh_inspector() -> void:
 		var unlocked: Array = GameManager.unlocked_parts_by_type(selected_part_type)
 		if not unlocked.is_empty():
 			var part: Dictionary = _part_for_type(selected_part_type)
-			feedback_label.text = GameManager.dict_text(part, "name") + " · " + GameManager.text("click its slot", "点击对应安装位")
+			var part_name := GameManager.dict_text(part, "name")
+			var state := GameManager.part_slot_state(selected_part_type, str(part.get("id", "")))
+			var guidance := ""
+			match state:
+				"installed":
+					guidance = GameManager.text("Installed successfully. Pick another slot.", "已安装成功。请选择其它安装位。")
+				"equipped":
+					guidance = GameManager.text("Equipped - click the matching blueprint slot.", "已装备——请点击蓝图上的对应安装位。")
+				"unlocked":
+					guidance = GameManager.text("Unlocked - click the slot to equip and install it.", "已解锁——点击安装位即可装备并安装。")
+				"incompatible":
+					guidance = GameManager.text("Wrong telescope family for this mission.", "望远镜类型与本关不兼容。")
+				_:
+					guidance = GameManager.text("Requires its introduction lesson to unlock.", "需要先完成对应教学关卡解锁。")
+			feedback_label.text = part_name + " · " + guidance
 			return
 	var next_part := _next_installable_part()
 	if next_part == "":
@@ -879,15 +915,27 @@ func _draw_gauge_icon(icon: String, pos: Vector2) -> void:
 
 
 func _select_part(part_type: String) -> void:
+	selected_part_type = part_type
+	# Remember the exact part id the card represents, so the install uses the
+	# player's real choice rather than a stale equipped id.
+	selected_part_id = str(_part_for_type(part_type).get("id", ""))
 	if _is_installed(part_type):
-		selected_part_type = part_type
-		feedback_label.text = str(_part_label(part_type, "short")) + " " + GameManager.text("is already installed.", "已安装。")
+		feedback_label.text = str(_part_label(part_type, "short")) + " " + GameManager.text("is already installed. Pick its slot to replace it.", "已安装。点击安装位可替换。")
 	else:
-		selected_part_type = part_type
-		feedback_label.text = GameManager.text(
-			"Click the " + str(_part_label(part_type, "short")) + " slot on the blueprint.",
-			"点击蓝图上的 " + str(_part_label(part_type, "short")) + " 安装位。"
-		)
+		var state := GameManager.part_slot_state(part_type, selected_part_id)
+		if state == "incompatible":
+			feedback_label.text = GameManager.install_part_block_reason(part_type, selected_part_id)
+		elif state == "unlocked":
+			# Safe to auto-equip the moment the card is picked: the card only
+			# exists for unlocked, compatible parts, so equip it now and show
+			# "Equipped" straight away - no separate Equip button needed.
+			GameManager.equip_part(selected_part_id)
+			feedback_label.text = GameManager.dict_text(_part_for_type(part_type), "name") + " " + GameManager.text("equipped. Click its blueprint slot to install.", "已装备。点击蓝图安装位即可安装。")
+		else:
+			feedback_label.text = GameManager.text(
+				"Click the " + str(_part_label(part_type, "short")) + " slot on the blueprint.",
+				"点击蓝图上的 " + str(_part_label(part_type, "short")) + " 安装位。"
+			)
 	_refresh_all()
 
 
@@ -899,8 +947,14 @@ func _try_install(slot_type: String) -> void:
 		feedback_label.text = GameManager.text("Select a part card from the left first.", "请先从左侧选择零件卡。")
 		return
 	if _is_installed(slot_type):
-		feedback_label.text = str(_part_label(slot_type, "short")) + " is already installed.\n这个安装位已经完成。"
-		return
+		# Allow REPLACING with a different part: the same part is a no-op, a
+		# new part re-installs (install_part overwrites the slot snapshot, so
+		# the old part's alignment/id never carries over).
+		var installed_id := str(_installed_part_id(slot_type))
+		var picked_id := selected_part_id if selected_part_id != "" else str(_part_for_type(slot_type).get("id", ""))
+		if selected_part_type != slot_type or picked_id == installed_id:
+			feedback_label.text = str(_part_label(slot_type, "short")) + " " + GameManager.text("is already installed. Pick a different part to replace it.", "已安装。选择另一个零件可替换。")
+			return
 	if selected_part_type != slot_type:
 		wrong_attempts[selected_part_type] = int(wrong_attempts.get(selected_part_type, 0)) + 1
 		feedback_label.text = _wrong_feedback(selected_part_type, slot_type)
@@ -916,9 +970,16 @@ func _try_install(slot_type: String) -> void:
 
 	install_animation_active = true
 	var animation := _capture_part_animation(slot_type)
-	var score: int = GameManager.install_part(slot_type, int(wrong_attempts.get(slot_type, 0)))
+	var install_id := selected_part_id if selected_part_id != "" else str(_part_for_type(slot_type).get("id", ""))
+	var score: int = GameManager.install_part(slot_type, int(wrong_attempts.get(slot_type, 0)), install_id)
+	if score < 0:
+		install_animation_active = false
+		feedback_label.text = GameManager.install_part_block_reason(slot_type, install_id)
+		InteractionFeedback.error(part_card_controls.get(slot_type) as Control if part_card_controls.has(slot_type) else feedback_label)
+		return
 	feedback_label.text = GameManager.text("Installed " + str(_part_label(slot_type, "short")) + ". Alignment " + str(score) + ".", "已安装 " + str(_part_label(slot_type, "short")) + "，对齐 " + str(score) + "。")
 	selected_part_type = ""
+	selected_part_id = ""
 	install_animation_active = false
 	_refresh_all()
 	_play_part_animation(animation)
@@ -1041,6 +1102,10 @@ func _next_installable_part() -> String:
 
 func _is_installed(part_type: String) -> bool:
 	return bool(_dict_value(_assembly_state().get(part_type, {})).get("installed", false))
+
+
+func _installed_part_id(part_type: String) -> String:
+	return str(_dict_value(_assembly_state().get(part_type, {})).get("installed_part_id", ""))
 
 
 func _part_for_type(part_type: String) -> Dictionary:

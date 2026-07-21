@@ -38,6 +38,7 @@ var guidance_title_label: Label
 var guidance_hint_label: Label
 var guidance_action_label: Label
 var guidance_outcome_label: Label
+var mobile_overlay: Control
 var route_edge_indicator: Control
 var route_arrow_label: Label
 var route_distance_label: Label
@@ -178,6 +179,8 @@ func _register_hitboxes() -> void:
 	_register_interactable("assembly", GameManager.text("Assembly Table", "组装台"), GameManager.text("Build and align the telescope.", "组装和校准望远镜。"), Rect2(782, 214, 170, 160))
 	if GameManager.current_observation_mode() == "naked_eye":
 		_register_interactable("telescope", GameManager.text("Naked Eye Observation", "肉眼观测"), GameManager.text("Observe the night sky with your own eyes.", "用肉眼观察夜空。"), Rect2(455, 398, 120, 124))
+	elif GameManager.current_observation_mode() == "constellation":
+		_register_interactable("telescope", GameManager.text("Constellation Search", "星座搜寻"), GameManager.text("Use the observation pad to locate the complete star pattern, then study it through the telescope.", "使用观测台定位完整星群，再通过望远镜观察它。"), Rect2(455, 398, 120, 124))
 	else:
 		_register_interactable("telescope", GameManager.text("Telescope Observation Pad", "望远镜观测台"), GameManager.text("Open-air quick setup: carry your telescope out and observe right away. Same sky as the dome.", "露天快速架设：把你组装的望远镜搬出来立刻观测。与圆顶观星站看同一片天空。"), Rect2(455, 398, 120, 124))
 	_register_interactable("journal", GameManager.text("Learning Journal", "学习日志"), GameManager.text("Review completed observations and learning cards.", "查看已完成的观测和学习卡。"), Rect2(96, 476, 214, 132))
@@ -247,6 +250,123 @@ func _draw_hud() -> void:
 	menu.pressed.connect(func() -> void: GameManager.go("menu"))
 	add_child(menu)
 
+	var touch_settings := Button.new()
+	touch_settings.text = GameManager.text("Touch", "触控")
+	touch_settings.position = Vector2(818, 18)
+	touch_settings.size = Vector2(76, 32)
+	touch_settings.add_theme_font_size_override("font_size", 10)
+	touch_settings.add_theme_stylebox_override("normal", _style(Color(0.055, 0.075, 0.120, 0.94), BRASS, 1, 3))
+	touch_settings.add_theme_stylebox_override("hover", _style(Color(0.10, 0.15, 0.22, 0.98), Color(1.0, 0.82, 0.42), 1, 3))
+	touch_settings.add_theme_color_override("font_color", WARM_TEXT)
+	touch_settings.pressed.connect(_toggle_mobile_settings)
+	add_child(touch_settings)
+
+	var types_button := Button.new()
+	types_button.text = GameManager.text("Scopes", "望远镜图鉴")
+	types_button.position = Vector2(718, 18)
+	types_button.size = Vector2(92, 32)
+	types_button.add_theme_font_size_override("font_size", 10)
+	types_button.add_theme_stylebox_override("normal", _style(Color(0.055, 0.075, 0.120, 0.94), BRASS, 1, 3))
+	types_button.add_theme_stylebox_override("hover", _style(Color(0.10, 0.15, 0.22, 0.98), Color(1.0, 0.82, 0.42), 1, 3))
+	types_button.add_theme_color_override("font_color", WARM_TEXT)
+	types_button.pressed.connect(func() -> void:
+		GameManager.set_meta("telescope_types_browse", true)
+		GameManager.go("telescope_types"))
+	add_child(types_button)
+
+	# Travel is always available, not only when the target is below the horizon.
+	var site_button := Button.new()
+	site_button.text = GameManager.text("Site", "观测地点")
+	site_button.position = Vector2(618, 18)
+	site_button.size = Vector2(92, 32)
+	site_button.add_theme_font_size_override("font_size", 10)
+	site_button.add_theme_stylebox_override("normal", _style(Color(0.055, 0.075, 0.120, 0.94), BRASS, 1, 3))
+	site_button.add_theme_stylebox_override("hover", _style(Color(0.10, 0.15, 0.22, 0.98), Color(1.0, 0.82, 0.42), 1, 3))
+	site_button.add_theme_color_override("font_color", WARM_TEXT)
+	site_button.pressed.connect(func() -> void: GameManager.go("world_map"))
+	add_child(site_button)
+	_draw_hud_lower()
+
+
+var mobile_settings_popup: Control
+
+
+func _toggle_mobile_settings() -> void:
+	if mobile_settings_popup != null:
+		mobile_settings_popup.queue_free()
+		mobile_settings_popup = null
+		return
+	mobile_settings_popup = Control.new()
+	mobile_settings_popup.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mobile_settings_popup.z_index = 180
+	add_child(mobile_settings_popup)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mobile_settings_popup.add_child(dim)
+	var panel := Panel.new()
+	panel.position = Vector2(292, 154)
+	panel.size = Vector2(440, 460)
+	panel.add_theme_stylebox_override("panel", _style(Color(0.035, 0.055, 0.10, 0.98), BRASS, 3, 6))
+	mobile_settings_popup.add_child(panel)
+	var title := _label(GameManager.text("Mobile Controls", "移动端控制设置"), Vector2(312, 170), Vector2(400, 28), 20, HORIZONTAL_ALIGNMENT_CENTER)
+	title.reparent(panel)
+	title.position = Vector2(20, 16)
+	var y := 60.0
+	var rows := [
+		["mobile_mode", GameManager.text("Mobile mode (touch controls)", "移动模式（触摸控制）"), TouchInput.is_mobile()],
+		["joystick_visible", GameManager.text("Show virtual joystick", "显示虚拟摇杆"), TouchInput.joystick_visible],
+		["invert_pitch", GameManager.text("Invert pitch axis", "反转俯仰轴"), TouchInput.invert_pitch],
+		["show_touch_hints", GameManager.text("Show touch hints", "显示触摸提示"), TouchInput.show_touch_hints],
+	]
+	for row_value in rows:
+		var row: Array = row_value
+		var check := CheckButton.new()
+		check.text = str(row[1])
+		check.button_pressed = bool(row[2])
+		check.position = Vector2(24, y)
+		check.size = Vector2(392, 44)
+		check.add_theme_font_size_override("font_size", 14)
+		var setting_key := str(row[0])
+		check.toggled.connect(func(pressed: bool) -> void:
+			if setting_key == "mobile_mode":
+				TouchInput.set_mobile_mode(pressed)
+			else:
+				TouchInput.apply_setting(setting_key, pressed)
+		)
+		panel.add_child(check)
+		y += 54.0
+	for slider_spec in [
+		["joystick_scale", GameManager.text("Joystick size", "摇杆大小"), 0.7, 1.6, TouchInput.joystick_scale],
+		["touch_sensitivity", GameManager.text("Touch sensitivity", "触摸灵敏度"), 0.4, 2.5, TouchInput.touch_sensitivity],
+	]:
+		var spec: Array = slider_spec
+		var slider_label := Label.new()
+		slider_label.text = str(spec[1])
+		slider_label.position = Vector2(24, y)
+		slider_label.size = Vector2(200, 22)
+		slider_label.add_theme_font_size_override("font_size", 14)
+		panel.add_child(slider_label)
+		var slider := HSlider.new()
+		slider.min_value = float(spec[2])
+		slider.max_value = float(spec[3])
+		slider.step = 0.05
+		slider.value = float(spec[4])
+		slider.position = Vector2(24, y + 26)
+		slider.size = Vector2(392, 32)
+		var slider_key := str(spec[0])
+		slider.value_changed.connect(func(value: float) -> void: TouchInput.apply_setting(slider_key, value))
+		panel.add_child(slider)
+		y += 70.0
+	var close := Button.new()
+	close.text = GameManager.text("Close", "关闭")
+	close.position = Vector2(150, y + 8)
+	close.size = Vector2(140, 44)
+	close.pressed.connect(_toggle_mobile_settings)
+	panel.add_child(close)
+
+
+func _draw_hud_lower() -> void:
 	var bottom := Panel.new()
 	bottom.position = Vector2(172, 704)
 	bottom.size = Vector2(680, 48)
@@ -297,7 +417,40 @@ func _draw_hud() -> void:
 	route_edge_indicator.visible = false
 
 	focus_label = _label("", Vector2(260, 662), Vector2(504, 20), 13, HORIZONTAL_ALIGNMENT_CENTER)
+	if TouchInput.is_mobile():
+		mobile_overlay = preload("res://scripts/ui/mobile_controls.gd").new()
+		add_child(mobile_overlay)
+		mobile_overlay.add_action_button("interact", GameManager.text("Interact", "互动"), _interact_with_nearby, 0)
+		mobile_overlay.add_action_button("missions", GameManager.text("Missions", "任务"), _toggle_mission_board, 1)
+		mobile_overlay.set_action_enabled("interact", false)
 	feedback_label = _label(GameManager.text("Start at the Mission Board, then use the Assembly Table.", "先从任务公告板开始，然后去组装台。"), Vector2(112, 680), Vector2(800, 20), 13, HORIZONTAL_ALIGNMENT_CENTER)
+	_build_location_indicator()
+
+
+func _build_location_indicator() -> void:
+	# When the player has travelled to another observing site, the lobby says so
+	# and offers a one-click return to the home base.
+	if GameManager.is_at_home_location():
+		return
+	var loc := GameManager.observing_location()
+	var chip := Panel.new()
+	chip.position = Vector2(300, 62)
+	chip.size = Vector2(424, 34)
+	chip.add_theme_stylebox_override("panel", _style(Color(0.10, 0.08, 0.03, 0.95), Color(1.0, 0.82, 0.42), 2, 5))
+	add_child(chip)
+	var label := _label_to(chip, GameManager.text("Observing from: ", "当前观测点：") + GameManager.dict_text(loc, "name"), Vector2(12, 7), Vector2(280, 20), 12, HORIZONTAL_ALIGNMENT_LEFT)
+	label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.5))
+	var home_btn := Button.new()
+	home_btn.text = GameManager.text("Return Home", "返回主基地")
+	home_btn.position = Vector2(300, 8)
+	home_btn.size = Vector2(112, 20)
+	home_btn.add_theme_font_size_override("font_size", 10)
+	home_btn.add_theme_stylebox_override("normal", _style(Color(0.06, 0.09, 0.14, 0.96), BRASS, 1, 3))
+	home_btn.add_theme_color_override("font_color", WARM_TEXT)
+	home_btn.pressed.connect(func() -> void:
+		GameManager.reset_observing_location()
+		_build())
+	chip.add_child(home_btn)
 
 
 func _move_player(delta: float) -> void:
@@ -310,6 +463,10 @@ func _move_player(delta: float) -> void:
 		direction.y -= 1.0
 	if Input.is_action_pressed("move_down") or Input.is_key_pressed(KEY_DOWN):
 		direction.y += 1.0
+	# Mobile: the virtual joystick feeds the SAME movement path at the same
+	# speed - keyboard and touch are interchangeable, never additive beyond 1.
+	if direction == Vector2.ZERO:
+		direction = TouchInput.move_vector()
 	if direction == Vector2.ZERO:
 		player_is_moving = false
 		_update_player_animation(delta)
@@ -414,6 +571,13 @@ func _update_nearby() -> void:
 			best_distance = distance
 			best_id = str(data["id"])
 	nearby_id = best_id
+	if mobile_overlay != null:
+		# Interact button mirrors the E key: enabled near an interactable
+		# and labeled with the object's name.
+		if nearby_id == "":
+			mobile_overlay.set_action_enabled("interact", false, GameManager.text("Interact", "互动"))
+		else:
+			mobile_overlay.set_action_enabled("interact", true, str(_get_interactable(nearby_id).get("name", "")))
 
 	for data in interactables:
 		var frame := data.get("glow") as CanvasItem
@@ -442,9 +606,9 @@ func _update_hud() -> void:
 	if nearby_id == "":
 		focus_label.text = GameManager.text("Move around the observatory room", "在观测室里移动")
 		if _has_feedback_override():
-			feedback_label.text = feedback_override
+			InteractionFeedback.crossfade_text(feedback_label, feedback_override)
 		elif GameManager.room_guidance_target != "":
-			feedback_label.text = GameManager.room_guidance_hint
+			InteractionFeedback.crossfade_text(feedback_label, GameManager.room_guidance_hint)
 		elif active_guidance == "ready_to_observe":
 			feedback_label.text = GameManager.text(
 				"Telescope ready. Go to the Telescope Observation Pad or Observatory Door to begin sky observation.",
@@ -463,9 +627,9 @@ func _update_hud() -> void:
 	var item := _get_interactable(nearby_id)
 	focus_label.text = "[E] " + str(item.get("name", ""))
 	if _has_feedback_override():
-		feedback_label.text = feedback_override
+		InteractionFeedback.crossfade_text(feedback_label, feedback_override)
 	else:
-		feedback_label.text = str(item.get("hint", ""))
+		InteractionFeedback.crossfade_text(feedback_label, str(item.get("hint", "")))
 	_update_room_guidance_panel()
 
 
@@ -499,12 +663,18 @@ func _handle_interaction(id: String) -> void:
 		GameManager.go("parts")
 	elif id == "assembly":
 		GameManager.set_observatory_spawn("assembly")
-		if GameManager.try_story_for_trigger("before_assembly", "assembly"):
+		# Advanced (reflector-family) levels present the telescope-type
+		# selection screen first; the story/teaching briefs return there, and
+		# its Build button routes on to the correct bench.
+		var assembly_dest := "telescope_types" if GameManager.uses_family_selection() else "assembly"
+		if assembly_dest == "telescope_types":
+			GameManager.set_meta("telescope_types_browse", false)
+		if GameManager.try_story_for_trigger("before_assembly", assembly_dest):
 			return
-		if GameManager.try_teaching_intercept("before_assembly", "assembly"):
+		if GameManager.try_teaching_intercept("before_assembly", assembly_dest):
 			return
 		GameManager.clear_room_guidance()
-		GameManager.go("assembly")
+		GameManager.go(assembly_dest)
 	elif id == "door":
 		GameManager.set_observatory_spawn("door")
 		if GameManager.current_observation_mode() == "naked_eye":
@@ -513,7 +683,7 @@ func _handle_interaction(id: String) -> void:
 			if GameManager.try_teaching_intercept("before_observation", "sky"):
 				return
 			GameManager.clear_room_guidance()
-			GameManager.go("sky")
+			_enter_sky_or_relocate("door")
 		else:
 			GameManager.clear_room_guidance()
 			GameManager.go("interior")
@@ -528,7 +698,7 @@ func _handle_interaction(id: String) -> void:
 		if bool(gate.get("ok", false)):
 			GameManager.set_observatory_spawn("telescope")
 			GameManager.clear_room_guidance()
-			GameManager.go("sky")
+			_enter_sky_or_relocate("telescope")
 		else:
 			_show_feedback(GameManager.text(
 				str(gate.get("reason_en", "The telescope is not ready yet. Go to the Assembly Table and install the core parts.")),
@@ -541,6 +711,12 @@ func _handle_interaction(id: String) -> void:
 	elif id == "computer":
 		GameManager.set_observatory_spawn("computer")
 		_toggle_stats_terminal()
+
+
+func _enter_sky_or_relocate(spawn: String) -> void:
+	# Delegates to the single unified observation entry so the open pad and the
+	# dome interior share one horizon-aware path (no bypass, no lost state).
+	GameManager.go_to_observation(spawn)
 
 
 func _toggle_mission_board() -> void:
@@ -670,6 +846,8 @@ func _mission_board_route() -> Dictionary:
 func _mission_observation_mode_text() -> String:
 	if GameManager.current_observation_mode() == "naked_eye":
 		return GameManager.text("Naked Eye", "肉眼")
+	if GameManager.current_observation_mode() == "constellation":
+		return GameManager.text("Constellation Search", "星座搜寻")
 	var required: Array = GameManager.current_level().get("required_parts", [])
 	if required.has("finder_scope"):
 		return GameManager.text("Finder Scope -> Telescope", "寻星镜 -> 望远镜")
@@ -1311,6 +1489,16 @@ func _update_room_guidance_panel() -> void:
 			route_edge_indicator.visible = false
 		_update_guidance_overlay({})
 		return
+	if not guidance_panel.visible:
+		# First appearance: slide down 8px + fade, matching the page style.
+		guidance_panel.visible = true
+		if not InteractionFeedback.is_reduced_motion():
+			var rest := guidance_panel.position
+			guidance_panel.position = rest + Vector2(0, -8)
+			guidance_panel.modulate.a = 0.0
+			var tween := guidance_panel.create_tween().set_parallel(true)
+			tween.tween_property(guidance_panel, "position", rest, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tween.tween_property(guidance_panel, "modulate:a", 1.0, 0.18)
 	guidance_panel.visible = true
 	guidance_title_label.text = GameManager.room_guidance_title
 	var target_name := ""

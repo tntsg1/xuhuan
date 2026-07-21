@@ -317,6 +317,7 @@ func _part_card(part: Dictionary) -> Control:
 	var equipped := GameManager.equipped_part_id(part_type) == part_id
 	var exact_required_id := _required_id_for_type(part_type)
 	var exact_required := exact_required_id == part_id
+	var required_for_mission := GameManager.required_part_types_for_current_level().has(part_type)
 	var incompatible_equipped := equipped and exact_required_id != "" and not exact_required
 	var recommended := _is_recommended(part)
 	var is_next_step := part_type == next_step_part_type
@@ -333,7 +334,7 @@ func _part_card(part: Dictionary) -> Control:
 	elif equipped:
 		bg = CARD_EQUIPPED
 		border = GREEN
-	elif exact_required or recommended or is_next_step:
+	elif exact_required or required_for_mission or recommended or is_next_step:
 		border = GOLD
 	elif not unlocked:
 		bg = CARD_LOCKED
@@ -350,6 +351,8 @@ func _part_card(part: Dictionary) -> Control:
 		_badge_to(root, GameManager.text("Equipped, but not accepted by this mission", "已装备，但不符合本关指定"), Vector2(122, 10), Vector2(322, 22), WARNING)
 	elif exact_required:
 		_badge_to(root, GameManager.text("Lesson-required: this level teaches this device", "本关指定零件——本关正在学习/要求该设备"), Vector2(122, 10), Vector2(380, 22), GOLD)
+	elif required_for_mission:
+		_badge_to(root, GameManager.text("Required for current mission", "本关必需"), Vector2(122, 10), Vector2(250, 22), GOLD)
 	elif recommended:
 		_badge_to(root, GameManager.text("Recommended for current mission", "当前任务推荐"), Vector2(122, 10), Vector2(322, 22), GOLD)
 	elif unlocked and GameManager.pinned_part_id(part_type) == "" and str(GameManager.best_part_for_type(part_type).get("id", "")) == part_id:
@@ -635,6 +638,13 @@ func _scroll_to_part_type(part_type: String) -> void:
 	for child in parts_box.get_children():
 		if child.name == "part_card_%s" % part_type:
 			parts_scroll.scroll_vertical = max(0, int(child.position.y) - 36)
+			# First finder night: spotlight the Basic Finder Scope card so the
+			# finder lesson flows Cabinet -> Assembly -> Sky.
+			if part_type == "finder_scope" and child is Control and not InteractionFeedback.was_tutorial_seen("first_finder_cabinet"):
+				InteractionFeedback.tutorial_highlight_once(child as Control, "first_finder_cabinet", GameManager.text(
+					"This is your Basic Finder Scope - equip it, then install it at the Assembly Table.",
+					"这是你的基础寻星镜——先装备它，再到组装台安装。"
+				), self)
 			return
 
 
@@ -698,6 +708,8 @@ func _part_stat_chips(part: Dictionary) -> Array[String]:
 func _unlock_note(part: Dictionary, unlocked: bool) -> String:
 	if unlocked:
 		return ""
+	if str(part.get("type", "")) == "finder_scope" and GameManager.required_part_types_for_current_level().has("finder_scope"):
+		return GameManager.text("Complete Finder Scope Introduction first", "请先完成寻星镜教学")
 	var level := int(part.get("unlock_level", 999))
 	if level < 999:
 		return GameManager.text("Unlocks at L%d" % level, "第 %d 关解锁" % level)

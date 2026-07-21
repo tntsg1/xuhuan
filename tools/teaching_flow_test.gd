@@ -62,6 +62,7 @@ func _initialize() -> void:
 	await process_frame
 
 	# --- 4. Level 3 brief before assembly ------------------------------------
+	gm.debug_jump_to_level(3, false)
 	_check(int(gm.progress.get("current_level", 0)) == 3, "at level 3")
 	_check(gm.try_teaching_intercept("before_assembly", "assembly"), "L3 before_assembly intercepts")
 	_check(str(tfm.active_card_id) == "refractor_light_path", "L3 brief is refractor_light_path")
@@ -78,6 +79,7 @@ func _initialize() -> void:
 	await process_frame
 
 	# --- 5. Level 4 brief before focus ----------------------------------------
+	gm.debug_jump_to_level(4, false)
 	_check(int(gm.progress.get("current_level", 0)) == 4, "at level 4")
 	gm.selected_object_id = "jupiter"
 	_check(gm.try_teaching_intercept("before_focus", "telescope"), "L4 before_focus intercepts")

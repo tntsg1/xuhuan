@@ -15,7 +15,10 @@ func _initialize() -> void:
 	_check(gm.telescope_is_ready(), "L26 prepared reflector satisfies independent required parts")
 	var stats: Dictionary = gm.calculate_stats()
 	_check(float(stats.get("light_score", 0.0)) > 90.0, "primary mirror contributes aperture/light stats")
-	_check(not gm.collimation_is_acceptable(), "L26 starts with unmet collimation gate")
+	# Debug-prepare now aligns the mirrors too; reset the score so the gate
+	# logic itself stays under test.
+	gm.set_collimation_score(0.0)
+	_check(not gm.collimation_is_acceptable(), "L26 collimation gate blocks when unaligned")
 	gm.set_collimation_score(92.0)
 	_check(gm.collimation_is_acceptable(), "collimation threshold unlocks observation")
 	if failures == 0:

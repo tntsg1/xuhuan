@@ -35,7 +35,8 @@
     "cost": 0,
     "unlock_level": 1,
     "description_en": "A basic tube that keeps the objective and eyepiece in line.",
-    "description_zh": "保持主镜和目镜对齐的基础镜筒。"
+    "description_zh": "保持主镜和目镜对齐的基础镜筒。",
+    "icon_path": "res://assets/telescope_parts/starter_tube.png"
   },
   {
     "id": "objective_60mm",
@@ -48,7 +49,8 @@
     "cost": 0,
     "unlock_level": 1,
     "description_en": "Good for the Moon and bright stars.",
-    "description_zh": "适合观察月球和明亮恒星。"
+    "description_zh": "适合观察月球和明亮恒星。",
+    "icon_path": "res://assets/telescope_parts/objective_60mm.png"
   },
   {
     "id": "eyepiece_20mm",
@@ -61,7 +63,8 @@
     "cost": 0,
     "unlock_level": 1,
     "description_en": "A wide view eyepiece. Good for finding targets.",
-    "description_zh": "视野较宽的目镜，适合寻找目标。"
+    "description_zh": "视野较宽的目镜，适合寻找目标。",
+    "icon_path": "res://assets/telescope_parts/eyepiece_20mm.png"
   },
   {
     "id": "basic_finder_scope",
@@ -87,7 +90,8 @@
     "cost": 80,
     "unlock_level": 6,
     "description_en": "Doubles the magnification. Great for planets, but the view is narrower and dimmer.",
-    "description_zh": "倍率翻倍，适合看行星细节，但视野更窄、图像更暗。"
+    "description_zh": "倍率翻倍，适合看行星细节，但视野更窄、图像更暗。",
+    "icon_path": "res://assets/telescope_parts/eyepiece_10mm.png"
   },
   {
     "id": "objective_100mm",
@@ -100,7 +104,8 @@
     "cost": 220,
     "unlock_level": 8,
     "description_en": "A big lens that collects much more light. Needed for faint nebulae and galaxies.",
-    "description_zh": "收集更多光线的大口径物镜。观察暗弱的星云和星系必须用它。"
+    "description_zh": "收集更多光线的大口径物镜。观察暗弱的星云和星系必须用它。",
+    "icon_path": "res://assets/telescope_parts/objective_100mm.png"
   },
   {
     "id": "stable_mount",
@@ -112,7 +117,8 @@
     "cost": 180,
     "unlock_level": 8,
     "description_en": "A heavy mount that keeps the telescope steady at high magnification.",
-    "description_zh": "让望远镜在高倍率下也能保持稳定的重型支架。"
+    "description_zh": "让望远镜在高倍率下也能保持稳定的重型支架。",
+    "icon_path": "res://assets/telescope_parts/stable_mount.png"
   },
   {
     "id": "tracking_mount",
@@ -125,7 +131,8 @@
     "cost": 260,
     "unlock_level": 23,
     "description_en": "A motorized mount that can turn at the same rate as the sky, canceling Earth's drift.",
-    "description_zh": "带电机的支架，能以与天空相同的速度转动，抵消地球自转带来的漂移。"
+    "description_zh": "带电机的支架，能以与天空相同的速度转动，抵消地球自转带来的漂移。",
+    "icon_path": "res://assets/telescope_parts/tracking_mount.png"
   },
   {
     "id": "basic_focus_knob",
@@ -139,6 +146,7 @@
     "telescope_type": "refractor",
     "optical_role": "focus",
     "description_en": "Moves the eyepiece slightly so the image lands sharply at the focal plane.",
-    "description_zh": "轻微移动目镜位置，让焦平面上的图像变清楚。"
+    "description_zh": "轻微移动目镜位置，让焦平面上的图像变清楚。",
+    "icon_path": "res://assets/telescope_parts/basic_focus_knob.png"
   }
 ]

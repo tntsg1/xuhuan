@@ -65,8 +65,17 @@ func _save_settings() -> void:
 
 func _on_node_added(node: Node) -> void:
 	if node is Button:
-		(node as Button).call_deferred("set_meta", "feedback_pending", true)
-		call_deferred("bind_button", node)
+		# Deferred by INSTANCE ID: rebuilt screens free buttons within the
+		# same frame, and a typed deferred bind_button(freed Button) throws
+		# "Cannot convert argument" every time. instance_from_id() simply
+		# returns null for freed nodes.
+		call_deferred("_bind_button_deferred", node.get_instance_id())
+
+
+func _bind_button_deferred(button_id: int) -> void:
+	var node: Object = instance_from_id(button_id)
+	if node is Button and is_instance_valid(node):
+		bind_button(node as Button)
 
 
 func _bind_existing_buttons(node: Node) -> void:
@@ -189,6 +198,19 @@ func pulse(control: Control, color := CYAN, duration := 0.5) -> void:
 	var start := control.modulate
 	tween.tween_property(control, "modulate", color, duration * 0.45).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(control, "modulate", start, duration * 0.55).set_trans(Tween.TRANS_SINE)
+
+
+# Text swap with a soft fade-in of the NEW text. Safe to call every frame:
+# identical text is a no-op, so only real changes animate.
+func crossfade_text(label: Label, new_text: String) -> void:
+	if label == null or not is_instance_valid(label) or label.text == new_text:
+		return
+	label.text = new_text
+	if reduced_motion:
+		return
+	label.modulate.a = 0.18
+	var tween := _replace_tween(label, "feedback_textswap")
+	tween.tween_property(label, "modulate:a", 1.0, 0.18)
 
 
 func page_enter(control: Control, from_offset := Vector2(0, 10)) -> void:

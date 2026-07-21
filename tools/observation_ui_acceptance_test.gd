@@ -135,18 +135,33 @@ func _test_pointer_extremes() -> void:
 	var alt_pointer := view.get("alt_target_pointer") as TextureRect
 	_check(az_pointer.flip_v, "azimuth pointer tip is oriented downward")
 	_check(is_equal_approx(alt_pointer.rotation, PI * 0.5), "altitude pointer tip is oriented toward the sky window")
+	# Pointer semantics (user fix 2026-07-19): the pointer marks the mission
+	# TARGET's true direction inside the scrolling window - it must NOT ride
+	# along with the aim. Sweeping the aim PAST the target flips the pointer
+	# to the other side; matching the target centers it; far off-window pins
+	# it at the band edge, dimmed.
+	var target_item: Dictionary = view.call("_sky_item", str(view.get("target_id")))
+	var target_az := float(target_item.get("azimuth", 0.0))
+	var target_alt := clampf(float(target_item.get("altitude", 30.0)), 10.0, 80.0)
 	var az_positions: Array[float] = []
-	for azimuth in [0.0, 90.0, 180.0, 270.0, 359.0]:
-		view.set("display_azimuth", azimuth)
+	for offset in [-12.0, -5.0, 0.0, 5.0, 12.0]:
+		view.set("display_azimuth", wrapf(target_az + offset, 0.0, 360.0))
 		view.call("_update_scale_asset_state")
 		az_positions.append(az_pointer.position.x)
-	_check(az_positions[0] < az_positions[1] and az_positions[1] < az_positions[2] and az_positions[2] < az_positions[3] and az_positions[3] < az_positions[4], "Az 0/90/180/270/359 move the pointer monotonically across the scale")
+	_check(az_positions[0] > az_positions[1] and az_positions[1] > az_positions[2] and az_positions[2] > az_positions[3] and az_positions[3] > az_positions[4],
+		"sweeping the aim eastward walks the target pointer west across the band")
+	_check(absf(az_positions[1] - az_positions[2]) > 4.0 and absf(az_positions[3] - az_positions[2]) > 4.0,
+		"pointer sits between its two flanking sweep positions (target-relative, not aim-riding)")
+	view.set("display_azimuth", wrapf(target_az + 90.0, 0.0, 360.0))
+	view.call("_update_scale_asset_state")
+	_check(az_pointer.modulate.a < 0.9, "far off-window target pins the pointer dimmed at the band edge")
 	var alt_positions: Array[float] = []
-	for altitude in [0.0, 30.0, 60.0, 90.0]:
-		view.set("display_altitude", altitude)
+	for alt_offset in [-8.0, -3.0, 0.0, 3.0, 8.0]:
+		view.set("display_altitude", clampf(target_alt + alt_offset, 0.0, 90.0))
 		view.call("_update_scale_asset_state")
 		alt_positions.append(alt_pointer.position.y)
-	_check(alt_positions[0] > alt_positions[1] and alt_positions[1] > alt_positions[2] and alt_positions[2] > alt_positions[3], "Alt 0/30/60/90 move upward without reversing")
+	_check(alt_positions[0] < alt_positions[1] and alt_positions[1] < alt_positions[2] and alt_positions[2] < alt_positions[3] and alt_positions[3] < alt_positions[4],
+		"raising the aim walks the target pointer downward on the altitude band")
 
 
 func _test_modes() -> void:

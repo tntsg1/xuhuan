@@ -11,7 +11,7 @@ func _initialize() -> void:
 		quit(1)
 		return
 	game_manager.new_game()
-	_expect(game_manager.levels_data.size() == 91, "campaign reaches L91")
+	_expect(game_manager.levels_data.size() == 131, "campaign reaches L131 (91 core + 40 expansion)")
 	_expect(str(game_manager.levels_data[23].get("id", "")) == "level_24", "L1-L24 data remains intact")
 	_expect(str(game_manager.levels_data[24].get("telescope_family", "")) == "refractor", "L25 uses refractor for the chromatic-aberration comparison")
 	_expect(str(game_manager.levels_data[25].get("telescope_family", "")) == "newtonian", "L26 introduces the Newtonian family")

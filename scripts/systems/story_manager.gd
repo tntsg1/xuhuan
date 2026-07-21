@@ -13,6 +13,7 @@ extends Node
 # never replays.
 
 const DIALOGUES_PATH := "res://data/story_dialogues.json"
+const EXPANSION_DIALOGUES_PATH := "res://data/expansion/story_dialogues.json"
 
 # Events are found by naming convention against the loaded dialogue data:
 #   before_observation -> "level_N_before"
@@ -46,6 +47,18 @@ var pending_trigger := ""
 
 func _ready() -> void:
 	dialogues = _load_json_dict(DIALOGUES_PATH)
+	var expansion := _load_json_dict(EXPANSION_DIALOGUES_PATH)
+	for event_id in expansion:
+		# board_notes is a sub-dictionary keyed by level number: MERGE it so the
+		# expansion's 92-131 notes add to the base 1-91 notes instead of
+		# replacing the whole map (a plain assign would erase L1-91).
+		if event_id == "board_notes" and dialogues.get("board_notes") is Dictionary and expansion["board_notes"] is Dictionary:
+			var merged: Dictionary = dialogues["board_notes"]
+			for note_key in expansion["board_notes"]:
+				merged[note_key] = expansion["board_notes"][note_key]
+			dialogues["board_notes"] = merged
+		else:
+			dialogues[event_id] = expansion[event_id]
 
 
 # ------------------------------------------------------------------ queries

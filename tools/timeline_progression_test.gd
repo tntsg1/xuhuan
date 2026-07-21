@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Acceptance test for the 91-level campaign (user checklist items 1-32):
+# Acceptance test for the original 91-level campaign inside the expanded timeline:
 # timeline purity, strict 10-level family blocks, chromatic bridge L23-L25,
 # story coverage L1-L91, cabinet tabs, auto-equip compatibility, hints
 # toggle persistence, mojibake scan, save migration, and real mechanics.
@@ -20,9 +20,10 @@ func _initialize() -> void:
 	gm.new_game()
 
 	# (1)(16)(17) campaign size and final level.
-	_check(int(mm.get_max_level()) == 91, "1. campaign has 91 levels")
+	_check(int(mm.get_max_level()) == 131, "1. campaign appends expansion after the original 91 levels")
 	_check(not mm.is_final_level(90), "16. L90 is NOT the final level")
-	_check(mm.is_final_level(91), "17. L91 is the final level")
+	_check(mm.is_final_level(91), "17. L91 (final report) closes the woven campaign")
+	_check(not mm.is_final_level(131) and mm.order_index(131) < mm.order_index(76), "17b. constellation finale plays before the FAST block, not after the ending")
 
 	# (2) L1-24 contain no Newtonian content in data.
 	var forbidden := ["newtonian", "Newtonian", "牛顿", "reflector_tube", "primary_mirror", "secondary_mirror", "collimation_tool"]
@@ -142,13 +143,19 @@ func _initialize() -> void:
 	_check(saved_flag == false, "23. hints OFF persisted into progress")
 	gm.set_assembly_hints(true)
 
-	# (24) No mojibake in the key UI/system scripts.
-	var mojibake := ["瑁呴厤", "鎻愮ず", "鐗涢", "鏃犵嚎", "鐩爣", "闂彿", "锛�", "鈥�"]
+	# (24) No mojibake in the key UI/system scripts AND expansion data files.
+	# The GBK-misread signatures below only appear when UTF-8 Chinese was
+	# double-encoded; genuine content never contains them.
+	var mojibake := ["瑁呴厤", "鎻愮ず", "鐗涢", "鏃犵嚎", "鐩爣", "闂彿", "锛�", "鈥�", "璇嗗埆", "瑙傛祴", "缁忚繃", "鏄熷骇"]
 	for script_path in [
 		"res://scripts/ui/assembly_ui_template.gd", "res://scripts/ui/telescope_assembly_screen.gd",
 		"res://scripts/ui/advanced_assembly.gd", "res://scripts/ui/optical_tube_assembly.gd",
 		"res://scripts/ui/parts_cabinet.gd", "res://scripts/systems/game_manager.gd",
-		"res://scripts/systems/story_manager.gd"
+		"res://scripts/systems/story_manager.gd", "res://scripts/ui/constellation_observation.gd",
+		"res://scripts/ui/telescope_view.gd",
+		"res://data/expansion/levels.json", "res://data/expansion/story_dialogues.json",
+		"res://data/expansion/constellations.json", "res://data/expansion/celestial_objects.json",
+		"res://data/expansion/learning_cards.json"
 	]:
 		var file := FileAccess.open(script_path, FileAccess.READ)
 		_check(file != null, "24. %s readable" % script_path)

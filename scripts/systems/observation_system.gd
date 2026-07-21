@@ -169,7 +169,10 @@ static func _evaluate_telescope(stats: Dictionary, celestial_object: Dictionary,
 		# You cannot claim a top-quality observation with a blurred image.
 		if quality == "Excellent" or quality == "Good":
 			quality = "Fair"
-	var success := (not out_of_focus) and _quality_rank(quality) >= _quality_rank(minimum_success_quality)
+	var requirement_failure := _requirement_failure(stats, extra_context)
+	var success := (not out_of_focus) and requirement_failure.is_empty() and _quality_rank(quality) >= _quality_rank(minimum_success_quality)
+	if not requirement_failure.is_empty() and _quality_rank(quality) > _quality_rank("Fair"):
+		quality = "Fair"
 
 	var visual_effect := "clear"
 	var feedback_en := "Good observation. Identify the object to complete the mission."
@@ -178,6 +181,10 @@ static func _evaluate_telescope(stats: Dictionary, celestial_object: Dictionary,
 		visual_effect = "blurry"
 		feedback_en = "The image is out of focus. Adjust the focus knob until the target becomes sharp."
 		feedback_zh = "图像失焦了。请转动调焦旋钮，直到目标变清晰。"
+	elif not requirement_failure.is_empty():
+		visual_effect = str(requirement_failure.get("visual_effect", "clear"))
+		feedback_en = str(requirement_failure.get("en", "The observing technique is not ready."))
+		feedback_zh = str(requirement_failure.get("zh", "观测技巧尚未达到要求。"))
 	elif light_ratio < clarity_ratio and light_ratio < stability_ratio:
 		visual_effect = "dim"
 		feedback_en = "This object is dim with the current telescope. A larger objective lens would collect more light."
@@ -215,12 +222,37 @@ static func _evaluate_telescope(stats: Dictionary, celestial_object: Dictionary,
 		"effective_clarity": effective_clarity,
 		"seeing_eff": seeing_eff,
 		"seeing_label": seeing_label,
+		"technique_failure": requirement_failure,
 		"ratios": {
 			"light": light_ratio,
 			"clarity": clarity_ratio,
 			"stability": stability_ratio
 		}
 	}
+
+
+static func _requirement_failure(stats: Dictionary, context: Dictionary) -> Dictionary:
+	var requirements: Dictionary = context.get("observation_requirements", {})
+	if requirements.is_empty(): return {}
+	var altitude := float(context.get("altitude", 45.0))
+	if requirements.has("altitude_min") and altitude < float(requirements["altitude_min"]): return {"en":"Target is too low. Raise the aim or wait for the observing window.","zh":"目标高度太低。请抬高视野或等待合适观测窗口。","visual_effect":"shaky","code":"altitude_low"}
+	if requirements.has("altitude_max") and altitude > float(requirements["altitude_max"]): return {"en":"Mercury has left the required twilight window.","zh":"水星已经离开本关要求的暮光观测窗口。","visual_effect":"dim","code":"window"}
+	var magnification := float(context.get("magnification", stats.get("magnification", 0.0)))
+	if requirements.has("magnification_min") and magnification < float(requirements["magnification_min"]): return {"en":"Magnification is too low to resolve this feature. Fit a shorter eyepiece.","zh":"倍率不足以分辨该特征。请换用更短焦距目镜。","visual_effect":"blurry","code":"magnification_low"}
+	if requirements.has("magnification_max") and magnification > float(requirements["magnification_max"]): return {"en":"Magnification is too high: the field is narrow and turbulence is enlarged.","zh":"倍率过高：视野过窄，而且大气扰动被放大。","visual_effect":"shaky","code":"magnification_high"}
+	if requirements.has("light_min") and float(stats.get("light_score", 0.0)) < float(requirements["light_min"]): return {"en":"The aperture does not collect enough light for this target.","zh":"当前口径无法为这个目标收集足够光线。","visual_effect":"dim","code":"aperture"}
+	if requirements.has("stability_min") and float(stats.get("stability_score", 0.0)) < float(requirements["stability_min"]): return {"en":"The mount is not stable enough for this detail.","zh":"当前支架不够稳定，无法分辨该细节。","visual_effect":"shaky","code":"stability"}
+	var exposure := float(context.get("exposure", 0.5))
+	if requirements.has("exposure_min") and exposure < float(requirements["exposure_min"]): return {"en":"Exposure is too low; the phase edge has disappeared.","zh":"曝光太低，月相边缘已经消失。","visual_effect":"dim","code":"underexposed"}
+	if requirements.has("exposure_max") and exposure > float(requirements["exposure_max"]): return {"en":"Venus is overexposed. Reduce exposure until the crescent edge returns.","zh":"金星过曝。请降低曝光，直到弯月边缘重新出现。","visual_effect":"blurry","code":"overexposed"}
+	if str(requirements.get("filter", "none")) != str(context.get("filter", "none")): return {"en":"Select the nebula filter to suppress the bright sky background.","zh":"请选择星云滤镜，以压低明亮天空背景。","visual_effect":"dim","code":"filter"}
+	if float(context.get("dark_adaptation", 0.0)) < float(requirements.get("dark_adaptation_min", 0.0)): return {"en":"Your eyes are not dark-adapted yet. Wait without bright light.","zh":"眼睛尚未完成暗适应。请避开强光并继续等待。","visual_effect":"dim","code":"dark_adaptation"}
+	if bool(requirements.get("require_averted_vision", false)) and not bool(context.get("averted_vision", false)): return {"en":"Use averted vision: hold Shift and look just beside the target.","zh":"请使用侧视法：按住 Shift，并看向目标旁边。","visual_effect":"dim","code":"averted_vision"}
+	if bool(requirements.get("require_tracking", false)):
+		var rate := float(context.get("tracking_rate", 0.0))
+		if rate < float(requirements.get("tracking_min", 0.85)) or rate > float(requirements.get("tracking_max", 1.15)): return {"en":"Tracking rate is mismatched. Tune it close to 1.0x.","zh":"追踪速率不匹配。请调到接近 1.0x。","visual_effect":"shaky","code":"tracking"}
+	if requirements.has("seeing_patience") and float(context.get("observation_elapsed", 0.0)) < 4.0 + float(requirements["seeing_patience"]) * 4.0: return {"en":"Low-altitude seeing is still boiling. Hold the view and wait for a steady instant.","zh":"低空视宁度仍在剧烈扰动。请保持视野，等待短暂稳定。","visual_effect":"shaky","code":"seeing_patience"}
+	return {}
 
 
 static func _ratio(value: float, required: float) -> float:

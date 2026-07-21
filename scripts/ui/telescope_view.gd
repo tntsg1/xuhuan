@@ -28,7 +28,21 @@ const SPRITE_MAP := {
 	"arcturus": "res://assets/telescope_view/arcturus_clear.png",
 	"canopus": "res://assets/telescope_view/canopus_clear.png",
 	"alpha_centauri": "res://assets/telescope_view/alpha_cen_clear.png",
-	"proxima": "res://assets/telescope_view/proxima_clear.png"
+	"proxima": "res://assets/telescope_view/proxima_clear.png",
+	"mercury": "res://assets/telescope_view/expansion/mercury.svg",
+	"venus": "res://assets/telescope_view/expansion/venus.svg",
+	"saturn": "res://assets/telescope_view/expansion/saturn.svg",
+	"uranus": "res://assets/telescope_view/expansion/uranus.svg",
+	"neptune": "res://assets/telescope_view/expansion/neptune.svg",
+	"moon_crater_copernicus": "res://assets/telescope_view/expansion/moon_crater.svg",
+	"moon_mare_tranquillitatis": "res://assets/telescope_view/expansion/moon_mare.svg",
+	"moon_terminator": "res://assets/telescope_view/expansion/moon_terminator.svg",
+	"albireo": "res://assets/telescope_view/expansion/albireo.svg",
+	"pleiades": "res://assets/telescope_view/expansion/pleiades.svg",
+	"m13": "res://assets/telescope_view/expansion/m13.svg",
+	"ring_nebula": "res://assets/telescope_view/expansion/ring_nebula.svg",
+	"lagoon_nebula": "res://assets/telescope_view/expansion/lagoon_nebula.svg",
+	"sombrero_galaxy": "res://assets/telescope_view/expansion/sombrero.svg"
 }
 
 # Per-object state textures: clear (sharp art) / blurry (defocus photo,
@@ -112,6 +126,22 @@ const OBS_UI_DIR := "res://assets/ui/observation/suc/processed/"
 const Z_MODAL_OVERLAY := 1000
 const EYE_RETICLE_TEXTURE := OBS_UI_DIR + "eye_large_center.png"
 
+
+class ConstellationField extends Control:
+	var pattern: Array = []
+
+	func _draw() -> void:
+		if pattern.is_empty():
+			return
+		var area := Rect2(Vector2(120, 105), Vector2(396, 350))
+		for star_value in pattern:
+			var star: Dictionary = star_value
+			var position := area.position + Vector2(float(star.get("x", 0.5)), float(star.get("y", 0.5))) * area.size
+			var magnitude := float(star.get("magnitude", 2.0))
+			var radius := clampf(5.0 - magnitude * 0.8, 2.0, 4.2)
+			draw_circle(position, radius * 2.5, Color(0.58, 0.78, 1.0, 0.15))
+			draw_circle(position, radius, Color(0.97, 0.98, 1.0, 0.98))
+
 var feedback_label: Label
 var quality_label: Label
 var mission_step_label: Label
@@ -120,6 +150,8 @@ var identify_title_label: Label
 var identify_choice_ids: Array[String] = []
 var quiz_brief_overlay: Control
 var quiz_brief_dismissed := false
+var is_free_observation := false
+var free_result_label: Label
 var observation: Dictionary
 var selected_object: Dictionary
 
@@ -162,6 +194,7 @@ var blur_overlay: TextureRect
 var base_alpha := 1.0
 var current_sprite_path := ""
 var noise_quality := ""
+var constellation_field: ConstellationField
 
 # Smoothed display values: inputs are quantized (slider steps, quality
 # tiers), so visuals chase their targets each frame instead of snapping.
@@ -184,6 +217,11 @@ var dark_adaptation := 0.0
 var averted_vision_active := false
 var dark_adaptation_label: Label
 var averted_vision_label: Label
+var exposure_value := 0.5
+var active_filter := "none"
+var observation_elapsed := 0.0
+var technique_reevaluate_timer := 0.0
+var technique_status_label: Label
 var star_layer_nodes: Array[ColorRect] = []
 var star_layer_container: Control
 
@@ -251,6 +289,10 @@ func _ready() -> void:
 	if selected_object.is_empty():
 		selected_object = GameManager.current_target()
 		GameManager.selected_object_id = str(selected_object.get("id", ""))
+	# Free observation: the player is looking at a non-mission object. It shares
+	# every optical mechanic but never runs the identify quiz or completes the
+	# mission.
+	is_free_observation = GameManager.is_free_observation()
 	observation_mode = GameManager.current_observation_mode()
 	requires_focus = observation_mode == "telescope" and GameManager.current_requires_focus()
 	allow_focus_input = _focus_knob_installed()
@@ -315,7 +357,8 @@ func _is_dark_adaptation_target() -> bool:
 	if not requires_focus:
 		return false
 	var type_lower := str(selected_object.get("type_en", "")).to_lower()
-	return type_lower.contains("nebula") or type_lower.contains("galaxy")
+	var requirements: Dictionary = GameManager.current_level().get("observation_requirements", {})
+	return type_lower.contains("nebula") or type_lower.contains("galaxy") or requirements.has("dark_adaptation_min")
 
 
 # ------------------------------------------------------- object-type dispatch
@@ -453,15 +496,23 @@ func cloud_tier_index() -> int:
 
 
 func _process(delta: float) -> void:
+	observation_elapsed += delta
+	technique_reevaluate_timer += delta
 	focus_missing_feedback_cooldown = maxf(0.0, focus_missing_feedback_cooldown - delta)
 	if _is_dark_adaptation_target():
 		_advance_dark_adaptation(delta)
+	if technique_reevaluate_timer >= 0.25 and not GameManager.current_level().get("observation_requirements", {}).is_empty():
+		technique_reevaluate_timer = 0.0
+		observation = _evaluate()
+		_refresh_target_sprite()
+		_refresh_focus_ui()
+		_refresh_technique_status()
 	if requires_focus or drift_enabled:
 		# The chase also repositions the target sprite: on drift levels it
 		# must run even without focus, or the star field slides while the
 		# target itself stays frozen.
 		_advance_visual_smoothing(delta)
-	if observation_mode != "naked_eye":
+	if observation_mode != "naked_eye" and not _is_constellation_observation():
 		_advance_conditions(delta)
 	if drift_enabled:
 		_advance_drift(delta)
@@ -483,6 +534,9 @@ func _handle_focus_input(delta: float) -> void:
 			direction -= 1.0
 		if Input.is_key_pressed(KEY_D) or Input.is_action_pressed("move_right"):
 			direction += 1.0
+	# Mobile focus nudge buttons feed the same continuous adjustment path.
+	if TouchInput.is_mobile():
+		direction = clampf(direction + TouchInput.focus_direction, -1.0, 1.0)
 	if direction == 0.0:
 		return
 	if not allow_focus_input:
@@ -515,6 +569,9 @@ func _advance_drift(delta: float) -> void:
 		correction.y -= 1.0
 	if Input.is_key_pressed(KEY_S) or Input.is_action_pressed("move_down"):
 		correction.y += 1.0
+	# Mobile: the virtual joystick doubles as the drift-correction stick.
+	if correction == Vector2.ZERO:
+		correction = TouchInput.move_vector()
 	if correction != Vector2.ZERO:
 		drift_offset -= correction.normalized() * DRIFT_CORRECTION_SPEED * delta
 
@@ -830,6 +887,8 @@ func _init_focus() -> void:
 	# Quantize to the slider grid so dragging can land EXACTLY on target.
 	target_focus_value = snappedf(target_focus_value, 0.005)
 	focus_tolerance = _tolerance_for(selected_object)
+	var requirements: Dictionary = GameManager.current_level().get("observation_requirements", {})
+	focus_tolerance *= float(requirements.get("focus_multiplier", 1.0))
 	focus_value = 0.5
 	if absf(focus_value - target_focus_value) < 0.12:
 		# Always start visibly out of focus so the player learns the knob.
@@ -859,7 +918,25 @@ func _tolerance_for(obj: Dictionary) -> float:
 
 
 func _evaluate() -> Dictionary:
+	if _is_constellation_observation():
+		return {
+			"quality": "Good",
+			"success": true,
+			"visual_effect": "clear",
+			"feedback_en": "The full star pattern is clear enough to identify.",
+			"feedback_zh": "完整星群图形足够清晰，可以识别。",
+			"observation_mode": "constellation",
+			"seeing_label": "Good",
+			"ratios": {"light": 1.0, "clarity": 1.0, "stability": 1.0}
+		}
 	var context := {"observation_mode": observation_mode}
+	context["observation_requirements"] = GameManager.current_level().get("observation_requirements", {})
+	context["exposure"] = exposure_value
+	context["filter"] = active_filter
+	context["dark_adaptation"] = dark_adaptation
+	context["averted_vision"] = averted_vision_active
+	context["tracking_rate"] = GameManager.tracking_rate()
+	context["observation_elapsed"] = observation_elapsed
 	if requires_focus:
 		context["focus_error"] = focus_error
 		context["requires_focus"] = true
@@ -1003,6 +1080,9 @@ func _missing_required_parts_text() -> String:
 
 
 func _quality_shortfall_text() -> String:
+	var technique_failure: Dictionary = observation.get("technique_failure", {})
+	if not technique_failure.is_empty():
+		return GameManager.text(str(technique_failure.get("en", "Technique not ready.")), str(technique_failure.get("zh", "观测技巧尚未达到要求。")))
 	# Focus is fine - name the REAL limiting factor so the player never
 	# blames the wrong thing (audit: story must match the mechanic).
 	# Priority: focus (already excluded by caller) > collimation > cloud >
@@ -1066,15 +1146,44 @@ func _build() -> void:
 	# oversized and would otherwise paint over the title strip.
 	if observation_mode == "naked_eye":
 		_title_bar(GameManager.text("Naked Eye Observation", "肉眼观测"))
+	elif _is_constellation_observation():
+		_title_bar(GameManager.text("Constellation Field", "星座星域"))
 	else:
 		_title_bar(GameManager.text("Telescope View", "望远镜视野"))
 	_build_observation_panel()
+	if not GameManager.current_level().get("observation_requirements", {}).is_empty():
+		_build_technique_panel()
 	if drift_enabled:
 		_build_drift_panel()
 	if requires_focus and allow_focus_input:
 		_build_focus_novice_guide()
 	if requires_focus:
 		_refresh_focus_ui()
+	if TouchInput.is_mobile():
+		_build_mobile_view_controls()
+
+
+func _build_mobile_view_controls() -> void:
+	TouchInput.focus_direction = 0.0
+	# Drift levels reuse the virtual joystick as the centering stick.
+	if drift_enabled:
+		var overlay: Control = preload("res://scripts/ui/mobile_controls.gd").new()
+		add_child(overlay)
+	# Focus nudge buttons (Q/E equivalent) beside the drift panel, clear of
+	# the observation panel and identify buttons.
+	if requires_focus and allow_focus_input:
+		for spec in [["−", -1.0, Vector2(624, 690)], ["＋", 1.0, Vector2(684, 690)]]:
+			var nudge := Button.new()
+			nudge.text = str(spec[0])
+			nudge.position = spec[2]
+			nudge.size = Vector2(52, 52)
+			nudge.focus_mode = Control.FOCUS_NONE
+			nudge.add_theme_font_size_override("font_size", 22)
+			nudge.z_index = 90
+			var nudge_direction: float = float(spec[1])
+			nudge.button_down.connect(func() -> void: TouchInput.focus_direction = nudge_direction)
+			nudge.button_up.connect(func() -> void: TouchInput.focus_direction = 0.0)
+			add_child(nudge)
 	call_deferred("_animate_stat_bars")
 
 
@@ -1180,6 +1289,10 @@ func _build_observation_panel() -> void:
 	if requires_focus:
 		_build_focus_block()
 
+	if is_free_observation:
+		_build_free_observation_panel()
+		return
+
 	identify_title_label = _plabel(GameManager.text("Identify", "识别"), Vector2(CONTENT_X, 414), Vector2(CONTENT_W, 20), 16, Color(0.98, 0.82, 0.50))
 
 	choices_box = VBoxContainer.new()
@@ -1210,6 +1323,45 @@ func _build_observation_panel() -> void:
 		_set_identify_choices_visible(true)
 	else:
 		_show_pre_quiz_guide()
+
+
+func _build_free_observation_panel() -> void:
+	# Non-mission target: no identify quiz. A short result readout + "Add to
+	# Club Logbook" / "Back to Sky", so the player enjoys the real optics
+	# without any risk of completing or failing tonight's mission.
+	identify_title_label = _plabel(GameManager.text("Free Observation", "自由观测"), Vector2(CONTENT_X, 414), Vector2(CONTENT_W, 22), 17, Color(0.42, 0.82, 1.0))
+	var name_line := GameManager.dict_text(selected_object, "name")
+	_plabel(name_line + "  ·  " + GameManager.dict_text(selected_object, "type"), Vector2(CONTENT_X, 440), Vector2(CONTENT_W, 20), 13, COL_TEXT)
+	var q := str(observation.get("quality", "Good"))
+	_plabel(GameManager.text("Quality: ", "观测质量：") + q, Vector2(CONTENT_X, 466), Vector2(CONTENT_W, 20), 13, COL_GOLD_LIGHT)
+	var learn := _plabel(GameManager.dict_text(selected_object, "learning_text") if selected_object.has("learning_text_en") else GameManager.dict_text(selected_object, "short_hint"), Vector2(CONTENT_X, 492), Vector2(CONTENT_W, 78), 12, Color(0.82, 0.88, 0.92))
+	learn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	learn.max_lines_visible = 4
+	free_result_label = _plabel("", Vector2(CONTENT_X, 574), Vector2(CONTENT_W, 20), 12, Color(0.55, 1.0, 0.68))
+
+	var bottom := HBoxContainer.new()
+	bottom.position = Vector2(CONTENT_X, 600)
+	bottom.size = Vector2(CONTENT_W, 40)
+	bottom.add_theme_constant_override("separation", 8)
+	add_child(bottom)
+	var log_btn := _pixel_button(GameManager.text("Add to Logbook", "加入日志"), Vector2(150, 40), 13)
+	log_btn.pressed.connect(_add_free_observation_to_logbook)
+	bottom.add_child(log_btn)
+	var back := _pixel_button(GameManager.text("Back to Sky", "返回星图"), Vector2(120, 40), 13)
+	back.pressed.connect(func() -> void: GameManager.go("sky"))
+	bottom.add_child(back)
+
+
+func _add_free_observation_to_logbook() -> void:
+	var result: Dictionary = GameManager.record_free_observation(str(selected_object.get("id", "")), observation)
+	if free_result_label != null:
+		if bool(result.get("repeat", false)):
+			free_result_label.text = GameManager.text("Already logged with this setup. Change eyepiece or family for a new record.", "该设备下已记录。换目镜或望远镜类型可添加新记录。")
+			free_result_label.add_theme_color_override("font_color", Color(0.86, 0.78, 0.52))
+		else:
+			free_result_label.text = GameManager.text("New observation record added (+5 credits).", "已新增观测记录（+5 积分）。")
+			free_result_label.add_theme_color_override("font_color", Color(0.55, 1.0, 0.68))
+			InteractionFeedback.success(free_result_label, "free_observation_logged")
 
 
 func _build_focus_block() -> void:
@@ -1360,6 +1512,59 @@ const DRIFT_PANEL_SIZE := Vector2(560, 72)
 const DRIFT_ROW_H := 20.0
 
 
+func _build_technique_panel() -> void:
+	var requirements: Dictionary = GameManager.current_level().get("observation_requirements", {})
+	var panel_pos := Vector2(54, 614)
+	var panel_size := Vector2(680, 44)
+	_pixel_panel(self, panel_pos, panel_size, COL_NAVY, COL_BRASS)
+	_plabel(GameManager.text("TECHNIQUE", "观测技巧"), panel_pos + Vector2(10, 5), Vector2(82, 16), 10, COL_GOLD_LIGHT)
+	var x := panel_pos.x + 92.0
+	if requirements.has("exposure_min") or requirements.has("exposure_max"):
+		_plabel(GameManager.text("Exposure", "曝光"), Vector2(x, panel_pos.y + 5), Vector2(58, 14), 9, COL_TEXT)
+		var slider := HSlider.new()
+		slider.min_value = 0.0
+		slider.max_value = 1.0
+		slider.step = 0.02
+		slider.value = exposure_value
+		slider.position = Vector2(x + 60, panel_pos.y + 2)
+		slider.size = Vector2(118, 20)
+		slider.value_changed.connect(func(value: float) -> void:
+			exposure_value = value
+			observation = _evaluate()
+			_refresh_target_sprite()
+			_refresh_technique_status()
+		)
+		add_child(slider)
+		x += 190.0
+	if requirements.has("filter"):
+		var filter_button := _pixel_button(GameManager.text("Filter: Off", "滤镜：关闭"), Vector2(112, 26), 9)
+		filter_button.position = Vector2(x, panel_pos.y + 4)
+		filter_button.pressed.connect(func() -> void:
+			active_filter = "nebula" if active_filter == "none" else "none"
+			filter_button.text = GameManager.text("Filter: Nebula", "滤镜：星云") if active_filter == "nebula" else GameManager.text("Filter: Off", "滤镜：关闭")
+			observation = _evaluate()
+			_refresh_target_sprite()
+			_refresh_technique_status()
+		)
+		add_child(filter_button)
+		x += 122.0
+	technique_status_label = _plabel("", Vector2(x, panel_pos.y + 4), Vector2(panel_pos.x + panel_size.x - x - 8, 32), 9, Color(0.74, 0.86, 0.96))
+	technique_status_label.max_lines_visible = 2
+	_refresh_technique_status()
+
+
+func _refresh_technique_status() -> void:
+	if technique_status_label == null:
+		return
+	var failure: Dictionary = observation.get("technique_failure", {})
+	if failure.is_empty():
+		technique_status_label.text = GameManager.text("Technique ready", "观测技巧已就绪")
+		technique_status_label.add_theme_color_override("font_color", Color(0.48, 0.96, 0.60))
+	else:
+		technique_status_label.text = GameManager.text(str(failure.get("en", "Adjust technique.")), str(failure.get("zh", "请调整观测技巧。")))
+		technique_status_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.36))
+
+
 func _build_drift_panel() -> void:
 	# Center Hold / tracking UI lives below the scope circle, left of the
 	# right-hand observation panel - never competes with it for space.
@@ -1504,7 +1709,7 @@ func _refresh_focus_ui() -> void:
 		quality_label.text = GameManager.text("Quality: ", "质量: ") + quality
 		quality_label.add_theme_color_override("font_color", _quality_color(quality))
 	if feedback_label != null:
-		feedback_label.text = _current_feedback()
+		InteractionFeedback.crossfade_text(feedback_label, _current_feedback())
 	if drift_enabled:
 		_refresh_drift_ui()
 	_update_target_visuals()
@@ -1671,6 +1876,8 @@ func _add_dark_adaptation_row(y: float) -> float:
 
 
 func _short_feedback(quality: String) -> String:
+	if _is_constellation_observation():
+		return GameManager.text("Trace the shape you centered, then identify the constellation.", "观察刚才居中的星群形状，再识别对应星座。")
 	if observation_mode == "naked_eye":
 		return GameManager.text(str(observation.get("feedback_en", "")), str(observation.get("feedback_zh", "")))
 	match quality:
@@ -1709,6 +1916,17 @@ func _add_identify_choices() -> void:
 func _build_identify_choice_ids() -> Array[String]:
 	var ids: Array[String] = []
 	var correct_id := str(selected_object.get("id", ""))
+	if _is_constellation_observation():
+		for data_value in GameManager.constellations_data:
+			var data: Dictionary = data_value
+			_add_unique(ids, str(data.get("id", "")))
+		ids.erase(correct_id)
+		ids.shuffle()
+		while ids.size() > 3:
+			ids.pop_back()
+		ids.insert(0, correct_id)
+		ids.shuffle()
+		return ids
 	_add_unique(ids, correct_id)
 	_add_unique(ids, str(GameManager.current_target().get("id", "")))
 	for id in _distractors_for(correct_id):
@@ -1899,6 +2117,11 @@ func _scope_visual() -> Control:
 	lens_center = center
 	effect_seed = fmod(float(str(selected_object.get("id", "")).hash()), 100.0)
 	cloud_cover_level = _cloud_cover() if observation_mode != "naked_eye" else 0.0
+	if _is_constellation_observation():
+		_add_sky_background(root, center)
+		_add_scope_stars(root, center)
+		_add_constellation_field(root)
+		return root
 	if observation_mode == "naked_eye":
 		# Open night sky, no telescope barrel.
 		_circle(root, center - Vector2(262, 262), Vector2(524, 524), Color(0.006, 0.012, 0.032), Color.TRANSPARENT, 0)
@@ -1936,6 +2159,19 @@ func _scope_visual() -> Control:
 	if observation_mode == "naked_eye":
 		_add_observation_reticle(root, center)
 	return root
+
+
+func _is_constellation_observation() -> bool:
+	return observation_mode == "constellation" and not GameManager.get_constellation(str(selected_object.get("id", ""))).is_empty()
+
+
+func _add_constellation_field(parent: Control) -> void:
+	constellation_field = ConstellationField.new()
+	constellation_field.name = "ConstellationField"
+	constellation_field.size = Vector2(640, 620)
+	constellation_field.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	constellation_field.pattern = GameManager.get_constellation(str(selected_object.get("id", ""))).get("stars", [])
+	parent.add_child(constellation_field)
 
 
 func _add_observation_reticle(parent: Control, center: Vector2) -> void:
@@ -1993,6 +2229,8 @@ func _add_target_visual(parent: Control, scope_center: Vector2) -> void:
 	elif effect == "dim" and quality in ["Poor", "Failed"] and not _city_glow_diffuse_target():
 		base_alpha *= 0.55
 	base_alpha = clampf(base_alpha + _dark_adaptation_alpha_bonus(), 0.0, 1.0)
+	if GameManager.current_level().get("observation_requirements", {}).has("exposure_max"):
+		base_alpha = clampf(base_alpha * lerpf(0.42, 1.35, exposure_value), 0.0, 1.0)
 
 	var path: String = _sprite_path_for_target(id, quality, effect)
 	current_sprite_path = path
@@ -2124,6 +2362,18 @@ func _object_view_scale(id: String) -> float:
 			return 0.62
 		"orion_nebula":
 			return 0.70
+		"mercury": return 0.28
+		"venus": return 0.44
+		"saturn": return 0.72
+		"uranus": return 0.24
+		"neptune": return 0.20
+		"moon_crater_copernicus", "moon_mare_tranquillitatis", "moon_terminator": return 0.92
+		"albireo": return 0.46
+		"pleiades": return 0.90
+		"m13": return 0.55
+		"ring_nebula": return 0.42
+		"lagoon_nebula": return 0.82
+		"sombrero_galaxy": return 0.68
 	return 1.0
 
 
@@ -2166,6 +2416,8 @@ func _refresh_target_sprite() -> void:
 	elif effect == "dim" and quality in ["Poor", "Failed"] and not _city_glow_diffuse_target():
 		base_alpha *= 0.55
 	base_alpha = clampf(base_alpha + _dark_adaptation_alpha_bonus(), 0.0, 1.0)
+	if GameManager.current_level().get("observation_requirements", {}).has("exposure_max"):
+		base_alpha = clampf(base_alpha * lerpf(0.42, 1.35, exposure_value), 0.0, 1.0)
 	var path := _sprite_path_for_target(id, quality, effect)
 	if path != current_sprite_path:
 		current_sprite_path = path
@@ -2368,9 +2620,11 @@ func _add_real_sky_stars(parent: Control, scope_center: Vector2, fov_radius: flo
 	if stars.is_empty():
 		return
 	var service := SkyPositionService.new()
-	var config: Dictionary = service.load_config()
-	var latitude: float = float(config.get("default_latitude", 34.0522))
-	var longitude: float = float(config.get("default_longitude", -118.2437))
+	service.load_config()
+	# Eyepiece star field uses the player's actual observing site too.
+	var loc: Dictionary = GameManager.observing_location()
+	var latitude: float = float(loc.get("lat", 34.0522))
+	var longitude: float = float(loc.get("lon", -118.2437))
 	var utc_now: Dictionary = Time.get_datetime_dict_from_system(true)
 	var aim := _current_aim()
 	var aim_alt_rad := deg_to_rad(aim.y)
@@ -2545,6 +2799,8 @@ func _distractors_for(id: String) -> Array[String]:
 
 func _mystery_description(obj: Dictionary) -> Dictionary:
 	var id := str(obj.get("id", ""))
+	if _is_constellation_observation():
+		return {"en": "a complete pattern of bright field stars", "zh": "一整组明亮的星群图形"}
 	match id:
 		"moon":
 			return {"en": "bright round object", "zh": "明亮圆形目标"}

@@ -100,8 +100,8 @@ func _test_sky_positions() -> int:
 	var failures := 0
 	var service: RefCounted = SkyPositionServiceScript.new()
 	var data: Dictionary = service.get_sky_positions(Rect2(40, 72, 650, 560))
-	if data.size() != 13:
-		print("FAIL: expected 13 catalog objects, got %d" % data.size())
+	if data.size() != 27:
+		print("FAIL: expected 27 catalog objects, got %d" % data.size())
 		failures += 1
 
 	print("--- tonight's positions (offline/calculated pass) ---")

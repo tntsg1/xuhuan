@@ -71,7 +71,7 @@
     "variation": "drift",
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "chromatic_aberration": true
@@ -162,7 +162,7 @@
     "variation": "drift",
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     }
   },
@@ -237,7 +237,7 @@
     "variation": "drift",
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "chromatic_aberration": false
@@ -313,7 +313,7 @@
     "variation": "drift",
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     }
   },
@@ -388,7 +388,7 @@
     "variation": "drift",
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     }
   },
@@ -464,7 +464,7 @@
     "variation": "drift",
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "dark"
     }
   },
@@ -539,7 +539,7 @@
     "variation": "drift",
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "dark"
     }
   },
@@ -614,7 +614,7 @@
     "variation": "drift",
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     }
   },
@@ -764,7 +764,7 @@
     "variation": "drift",
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     }
   },
@@ -849,7 +849,7 @@
     "variation": "drift",
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     }
   },
@@ -924,7 +924,7 @@
     "hold_seconds": 4,
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -992,7 +992,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -1060,7 +1060,7 @@
     "hold_seconds": 8,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -1128,7 +1128,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "dark"
     },
     "requires_focus": true
@@ -1196,7 +1196,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "dark"
     },
     "requires_focus": true
@@ -1332,7 +1332,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "poor",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -1400,7 +1400,7 @@
     "hold_seconds": 8,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -1468,7 +1468,7 @@
     "hold_seconds": 10,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "dark"
     },
     "requires_focus": true
@@ -1544,7 +1544,7 @@
     "hold_seconds": 8,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -1561,7 +1561,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "cassegrain",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 86,
     "target_object_id": "moon",
     "required_parts": [
@@ -1616,7 +1616,7 @@
     "hold_seconds": 4,
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -1633,7 +1633,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "cassegrain",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 86,
     "target_object_id": "jupiter",
     "required_parts": [
@@ -1680,7 +1680,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -1697,7 +1697,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "cassegrain",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 86,
     "target_object_id": "sirius",
     "required_parts": [
@@ -1744,7 +1744,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -1761,7 +1761,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "cassegrain",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 86,
     "target_object_id": "mars",
     "required_parts": [
@@ -1808,7 +1808,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "poor",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -1825,7 +1825,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "cassegrain",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 86,
     "target_object_id": "jupiter",
     "required_parts": [
@@ -1889,7 +1889,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "cassegrain",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 86,
     "target_object_id": "mars",
     "required_parts": [
@@ -1936,7 +1936,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -1953,7 +1953,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "cassegrain",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 86,
     "target_object_id": "moon",
     "required_parts": [
@@ -2000,7 +2000,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2017,7 +2017,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "cassegrain",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 86,
     "target_object_id": "jupiter",
     "required_parts": [
@@ -2064,7 +2064,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2081,7 +2081,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "cassegrain",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 86,
     "target_object_id": "sirius",
     "required_parts": [
@@ -2145,7 +2145,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "cassegrain",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 86,
     "target_object_id": "jupiter",
     "required_parts": [
@@ -2200,7 +2200,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2217,7 +2217,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "gregorian",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 88,
     "target_object_id": "moon",
     "required_parts": [
@@ -2272,7 +2272,7 @@
     "hold_seconds": 4,
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2289,7 +2289,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "gregorian",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 88,
     "target_object_id": "sirius",
     "required_parts": [
@@ -2336,7 +2336,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2353,7 +2353,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "gregorian",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 88,
     "target_object_id": "vega",
     "required_parts": [
@@ -2400,7 +2400,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2417,7 +2417,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "gregorian",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 88,
     "target_object_id": "mars",
     "required_parts": [
@@ -2464,7 +2464,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2481,7 +2481,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "gregorian",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 88,
     "target_object_id": "jupiter",
     "required_parts": [
@@ -2528,7 +2528,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2545,7 +2545,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "gregorian",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 88,
     "target_object_id": "orion_nebula",
     "required_parts": [
@@ -2592,7 +2592,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "dark"
     },
     "requires_focus": true
@@ -2609,7 +2609,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "gregorian",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 88,
     "target_object_id": "sirius",
     "required_parts": [
@@ -2656,7 +2656,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2673,7 +2673,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "gregorian",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 88,
     "target_object_id": "mars",
     "required_parts": [
@@ -2737,7 +2737,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "gregorian",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 88,
     "target_object_id": "arcturus",
     "required_parts": [
@@ -2784,7 +2784,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "good",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2801,7 +2801,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "gregorian",
     "requires_telescope": true,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 88,
     "target_object_id": "mars",
     "required_parts": [
@@ -2853,7 +2853,7 @@
     "hold_seconds": 6,
     "environment": {
       "seeing": "average",
-      "cloud_cover": 0.0,
+      "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
     "requires_focus": true
@@ -2870,7 +2870,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "andromeda",
     "required_parts": [
@@ -2931,7 +2931,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "orion_nebula",
     "required_parts": [
@@ -2984,7 +2984,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "orion_nebula",
     "required_parts": [
@@ -3037,7 +3037,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "andromeda",
     "required_parts": [
@@ -3090,7 +3090,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "andromeda",
     "required_parts": [
@@ -3143,7 +3143,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "andromeda",
     "required_parts": [
@@ -3196,7 +3196,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "orion_nebula",
     "required_parts": [
@@ -3249,7 +3249,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "betelgeuse",
     "required_parts": [
@@ -3302,7 +3302,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "orion_nebula",
     "required_parts": [
@@ -3355,7 +3355,7 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": true,
+    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "andromeda",
     "required_parts": [

@@ -67,7 +67,8 @@
     "fallback_x": 115,
     "fallback_y": 125,
     "fallback_altitude": 52.0,
-    "fallback_azimuth": 155.0
+    "fallback_azimuth": 155.0,
+    "planet_body": "moon"
   },
   {
     "id": "mars",
@@ -77,7 +78,8 @@
     "fallback_x": 650,
     "fallback_y": 125,
     "fallback_altitude": 34.0,
-    "fallback_azimuth": 205.0
+    "fallback_azimuth": 205.0,
+    "planet_body": "mars"
   },
   {
     "id": "jupiter",
@@ -87,7 +89,8 @@
     "fallback_x": 600,
     "fallback_y": 340,
     "fallback_altitude": 28.0,
-    "fallback_azimuth": 118.0
+    "fallback_azimuth": 118.0,
+    "planet_body": "jupiter"
   },
   {
     "id": "arcturus",

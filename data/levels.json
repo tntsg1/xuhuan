@@ -201,7 +201,17 @@
       "eyepiece_10mm"
     ],
     "unlock_equipment_stage": "refractor_with_finder",
-    "badge": "Finder Scope"
+    "badge": "Finder Scope",
+    "variation": "finder_calibration",
+    "teaching_steps": [
+      {
+        "id": "finder_scope_intro",
+        "card_id": "finder_scope_alignment",
+        "trigger": "before_assembly",
+        "mode": "brief",
+        "required_once": true
+      }
+    ]
   },
   {
     "id": "level_7",

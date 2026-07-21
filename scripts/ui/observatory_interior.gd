@@ -112,8 +112,9 @@ func _start_observation() -> void:
 			"望远镜还没有准备好。请先组装核心部件。"
 		)
 		return
-	GameManager.set_observatory_spawn("door")
-	GameManager.go("sky")
+	# Unified observation entry: the dome console now routes through the same
+	# horizon-aware gate as the open pad, instead of jumping straight to sky.
+	GameManager.go_to_observation("door")
 
 
 func _rect(pos: Vector2, rect_size: Vector2, color: Color) -> ColorRect:

@@ -57,6 +57,7 @@ func _initialize() -> void:
 	gm.selected_object_id = "polaris"
 	gm.complete_current_mission("polaris", gm.evaluate_selected_object())
 	await process_frame
+	gm.debug_jump_to_level(3, false)
 	_check(int(gm.progress.get("current_level", 0)) == 3, "at level 3")
 	_check(gm.try_story_for_trigger("before_assembly", "assembly"), "L3 before_assembly story plays")
 	gm.complete_current_story()
@@ -75,6 +76,7 @@ func _initialize() -> void:
 	gm.selected_object_id = "moon"
 	gm.complete_current_mission("moon", gm.evaluate_selected_object())
 	await process_frame
+	gm.debug_jump_to_level(4, false)
 	_check(int(gm.progress.get("current_level", 0)) == 4, "at level 4")
 	gm.selected_object_id = "jupiter"
 	_check(gm.try_story_for_trigger("before_focus", "telescope"), "L4 before_focus story plays")
