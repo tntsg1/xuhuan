@@ -1,35 +1,327 @@
 # Pixel Observatory Changelog
 
-This is the English-first release log. The earlier detailed Chinese archive is
-preserved in [`VERSION_HISTORY.md`](VERSION_HISTORY.md) and has not been
-deleted.
+This is the English-first release log for Pixel Observatory. It restores the
+major project history that was previously summarized too aggressively in the
+README. Earlier records remain preserved in [`VERSION_HISTORY.md`](VERSION_HISTORY.md),
+which contains the detailed target/function/fix/verification format. This file
+adds a readable release-facing timeline with dates, player-facing meaning and
+concrete implementation details.
 
-## 2026-07-22 - Learning Card and Mobile Parts Cabinet
+## How To Read This Log
 
-- Replaced the `naked_eye_limits` teaching image with a larger diagram focused
-  on eye pupil size, telescope aperture, light collection, and faint objects.
-- Updated `data/learning_cards.json` to reference
-  `naked_eye_limits_light_gathering.png`.
-- Enlarged the Concept Brief diagram area while preserving aspect ratio and
+- The early `v0.x` and `v1.x` labels are historical development milestones.
+- A milestone can describe a system that was later refined; it does not mean
+  that every later visual or content issue disappeared permanently.
+- Advanced telescope families are described as framework, active development or
+  finished only where that distinction is explicit.
+- The public Web build is updated only after source changes are exported and
+  deployed by the workflow.
+
+## Historical Milestones
+
+### v0.1 — Project Replacement and MVP Foundation
+
+**Purpose:** Replace the former prototype with a 2D pixel astronomy teaching
+game and establish a runnable loop.
+
+**Delivered:** The project became Pixel Observatory with a Main Menu, Observatory
+Room, Telescope Assembly, Sky Observation, Telescope View, Learning Card and
+Learning Journal. Core managers were established for saves, missions, assembly,
+telescope math and observation evaluation. Levels, parts, celestial objects and
+localization moved into JSON data.
+
+**Why it mattered:** The project stopped being a generic technical prototype and
+became a playable astronomy-learning product with a clear educational subject.
+
+### v0.2 — Movable Observatory Room
+
+**Purpose:** Turn the flow into an explorable base instead of a page of buttons.
+
+**Delivered:** A movable player, WASD/arrow movement, proximity interaction,
+Mission Board, Parts Cabinet, Assembly Table, Observatory Door, Telescope Pad,
+Learning Journal and Stats Terminal. The HUD began showing level, credits,
+telescope state and nearby interaction guidance.
+
+**Known lesson:** Early workshop/furniture assets were visually inconsistent,
+which motivated the later complete-background approach.
+
+### v0.3 — Observatory Interior Redesign
+
+**Purpose:** Establish a believable astronomy-club room and clearer routes.
+
+**Delivered:** The base was redesigned around a school astronomy club, with a
+door and observation pad as meaningful destinations. Missing telescope parts
+directed the player to the Assembly Table; a completed telescope directed the
+player toward observation.
+
+**Player effect:** The base became part of the story and not just a decorative
+background.
+
+### v0.4 — Playable Telescope Assembly
+
+**Purpose:** Replace debug-style installation with a readable assembly activity.
+
+**Delivered:** The three-column Parts Tray / Blueprint / Inspector layout,
+select-part-then-snap-slot interaction, installation order, wrong-slot feedback,
+wrong-attempt tracking and Finish Assembly validation. Installed state began
+reading from `assembly_state` instead of incorrectly treating unlocked parts as
+installed.
+
+### v0.5 — First Complete Mission Loop
+
+**Purpose:** Prove that a player can start, observe, identify, learn and progress.
+
+**Delivered:** New Game began with an unassembled telescope. The first Moon
+mission could be selected in Sky Observation, identified in Telescope View,
+recorded in the Learning Journal, rewarded with credits and followed by the next
+level.
+
+### v0.6 — Distinct Sky Observation Targets
+
+**Purpose:** Make the sky feel like an astronomy scene rather than a button list.
+
+**Delivered:** Moon, Polaris, Sirius, Betelgeuse, Mars, Jupiter, Orion Nebula
+and Andromeda received distinct visual treatment. Transparent click regions kept
+the starfield visible, while selection used a gold highlight rather than a large
+opaque rectangle.
+
+### v0.7 — Telescope View and Quality States
+
+**Purpose:** Separate “what the player sees” from “what the player identifies.”
+
+**Delivered:** A circular telescope field, target-specific images, Excellent/Good/
+Fair/Poor/Failed quality states, and identification choices. Incorrect answers
+could be rejected without completing the mission.
+
+### v0.8 — Parts Cabinet and Assembly Separation
+
+**Purpose:** Fix the information architecture so inventory and assembly do not
+become one confusing screen.
+
+**Delivered:** Parts Cabinet became an inventory/description screen while the
+Assembly Table became the installation screen. Part mappings, return routes and
+post-assembly guidance were clarified.
+
+### v0.9 — Complete Observatory Background
+
+**Purpose:** Stabilize the visual composition using a complete background image.
+
+**Delivered:** The room used one coherent background with the player, transparent
+interaction layer and HUD rendered above it. Interaction boxes were tightened
+around the actual furniture and the player sprite gained separate display and
+collision sizing with a stable foot anchor.
+
+### v1.0 — Four-Direction Player Animation
+
+**Purpose:** Fix wrong-facing sprites, frame bleeding, head remnants and foot
+position drift.
+
+**Delivered:** A clean 4-column by 4-row player sheet with down, left, right and
+up rows; idle and walking frames; direction-aware animation; separate visual and
+collision dimensions; and a shared bottom-foot anchor.
+
+### v1.1 — Real Sky Position Pipeline
+
+**Purpose:** Move the sky from invented fixed positions toward location-aware
+observation.
+
+**Delivered:** `SkyPositionService`, catalog data and observing configuration.
+Solar-system targets could use AstronomyAPI when configured; stars and deep-sky
+objects used RA/Dec calculations; offline/local fallback paths were retained.
+Secrets were moved out of scripts and kept in ignored local configuration.
+
+### v1.2 — Teaching Before Operation
+
+**Purpose:** Put explanations before the player needs a new skill.
+
+**Delivered:** `TeachingFlowManager`, Concept Briefs, one-time teaching steps,
+separate “seen” and “completed” records, and operation-specific triggers for
+assembly, observation, focus, identification and collimation.
+
+### v1.3 — Focus Knob as a Real Part
+
+**Purpose:** Make focus control depend on an installed component.
+
+**Delivered:** Basic Focus Knob data, an assembly slot near the eyepiece,
+`focus_control_score`, DMS coordinate feedback, and a clear gate when the part
+was not installed.
+
+### v1.4 — Readable Learning Card Diagrams
+
+**Purpose:** Make the visual explanation large enough to teach from.
+
+**Delivered:** Enlarged Concept Brief and Mission Complete diagram areas,
+aspect-ratio-preserving TextureRect behavior and nearest-neighbour rendering for
+optical paths, focal planes and observation concepts.
+
+### v1.5 — Orion Nebula Focus and Quality Pass
+
+**Purpose:** Prevent players from mistaking poor equipment quality for failed
+focus.
+
+**Delivered:** A more forgiving early Orion Nebula lesson, separate focus and
+quality feedback, and clearer guidance for the difference between “focus is
+wrong” and “the equipment/conditions are limiting the image.”
+
+### v1.6 — Starlight Observatory Main Menu
+
+**Purpose:** Replace the minimal menu with a recognizable product identity.
+
+**Delivered:** A complete observatory-at-night main-menu background and
+New Game, Continue, Settings, Language and Quit actions with pixel-realistic
+brass/navy styling.
+
+### v1.7 — Unified Eye / Finder / Scope Mode UI
+
+**Purpose:** Make the three observation stages visually consistent.
+
+**Delivered:** Shared mode-button artwork, transparent hit areas, active-state
+framing and unavailable/inactive states that no longer compete visually.
+
+### v1.8 — Jupiter Observation States
+
+**Purpose:** Make observation quality visible instead of only numerical.
+
+**Delivered:** Clear, blurry and dim Jupiter states, with quality results mapped
+to the appropriate visual state and a large-image fallback for the Telescope View.
+
+### v1.9 — Advanced Telescope Framework and Observation HUD
+
+**Development period:** 2026-07-19.
+
+**Purpose:** Integrate advanced assembly, optical feedback, environmental effects,
+first-use guidance, target locking and a richer coordinate HUD.
+
+**Delivered:**
+
+- Newtonian and nested optical-tube assembly scaffolding.
+- Newtonian collimation with an optical-axis result and threshold feedback.
+- Refractor chromatic-aberration motivation and later reflector comparison.
+- Real transparent installed-part textures with layer order:
+  blueprint → installed art → completion border → OK marker → click region.
+- Interaction feedback for hover, press, success, error, snapping and page entry.
+- Focus, seeing, clouds, drift, tracking, finder calibration and target-lock
+  feedback paths.
+- Top azimuth and left altitude scales with DMS values.
+- Eye, Finder and Scope reticle assets and shared target-derived lock radii.
+- Identification feature guidance before the answer choices and randomized
+  answer placement.
+- Reduced-motion support so important state changes remain visible without large
+  animation.
+
+**Validation:** Observation UI acceptance, reticle regression, Newtonian parity,
+modal-layer, coordinate-lock, animation-feedback, environmental-effect,
+assembly-texture, story, teaching and full-flow suites were reported as passing.
+
+### v2.0 — Web Delivery and Mobile Input
+
+**Development period:** 2026-07-19 to 2026-07-20.
+
+**Purpose:** Make the game playable through the public website and prepare a
+mobile-style input path.
+
+**Delivered:**
+
+- Godot Web export through GitHub Actions and GitHub Pages.
+- Custom-domain delivery at `pixelobservatorygame.com` with Cloudflare in the
+  delivery layer.
+- Mobile Controller Mode with virtual joystick, interaction button, mission
+  button, scope switching, focus controls and collimation controls.
+- Touch-input abstraction that keeps the desktop keyboard path intact.
+- Initial mobile observation gestures and touch-safe UI sizing.
+- World-location, horizon, free-observation and detailed target-panel framework.
+
+**Known follow-up:** Web deployment and mobile input still require real-device
+testing across aspect ratios, and the world-map/horizon presentation needs more
+cinematic polish and clearer first-use explanation.
+
+## Dated Recent Updates
+
+### 2026-07-04 — L10-L24 Teaching and Practice Structure
+
+- Designed a spiral practice structure so one concept could be revisited across
+  several missions with different conditions.
+- Added chapter-level reasons for repeated targets, including focus,
+  magnification, finder navigation, light gathering and tracking.
+- Added teaching/story/mission-board data for the expanded early campaign.
+- Recorded remaining gaps where data fields existed but mechanics still needed
+  to be connected.
+
+### 2026-07-05 — Observation Effects Specification
+
+- Documented the intended relationship between focus, seeing, clouds, brightness,
+  drift, magnification and tracking.
+- Defined the difference between focus failure and insufficient observation
+  quality so feedback would not blame the wrong mechanic.
+- Identified the need for distinct clear, blurry and dim target artwork.
+
+### 2026-07-10 to 2026-07-12 — Newtonian and Advanced Assembly Work
+
+- Added reflector-family data and the nested optical-tube concept.
+- Added main blueprint and tube blueprint workflows.
+- Added primary mirror, mirror cell, secondary spider, secondary mirror,
+  focuser, eyepiece and collimation-tool slots.
+- Reused compatible tripod, mount and finder components outside the central tube
+  assembly, matching the refractor information architecture.
+- Added installed-art rendering, slot alignment checks and family-aware part
+  filtering.
+
+### 2026-07-18 — Observation HUD and Target Feedback
+
+- Added or refined reticle assets for naked eye, finder and telescope views.
+- Unified target projection, approach ring, lock ring, click region and actual
+  completion radius.
+- Refined coordinate bands, pointer behavior, focus controls and target guidance.
+- Added stronger visual feedback for collimation, tracking, cloud effects and
+  target-centered state.
+
+### 2026-07-19 — Web Publishing and Project Archive
+
+- Archived the active project state and published the Web export workflow.
+- Added Cloudflare/GitHub Pages deployment documentation and the public domain.
+- Updated the English-first project overview and historical documentation.
+
+### 2026-07-20 — Location, Horizon and Free Observation Systems
+
+- Added the framework for observing-site selection when a target is below the
+  horizon.
+- Added world-map/location transition data and layered horizon scenery.
+- Added free observation so non-mission celestial objects can be selected,
+  inspected in a detailed scrollable panel and recorded without advancing the
+  mission.
+- Added online/local/offline data-source status so the origin of a coordinate is
+  visible to the player.
+
+### 2026-07-22 — Learning Diagram and Mobile Cabinet Update
+
+- Replaced the `naked_eye_limits` teaching image with a larger light-gathering
+  diagram showing pupil size, aperture, collected light and faint objects.
+- Enlarged the Concept Brief image area while preserving its source ratio and
   nearest-neighbour pixel rendering.
-- Fixed the TextureRect property order so a large source image cannot force its
-  raw pixel dimensions back into the layout.
-- Added mobile swipe scrolling to the Parts Cabinet.
-- Added tap-versus-drag detection so a swipe does not equip a part or trigger a
-  second screen.
-- Preserved desktop mouse-wheel scrolling and normal tap/click behavior.
-- Added focused tests and verification captures for both changes.
+- Added touch swipe scrolling to the Parts Cabinet.
+- Added tap-versus-drag separation so a vertical swipe does not accidentally
+  equip a part or open another screen.
+- Preserved desktop mouse-wheel scrolling and normal click behavior.
+- Added focused regression tests and capture checks for both changes.
 
-## 2026-07-20 - Observation HUD and Feedback Baseline
+## Current Known Gaps
 
-- Archived the active project state and documented the observation HUD,
-  reticles, coordinate lock feedback, focus feedback, environmental effects,
-  and assembly texture behavior.
-- Continued the English-first documentation and web release workflow.
+These are intentionally listed so the log does not imply that every framework
+feature is already a polished 1.0 feature:
 
-## Earlier History
+- Some advanced telescope families still need final artwork, blueprint polish
+  and family-specific interaction.
+- Some later campaign content needs a diversity pass to avoid repeating the
+  same target or concept card too many times.
+- Below-horizon travel needs a stronger transition animation, clear world-map
+  controls and more convincing parallax horizon layers.
+- Mobile controls need real Android testing and a final APK release process.
+- Some live astronomy data can fall back to local calculations or offline
+  estimates when an external service is unavailable.
 
-The full previous log remains in [`VERSION_HISTORY.md`](VERSION_HISTORY.md),
-including the dated localization, story, teaching, assembly, observation,
-mobile input, campaign, and advanced telescope updates. It is retained as the
-historical record rather than rewritten or removed.
+## Release Verification Policy
+
+Before a release, run the relevant Godot headless tests, preserve/restore the
+real save file, inspect 1024x768 and mobile captures, verify that no new UI text
+mixes languages, and confirm that the Web export workflow completes. A source
+commit is not itself a Web release until the export and deployment jobs finish.
