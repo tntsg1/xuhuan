@@ -47,24 +47,27 @@ func _build() -> void:
 
 
 func _build_concept_brief(card: Dictionary) -> void:
-	_label("Concept Brief", Vector2(0, 18), Vector2(1024, 42), 30, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	_label("Before you start, learn the idea you are about to use.", Vector2(0, 62), Vector2(1024, 24), 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	# The diagram is the teaching payload, so it gets the largest share of the
+	# card: the header/subtitle are tightened and the board widened to the panel
+	# edges, leaving the explanation its full three wrapped lines underneath.
+	_label("Concept Brief", Vector2(0, 10), Vector2(1024, 36), 27, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_label("Before you start, learn the idea you are about to use.", Vector2(0, 48), Vector2(1024, 20), 13, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 
-	_panel(Vector2(92, 104), Vector2(840, 560))
-	_label(GameManager.dict_text(card, "title"), Vector2(150, 114), Vector2(724, 28), 22, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	_diagram(str(card.get("image", "")), Vector2(152, 142), Vector2(720, 405))
+	_panel(Vector2(56, 74), Vector2(912, 612))
+	_label(GameManager.dict_text(card, "title"), Vector2(100, 80), Vector2(824, 28), 22, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_diagram(str(card.get("image", "")), Vector2(64, 112), Vector2(896, 500))
 
 	var body: Label = _label(
 		GameManager.dict_text(card, "text"),
-		Vector2(150, 562),
-		Vector2(724, 72),
+		Vector2(100, 618),
+		Vector2(824, 62),
 		15,
 		TEXT,
 		HORIZONTAL_ALIGNMENT_CENTER
 	)
 	body.max_lines_visible = 3
 
-	var start: Button = _button(GameManager.text("Start", "开始"), Vector2(382, 686), Vector2(260, 48))
+	var start: Button = _button(GameManager.text("Start", "开始"), Vector2(382, 696), Vector2(260, 48))
 	start.pressed.connect(func() -> void:
 		GameManager.complete_current_brief()
 	)
@@ -585,14 +588,37 @@ func _diagram(image_path: String, pos: Vector2, size: Vector2) -> void:
 	if image_path == "" or not ResourceLoader.exists(image_path):
 		return
 	var diagram := TextureRect.new()
-	diagram.texture = load(image_path)
+	# Property ORDER matters: expand_mode/custom_minimum_size must be set BEFORE
+	# .texture. Assigning the texture first caches a minimum size equal to the
+	# raw pixel size, and the later .size assignment is silently clamped back up
+	# to it (Godot clamps Control.size to the cached minimum, and the expand_mode
+	# recompute is deferred). With a 1672x941 source that would push the diagram
+	# over the title, body and Start button.
+	diagram.custom_minimum_size = Vector2.ZERO
 	diagram.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# KEEP_ASPECT_CENTERED never stretches or crops; NEAREST keeps the pixel art crisp.
 	diagram.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	diagram.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	diagram.texture = load(image_path)
 	diagram.position = pos
 	diagram.size = size
 	diagram.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	diagram.name = "ConceptDiagram"
 	add_child(diagram)
+
+
+# Rect the diagram art actually covers on screen (KEEP_ASPECT_CENTERED letterboxes
+# inside the control), for layout regression tests.
+func debug_diagram_draw_rect() -> Rect2:
+	var diagram := get_node_or_null("ConceptDiagram") as TextureRect
+	if diagram == null or diagram.texture == null:
+		return Rect2()
+	var source: Vector2 = diagram.texture.get_size()
+	if source.x <= 0.0 or source.y <= 0.0:
+		return Rect2()
+	var scale := minf(diagram.size.x / source.x, diagram.size.y / source.y)
+	var drawn := source * scale
+	return Rect2(diagram.position + (diagram.size - drawn) * 0.5, drawn)
 
 
 func _panel(pos: Vector2, size: Vector2) -> Panel:

@@ -2,77 +2,69 @@
 
 ## Version Identity
 
-- Version name: `current-version-2026-07-20`
-- Updated: 2026-07-20
-- Godot version: 4.7 stable
-- Original snapshot commit: `cb9f5c8`
-- Latest included feature commit: `c254d56`
+- Version name: `current-version-2026-07-22`
+- Updated: 2026-07-22
+- Engine: Godot 4.7 stable
 - Branch: `agent/current-version-2026-07-18`
 - Remote: `origin` (`tntsg1/Pixel-Observatory`)
 
-## Included State
+## Included in This Snapshot
 
-- Pixel Observatory progression and developer level controls through the current 131-entry campaign order.
-- The 131-entry order is backed by `data/levels.json`, `data/advanced_levels.json`, `data/expansion/levels.json`, and `data/campaign_order.json`.
-- Refractor, Newtonian, Dobsonian, Gregorian/Cassegrain, radio, infrared, multi-observation, collimation, and tube-subassembly frameworks currently present in the workspace.
-- Refractor chromatic-aberration comparison, Vega art, Newtonian motivation/tutorial sequence, assembly, collimation, and observation progression.
-- Complete observation HUD integration from `C:/Users/tntsg/Downloads/tw/suc`, including native-alpha replacement assets.
-- Dynamic azimuth and altitude scales, 0/360-degree wrapping, live pointers, Eye/Finder/Scope mode art, focus and tracking controls.
-- One-to-one `410x410` naked-eye reticle with a `196 px` outer field boundary and a visible `64 px` center lock boundary.
-- Target approach and lock markers that follow the projected celestial object, remain transparent at center, and use compact target-derived sizing.
-- Focus, seeing, clouds, chromatic aberration, Earth-rotation drift, tracking-rate, hold-progress, and observation-quality feedback.
-- Collimation is now visible optical state: the bench previews asymmetric coma versus a symmetric Airy disc, while telescope targets retain score-driven coma, offset ghosting, and detail loss even at correct focus.
-- Shared interaction animations, first-use guidance, reduced-motion support, assembly snap feedback, collimation feedback, and observation success/failure feedback.
-- English/Chinese localization fixes, pre-quiz celestial-object guide, randomized A-D answers, and modal layer ordering fixes.
-- Current acceptance screenshots and regression tools under `artifacts/` and `tools/`.
-- Mobile Controller Mode with virtual joystick, touch interaction, scope switching, focus controls, and collimation controls; see `docs/mobile_controller_mode.md`.
-- Web deployment configuration for `pixelobservatorygame.com` through Cloudflare Worker/R2 and generated builds under `build/web/` and `build/cloudflare-public/`.
+- The current story, teaching, mission, assembly, observation, and logbook
+  systems.
+- Refractor, Newtonian, Dobsonian, infrared, radio, and advanced telescope
+  frameworks present in the workspace, with some advanced families still
+  requiring asset and content refinement.
+- Three observation modes: naked eye, finder scope, and telescope.
+- Focus, magnification, alignment, collimation, seeing, clouds, drift,
+  tracking, dark adaptation, and light-pollution feedback.
+- Dynamic target coordinates and site-aware visibility handling.
+- The active campaign order in `data/campaign_order.json`.
+- Mobile Controller Mode and touch-aware interaction paths.
 
-## Asset Provenance
+## Latest Update: Learning Card and Parts Cabinet
 
-- Original observation UI art is preserved under `assets/ui/observation/suc/source/`.
-- Processed runtime art is stored under `assets/ui/observation/suc/processed/`.
-- Source filename, SHA-256, dimensions, alpha state, crop rectangle, runtime mapping, and resize method are recorded in `assets/ui/observation/suc/asset_manifest.json`.
-- Download-folder originals are not modified by the importer.
+The `naked_eye_limits` card now uses:
 
-## Current Target Feedback Rules
+`res://assets/learning_diagrams/naked_eye_limits_light_gathering.png`
 
-- Approach and lock rings use the same projected target center and size.
-- Eye mode uses screen-space centering: the visible `64 px` center ring is also the exact gameplay lock radius.
-- Ring diameter is `target diameter + max(12 px, 25%)`.
-- Minimum diameters are 40 px for Eye, 44 px for Finder, and 48 px for Scope.
-- Approach uses a subtle cyan alpha pulse; lock uses a high-contrast gold ring.
-- The ring center remains transparent and does not obscure the celestial texture.
-- The visible ring and the target's pointer/click detection rectangle are identical.
+The Concept Brief layout gives the diagram a larger 896x500 content area,
+keeps its aspect ratio, and uses nearest-neighbour filtering for crisp pixel
+art. The diagram is loaded after the TextureRect sizing properties are set so
+Godot does not restore the source image's raw minimum size and break the
+layout.
 
-## Validation
+The parts cabinet now supports touch swiping. A vertical gesture scrolls the
+parts list, a tap selects a card, and a short tap on Equip remains an equip
+action. Dragging does not trigger an accidental selection or equip event.
 
-- Godot headless editor/import: passed.
-- Observation UI acceptance: passed.
-- L25 reticle regression: passed.
-- Newtonian reticle regression: passed.
-- Newtonian observation parity: passed.
-- Identification quiz and scope layer tests: passed.
-- Telescope modal layer regression: passed.
-- Coordinate lock feedback: passed.
-- Animation feedback and reduced-motion acceptance: passed.
-- Environmental focus effects: passed.
-- Collimation optics feedback: passed.
-- Focus novice guidance: passed.
-- Assembly texture regression: passed.
-- Core task, story, teaching, and full-flow regressions: passed.
+## Relevant Files
 
-## Website Check
+- `data/learning_cards.json`
+- `assets/learning_diagrams/naked_eye_limits_light_gathering.png`
+- `scripts/ui/learning_card.gd`
+- `scripts/ui/parts_cabinet.gd`
+- `tools/learning_card_diagram_test.gd`
+- `tools/parts_cabinet_touch_test.gd`
+- `tools/capture_r31_verification.gd`
 
-- Checked: 2026-07-20
-- URL: <https://pixelobservatorygame.com>
-- Result: HTTP 200; the returned page title is `Pixel Observatory` and the Godot Web entry page is reachable.
-- Deployment note: the website serves a built Web export. Local source changes require a new Web export and deployment before they appear online.
+## Validation State
 
-## Notes
+The Agent reported passing the focused learning-card and parts-cabinet tests,
+plus the existing project regression suites. The repository also contains
+the corresponding verification capture files under `artifacts/r31_verification/`.
 
-- Core level order, story conditions, observation calculations, and save schema were not changed by the HUD and feedback integration.
-- Local saves, credentials, generated Godot caches, isolated test profiles, and temporary backup files remain excluded from Git.
-- Detailed release history is maintained in `docs/VERSION_HISTORY.md`.
-- Detailed observation HUD evidence is maintained in `artifacts/observation_ui_acceptance/report.md`.
-- Project overview, current limitations, and website status are maintained in `docs/PROJECT_STATUS.md`.
+This shell does not currently have the Godot executable available, so I have
+not claimed a fresh local Godot runtime run. Git diff checks, asset existence,
+data references, and repository configuration were inspected before this
+snapshot was prepared. CI remains the authoritative web-export validation.
+
+## Web Status
+
+- Public site: <https://pixelobservatorygame.com/>
+- Repository: <https://github.com/tntsg1/Pixel-Observatory>
+- Web build workflow: `.github/workflows/deploy-web.yml`
+- Deployment details: `docs/WEBSITE.md`
+
+The site currently serves a Godot Web player. Source changes become visible
+online only after a new web export and successful deployment.

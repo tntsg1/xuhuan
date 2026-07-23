@@ -64,6 +64,25 @@ var next_step_part_type := ""
 var selected_family := ""
 var auto_equip_popup: Control
 
+# --- Mobile touch scrolling -------------------------------------------------
+# Driven from _input (which runs BEFORE gui propagation) so a swipe scrolls the
+# list whether the finger lands on a card, on the Equip button, or in the gap
+# between cards - child controls can no longer swallow the gesture. A press only
+# becomes a scroll after DRAG_THRESHOLD pixels of vertical travel; below that it
+# stays a tap, so selection and Equip behave exactly as they do with a mouse.
+const DRAG_THRESHOLD := 10.0
+const SELECTION := Color(0.42, 0.82, 1.0)
+
+var selected_part_id := ""
+var _touch_active := false
+var _touch_index := -1
+var _touch_start := Vector2.ZERO
+var _touch_start_scroll := 0
+var _touch_dragged := false
+# Touch emulation raises a mouse click right after the finger lifts; a gesture
+# that turned into a scroll must not let that click reach an Equip button.
+var _suppress_emulated_click := false
+
 # Family tabs shown above the parts list. "" = All.
 const FAMILY_TABS := [
 	["all", "All", "全部"],
@@ -71,7 +90,6 @@ const FAMILY_TABS := [
 	["newtonian", "Newtonian", "牛顿式"],
 	["dobsonian", "Dobsonian", "多布森"],
 	["cassegrain", "Cassegrain", "卡塞格林"],
-	["gregorian", "Gregorian", "格里高利"],
 	["space_segmented", "Infrared Space", "红外空间"],
 	["fast_radio", "FAST Radio", "FAST 射电"],
 ]
@@ -382,6 +400,18 @@ func _part_card(part: Dictionary) -> Control:
 
 	_draw_stat_chips(root, part, Vector2(18, 132), unlocked)
 	_draw_action_column(root, part, unlocked, equipped, incompatible_equipped)
+
+	# Tap-selection marker: an inner outline, so the equipped / locked / required
+	# border colours above stay exactly as they are.
+	root.set_meta("part_id", part_id)
+	var selection := Panel.new()
+	selection.name = "SelectionOutline"
+	selection.position = Vector2(3, 3)
+	selection.size = CARD_SIZE - Vector2(6, 6)
+	selection.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	selection.add_theme_stylebox_override("panel", _style(Color(0, 0, 0, 0), SELECTION, 2, 4))
+	selection.visible = part_id == selected_part_id
+	root.add_child(selection)
 	return root
 
 
@@ -403,6 +433,7 @@ func _draw_action_column(root: Control, part: Dictionary, unlocked: bool, equipp
 	_badge_to(root, badge_text, Vector2(column_x, 24), Vector2(146, 24), badge_color, HORIZONTAL_ALIGNMENT_CENTER)
 
 	var button := Button.new()
+	button.name = "EquipButton"
 	button.position = Vector2(column_x + 18, 62)
 	button.size = Vector2(110, 38)
 	button.add_theme_font_size_override("font_size", 12)
@@ -624,6 +655,137 @@ func _next_step_part_type() -> String:
 		if not bool(entry.get("installed", false)):
 			return part_type
 	return ""
+
+
+# --- touch scrolling / tap selection ---------------------------------------
+
+
+func _input(event: InputEvent) -> void:
+	if parts_scroll == null or not is_inside_tree():
+		return
+	if event is InputEventScreenTouch:
+		_handle_touch(event as InputEventScreenTouch)
+	elif event is InputEventScreenDrag:
+		_handle_drag(event as InputEventScreenDrag)
+	elif event is InputEventMouseButton:
+		_handle_mouse_button(event as InputEventMouseButton)
+
+
+func _handle_touch(touch: InputEventScreenTouch) -> void:
+	if touch.pressed:
+		_suppress_emulated_click = false
+		if not list_viewport_rect().has_point(touch.position):
+			return
+		_touch_active = true
+		_touch_index = touch.index
+		_touch_start = touch.position
+		_touch_start_scroll = parts_scroll.scroll_vertical
+		_touch_dragged = false
+		return
+	if not _touch_active or touch.index != _touch_index:
+		return
+	var was_drag := _touch_dragged
+	_touch_active = false
+	_touch_index = -1
+	_touch_dragged = false
+	if was_drag:
+		# A scroll must never equip anything or open another screen: swallow the
+		# release, and the emulated click that follows it.
+		_suppress_emulated_click = true
+		get_viewport().set_input_as_handled()
+		return
+	_tap_select(touch.position)
+
+
+func _handle_drag(drag: InputEventScreenDrag) -> void:
+	if not _touch_active or drag.index != _touch_index:
+		return
+	if not _touch_dragged and absf(drag.position.y - _touch_start.y) < DRAG_THRESHOLD:
+		return
+	_touch_dragged = true
+	scroll_by_drag(drag.position)
+	# Consumed so the ScrollContainer's own touch handling cannot double-apply.
+	get_viewport().set_input_as_handled()
+
+
+func _handle_mouse_button(mouse: InputEventMouseButton) -> void:
+	# Wheel events are deliberately untouched - the ScrollContainer keeps them.
+	if mouse.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if _suppress_emulated_click:
+		if not mouse.pressed:
+			_suppress_emulated_click = false
+		get_viewport().set_input_as_handled()
+		return
+	if not mouse.pressed and list_viewport_rect().has_point(mouse.position):
+		_tap_select(mouse.position)
+
+
+func scroll_by_drag(position_now: Vector2) -> void:
+	# Finger moving up yields a negative delta, which must scroll the list DOWN.
+	var delta_y := position_now.y - _touch_start.y
+	parts_scroll.scroll_vertical = int(clampf(float(_touch_start_scroll) - delta_y, 0.0, float(max_scroll_offset())))
+
+
+func max_scroll_offset() -> int:
+	if parts_scroll == null:
+		return 0
+	var bar := parts_scroll.get_v_scroll_bar()
+	if bar != null and bar.max_value > 0.0:
+		return int(maxf(0.0, bar.max_value - bar.page))
+	if parts_box == null:
+		return 0
+	return int(maxf(0.0, parts_box.size.y - parts_scroll.size.y))
+
+
+func list_viewport_rect() -> Rect2:
+	if parts_scroll == null:
+		return Rect2()
+	return parts_scroll.get_global_rect()
+
+
+func _tap_select(pos: Vector2) -> void:
+	var card := card_at(pos)
+	if card == null:
+		return
+	# A tap on the Equip button belongs to the button: let its own pressed signal
+	# run so equip / compatibility rules stay exactly as they are.
+	var equip := card.get_node_or_null("EquipButton") as Button
+	if equip != null and equip.get_global_rect().has_point(pos):
+		return
+	select_part(str(card.get_meta("part_id", "")))
+
+
+func card_at(pos: Vector2) -> Control:
+	if parts_box == null:
+		return null
+	for child in parts_box.get_children():
+		var control := child as Control
+		if control == null or not control.has_meta("part_id"):
+			continue
+		if control.get_global_rect().has_point(pos):
+			return control
+	return null
+
+
+# Selection only toggles an outline - never a rebuild - so selecting a card can
+# never move the list under the player's finger.
+func select_part(part_id: String) -> void:
+	if part_id == "":
+		return
+	selected_part_id = part_id
+	_refresh_selection_outlines()
+
+
+func _refresh_selection_outlines() -> void:
+	if parts_box == null:
+		return
+	for child in parts_box.get_children():
+		if not child.has_meta("part_id"):
+			continue
+		var outline := child.get_node_or_null("SelectionOutline") as Control
+		if outline != null:
+			outline.visible = str(child.get_meta("part_id", "")) == selected_part_id
 
 
 func _scroll_to_next_step() -> void:

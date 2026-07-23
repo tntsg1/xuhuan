@@ -1,56 +1,144 @@
-# Pixel Observatory 项目介绍与当前状态
+# Pixel Observatory: Project Status
 
-更新时间：2026-07-20
+**Status date:** 2026-07-22
 
-## 项目介绍
+## Project Overview
 
-Pixel Observatory / 像素观测站是一款由 Godot 4.7 开发的像素风天文观测教育游戏。玩家扮演刚加入天文俱乐部的新成员，在导师 Maya 的带领下进入天文台，从肉眼观测开始，逐步学习如何组装和使用不同类型的望远镜。游戏把天文学知识放进可操作的任务中：玩家需要选择合适的零件、把零件安装到蓝图槽位、调整方位角和俯仰角、使用肉眼/寻星镜/望远镜三种视野、调节焦距和倍率，并处理云层、大气扰动、地球自转漂移、光污染、暗适应和追踪等环境因素。
+Pixel Observatory is a Godot 4.7 pixel-realistic astronomy learning game.
+The player joins an astronomy club, learns from Maya, assembles optical
+equipment, navigates the sky, observes celestial targets, and records the
+results in a Club Logbook.
 
-项目的目标不是让玩家点击一个天体后直接得到答案，而是让玩家理解“为什么看不清、怎样才能看清”。设备性能会影响视场、集光能力、稳定性、对焦容差和最终观测质量；不同天体也会要求不同的观察策略。观测成功后，游戏会显示质量、奖励、学到的概念和操作过程，并将结果写入 Club Logbook，形成可回顾的学习记录。
+The project is intentionally different from a static astronomy tool. It has
+story, equipment compatibility, assembly decisions, optical feedback,
+environmental conditions, observation quality, rewards, progression, and
+optional free observation. Astronomy concepts are taught immediately before
+the player must use them.
 
-## 当前已经更新的内容
+## Current Gameplay Loop
 
-基础体验已经形成完整闭环：主菜单、Maya 开场剧情、天文台大厅、任务板、零件柜、组装台、镜筒子蓝图、观星台、望远镜视图、教学卡、Mission Complete 和 Club Logbook 均已存在。大厅使用完整的伪 3D 天文台背景，并通过透明交互层处理靠近、碰撞、E 键互动和路线高亮。
+1. Read the current mission and follow the highlighted base objective.
+2. Complete the relevant story or Concept Brief on first use.
+3. Select a compatible telescope family and equipment configuration.
+4. Assemble the required parts, including nested optical-tube components when
+   the family requires them.
+5. Enter the sky view and use the appropriate observation mode.
+6. Aim using azimuth, altitude, DMS guidance, and the active reticle.
+7. Adjust focus, magnification, tracking, alignment, and environmental
+   technique.
+8. Identify the mission object or inspect a non-mission object in free mode.
+9. Review the result, reward, concept, and process record in the Club Logbook.
 
-教学主线已经从肉眼观测扩展到望远镜操作。L1-L2 介绍肉眼成像和肉眼极限；L3-L6 引入折射式望远镜、调焦旋钮和寻星镜；后续基础关卡练习倍率、焦平面、深空、暗适应、光污染、地球自转和追踪。色差实验用于解释为什么玩家后来需要接触牛顿式反射镜，牛顿流程则包含主装配、镜筒子装配、主镜/副镜/蜘蛛支架/调焦器安装、准直和观测对比。
+## Systems Already Present
 
-当前主线顺序表包含 131 个条目：
+### Story and Teaching
 
-- L1-L24：基础教学主线，保持从肉眼到折射式望远镜的渐进顺序。
-- L25-L91：牛顿式、多布森式、卡塞格林式、格里高利式、红外、FAST 和多波段框架。
-- L92-L131：水星、金星、土星、天王星、海王星、月面目标、深空目标和星座练习。
+Maya introduces the club, the observatory, observation practice, optical
+principles, equipment changes, and the reason a player must perform each
+operation. `StoryManager` and `TeachingFlowManager` keep story events,
+Concept Briefs, and completed learning records separate so first-use lessons
+do not repeat unnecessarily.
 
-系统层面已经包含真实天体位置计算接口、离线 RA/Dec 数据、天体目标选择、DMS 方位/高度显示、三种观测视野、调焦、倍率、准直、环境效果、任务奖励、语言切换、保存迁移、调试关卡准备和移动端触控输入层。高级关卡和扩展关卡的数据已经加入，但高级内容仍在继续做内容一致性、素材质量和首次引导优化。
+### Observatory Base
 
-## 网站与发布状态
+The room provides the Mission Board, Parts Cabinet, Assembly Table,
+Observation Pad, Learning Journal, Observatory Door, and Stats Terminal.
+Interactions are proximity-based and use the same player position for keyboard
+and touch input. Route highlighting is used to make the next objective visible.
 
-正式网站：<https://pixelobservatorygame.com>
+### Assembly
 
-GitHub 仓库：<https://github.com/tntsg1/Pixel-Observatory>
+The assembly flow supports compatible part families, recommended parts,
+equipment status, assembly hints, nested optical-tube assembly, snap slots,
+installed-part artwork, and configuration-dependent telescope statistics.
+The parts cabinet has family filters and mobile touch scrolling. The latest
+touch update distinguishes a tap from a vertical drag to avoid accidental
+equipment changes.
 
-2026-07-20 已检查网站域名，页面返回正常，并显示 Godot Web 页面标题 `Pixel Observatory`。项目使用以下发布结构：
+### Observation
 
-- `build/web/`：普通 Godot Web 导出目录。
-- `build/cloudflare-public/`：面向 Cloudflare Worker/R2 的公开 Web 资源目录。
-- `wrangler.jsonc`：Cloudflare Worker、R2 bucket 和自定义域名配置。
-- `.github/workflows/deploy-web.yml`：仓库中的 Web 部署工作流。
+The sky view contains naked-eye, finder-scope, and telescope modes. It supports
+target selection, azimuth and altitude guidance, real-coordinate data where
+available, focus control, magnification trade-offs, seeing, clouds, drift,
+tracking rate, dark adaptation, light pollution, and target identification.
 
-网站当前可以作为试玩入口，但需要区分“线上构建”和“本地工作区”。本地代码、文档或素材被提交到 GitHub 后，不会自动改变线上游戏；只有完成新的 Godot Web 导出并触发 Cloudflare/GitHub Pages 部署，线上玩家才能看到新的版本。当前网站的移动端体验依赖 Web 触控层，原生 Android APK/AAB 尚未作为正式发行包完成。
+Mission targets use the mission flow. Other visible objects can be selected as
+free observations without completing or changing the current mission. Free
+observation details can be reviewed in a scrollable panel and recorded
+separately.
 
-## 主要目录
+### Mobile Input
 
-| 目录 | 作用 |
-|---|---|
-| `scenes/` | Godot 场景文件，包括大厅、组装、观星、学习卡等 |
-| `scripts/ui/` | UI 场景和交互逻辑 |
-| `scripts/systems/` | 保存、任务、观测、天空位置、教学和剧情系统 |
-| `data/` | 关卡、天体、零件、剧情、学习卡和主线顺序 |
-| `assets/` | 背景、UI、天体、零件和教学图解素材 |
-| `tools/` | 编译检查、流程回归、截图和专项验收脚本 |
-| `docs/` | 版本历史、关卡目录、部署说明和当前状态 |
+Mobile Controller Mode provides a virtual joystick, interaction controls,
+scope switching, focus controls, calibration controls, and touch observation
+input. The parts cabinet also supports touch swipe scrolling while preserving
+mouse-wheel support on desktop.
 
-## 已知限制与下一步
+## Content Structure
 
-当前最需要继续验证的是扩展内容的一致性，而不是单纯增加关卡数量：每个新增目标都应当有清晰任务目的、首次大屏教学、正确的设备门槛、与实际天体位置一致的观测步骤、对应的视觉反馈和日志记录。高级望远镜还需要继续补齐专属零件贴图、蓝图、镜筒内部结构和家族之间的兼容性选择。
+The repository contains a data-driven campaign and multiple data packages.
+`data/campaign_order.json` is the source for the active sequence. The level
+data is split across the base, advanced, and expansion files, so the numeric
+ID alone should not be used to infer the current playable order.
 
-移动端目前已经有虚拟摇杆、互动按钮、触控观星拖动、调焦按钮和准直方向控制，但仍需在真实手机上测试 16:9 以外的屏幕、横屏安全区域、按钮遮挡、学习卡字号和精细准直操作。公开发布前还需要重新导出 Web 构建、检查线上资源版本，并单独完成 APK/AAB 的导出与安装测试。
+The educational arc begins with naked-eye observation, introduces refractor
+assembly and focus, develops aiming and observing technique, then expands into
+reflector and advanced observation systems. The advanced content still needs
+continued content review so later telescope families feel distinct and do not
+repeat the same target, concept, or interaction too many times.
+
+## Latest Verified Change
+
+The latest Agent update made two focused changes:
+
+- Replaced the `naked_eye_limits` concept diagram with a larger light-gathering
+  diagram and enlarged the Concept Brief image area without stretching it.
+- Added touch swipe scrolling to the Parts Cabinet, with tap-versus-drag
+  separation and protection against accidental Equip clicks.
+
+The new diagram exists at:
+
+`assets/learning_diagrams/naked_eye_limits_light_gathering.png`
+
+The focused tests are:
+
+- `tools/learning_card_diagram_test.gd`
+- `tools/parts_cabinet_touch_test.gd`
+- `tools/capture_r31_verification.gd`
+
+## Known Limitations
+
+- The local shell used for this snapshot does not have a Godot CLI available;
+  a fresh local runtime test must be run in Godot or confirmed by CI.
+- The Concept Brief header and subtitle still contain hard-coded English and
+  should be routed through the language helper in a later polish pass.
+- The previous diagram remains as an unused asset and should be archived or
+  removed only after a deliberate asset cleanup review.
+- Advanced telescope families and their artwork still need consistency review.
+- Mobile behavior must still be checked on real Android hardware across
+  different aspect ratios, safe areas, and touch sizes.
+- The public web build must be regenerated and deployed after source changes;
+  GitHub source updates alone do not change the live game.
+
+## Release and Website Status
+
+The public website is:
+
+<https://pixelobservatorygame.com/>
+
+It currently serves a Godot Web player and returned HTTP 200 during the latest
+check. The repository workflow exports the Web build and deploys GitHub Pages.
+Cloudflare configuration is also present for the custom-domain delivery layer.
+See `docs/WEBSITE.md` for the exact publishing path and release checklist.
+
+## Next Priorities
+
+1. Run the latest update on a real Godot runtime and test the Concept Brief and
+   touch cabinet on desktop and Android.
+2. Finish the advanced-family asset audit and replace remaining placeholders.
+3. Review the active campaign for repeated targets, repeated concept cards,
+   missing first-use guidance, and equipment gates that do not match the
+   player's unlock state.
+4. Improve the world-location transition, horizon layers, and target visibility
+   feedback as one coherent observation flow.
+5. Re-export the Web build and verify the live domain after CI deployment.

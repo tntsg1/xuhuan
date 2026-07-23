@@ -11,7 +11,7 @@
     "id": "naked_eye_limits",
     "title_en": "Why Some Objects Are Hard to See",
     "title_zh": "为什么有些天体肉眼难以看见",
-    "image": "res://assets/learning_diagrams/naked_eye_limits_diagram.png",
+    "image": "res://assets/learning_diagrams/naked_eye_limits_light_gathering.png",
     "text_en": "Your eyes collect only a small amount of light. Bright objects like the Moon are easy to see, but faint galaxies need a telescope.",
     "text_zh": "眼睛能收集的光很少。月亮这样的明亮目标容易看见，但暗淡的星系需要望远镜。"
   },

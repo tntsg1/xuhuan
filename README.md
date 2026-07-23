@@ -1,382 +1,118 @@
-# 🔭 Pixel Observatory / 像素观测站
-
-> **这不是选择题。这不是点击观星。**
->
-> 你要亲手组装望远镜——拧上物镜、装上目镜、校准寻星镜、调焦——然后你看到的天体画面**真的会因为你装得好不好而变清晰或变模糊**。
->
-> 地球在转，大气在抖，云层会飘过来。16-bit 像素风。纯本地。双语。
->
-> *"The Moon is bright enough to take the power. But every new eyepiece needs a new focus."* — Maya
-
----
-
-## 当前项目状态（2026-07-20）
-
-Pixel Observatory 是一个使用 Godot 4.7 开发的像素风天文观测教育游戏。玩家从加入天文俱乐部开始，在 Maya 的引导下先用肉眼认识天空，再组装折射式望远镜，学习调焦、倍率、寻星镜、地球自转和大气扰动，之后逐步接触牛顿式、多布森式、卡塞格林式、格里高利式、红外和 FAST 射电观测。项目不是静态星图工具，也不是桌游规则的数字化，而是把剧情、设备组装、瞄准、调焦、环境干扰、识别题、奖励和观测日志组合成一个可重复练习的游戏流程。
-
-当前工作区已经包含 131 个主线顺序条目：L1-L24 为基础教学，L25-L91 为高级望远镜与多波段框架，L92-L131 为新增行星、月面目标、深空目标和星座练习。实际游玩顺序由 `data/campaign_order.json` 控制；高级内容仍在持续做剧情、首次引导、素材质量和可玩性的一致性验收。
-
-网站入口：[pixelobservatorygame.com](https://pixelobservatorygame.com)；代码仓库：[tntsg1/Pixel-Observatory](https://github.com/tntsg1/Pixel-Observatory)。2026-07-20 检查时网站可以返回标题为 `Pixel Observatory` 的 Godot Web 页面。网站由 Cloudflare Worker/R2 提供，线上构建与本地工作区分开，提交 GitHub 后仍需重新导出 Web 构建并部署才会更新线上版本。详细说明见 [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)。
-
----
-
-## 🎮 核心玩法
-
-```
-肉眼观测 → 组装折射望远镜 → 调焦 → 掌握倍率 → 寻星镜导航 → 深空观测 → 追踪天体
-```
-
-**三段式观星**：Naked Eye（120°×70° 广角扫天）→ Finder Scope（28°×18° 中视野对准）→ Telescope（6°×4° 窄视野识别）
-
----
-
-## 🗺️ 当前教学主线与扩展
-
-| 章节 | 关卡 | 主题 | 核心知识点 |
-|------|------|------|-----------|
-| Ch1 入门 | L1-L2 | 肉眼观测月亮/北极星 | 人眼成像、肉眼极限 |
-| Ch2 折射镜 | L3-L6 | 组装折射镜→调焦→倍率→寻星镜 | 光路、焦平面、倍率代价 |
-| Ch3 倍率掌握 | L10-L13 | 三档目镜切换→低空seeing→月亮高倍→自主选择 | 倍率不是越高越好 |
-| Ch4 导航 | L14-L17 | 坐标导航→寻星镜校准→窄视野困境→独立导航 | Eye→Finder→Scope |
-| Ch5 深空 | L7-L9, L18-L21 | 反射镜→口径→暗适应→光污染 | 深空观测、期望管理 |
-| Ch6 追踪 | L22-L24 | 地球自转漂移→追踪架→长时间驻留 | 从操作者到观测者 |
-
----
-
-## 🏗️ 技术架构
-
-```
-Pixel Observatory (Godot 4.7, 1024×768)
-├── Autoload (加载顺序)
-│   ├── SaveManager          ── user://savegame.json 读写
-│   ├── MissionManager       ── 关卡数据加载
-│   ├── TeachingFlowManager  ── 概念预习卡状态机
-│   ├── StoryManager         ── Maya 剧情层
-│   └── GameManager          ── 中枢：场景切换、进度、评估、双语
-├── scripts/ui/              ── 全部 UI 场景（程序化 Control 构建）
-├── scripts/systems/         ── 核心系统（观测/组装/数学/星空）
-├── data/                    ── JSON 数据（关卡/零件/天体/剧情/学习卡）
-├── assets/                  ── 美术素材
-│   ├── telescope_parts/     ── 11 张正式零件图
-│   ├── telescope_view/      ── 天体三态贴图（clear/blurry/dim）
-│   ├── learning_diagrams/   ── 教学图解
-│   ├── reference/           ── 参考图与 UI 背景
-│   └── ui_extracted/        ── 抠好的 UI 框架与道具
-└── tools/                   ── 6 个自动化测试
-```
-
----
-
-## 🔧 系统详情
-
-### 1. 双语语言系统
-- 中文/英文/双语三模式切换
-- UI、剧情、教学、任务、零件名称同步切换
-- 全部文本统一通过 `GameManager.text()` 管理
-- 所有 10 个 UI 场景连接 `language_changed` 信号自动重建
-
-### 2. 主观测室
-- 完整伪 3D 天文台背景替代错误的家具切片拼装
-- 修复家具互相覆盖
-- 调整零件柜、组装台、任务板、观测台、日志和统计终端位置
-
-### 3. 主角系统
-- 接入像素人物素材，上下左右四方向 + 行走动画
-- 分离显示尺寸和碰撞尺寸
-- 修正角色碰撞与实际脚底位置
-
-### 4. 大厅交互和碰撞
-- 缩小家具碰撞范围，修复碰到家具后无法左右移动
-- 远距离点击不再直接进入界面，必须靠近后按 E
-- 修复交互后返回错误位置
-
-### 5. Mission Board 任务中心
-- 显示当前目标、任务描述、设备需求、准备状态和任务步骤
-- 增加 Show Route 大厅目标高亮、方向箭头、距离提示和奖励预览
-
-### 6. 大厅路线引导
-- 观测、组装、日志、任务板和统计终端均可作为下一步目标
-- 靠近目标后切换为 E 提示
-- 任务完成后自动设置下一步路线
+# Pixel Observatory
+
+Pixel Observatory is a pixel-realistic astronomy education game built with
+Godot 4.7. It turns telescope operation into a playable learning loop:
+
+1. Learn an optical idea through a short visual lesson.
+2. Choose compatible equipment and assemble a telescope.
+3. Aim with the naked eye, finder scope, and telescope view.
+4. Adjust focus, magnification, alignment, tracking, and observing conditions.
+5. Identify the object, record the result, and unlock the next lesson.
+
+The project is designed as a game rather than a static sky map or a digital
+worksheet. Story, equipment choices, environmental effects, observation
+quality, rewards, and the Club Logbook are connected in one progression.
+
+## Current Status
 
-### 7. StoryManager 剧情系统
-- 引入 Maya 导师，New Game 开始时播放加入天文俱乐部剧情
-- 增加观测前、组装前、调焦前剧情和任务完成后 Maya 复盘
-
-### 8. TeachingFlowManager 教学状态机
-- 教学、剧情和关卡完成状态分开记录
-- 支持一关多个教学步骤，已看过的教学不重复弹出
-- 增加 12 张像素风教学图解卡
-
-### 9. 组装台系统
-- 修复 Unlocked 和 Installed 状态分离
-- 增加 11 张正式零件图标，修复安装顺序和错误零件安装
-- 增加调焦旋钮和寻星镜，安装后性能实时计算
-
-### 10. 调焦系统
-- 调焦旋钮必须实际安装后才允许观测
-- 失焦产生重影、模糊和清晰度下降
-- Q/E 或滑条调焦，不同天体使用不同调焦容差
-
-### 11. 观星界面
-- 肉眼、寻星镜和主望远镜三模式，支持视角切换
-- 方位角/俯仰角 + DMS 显示，目标选择与任务目标比较
-
-### 12. 天体视觉表现
-- 月球、火星、木星、恒星、星云和星系使用不同贴图
-- 木星和火星增加清晰/模糊/变暗三态
-- 圆形遮罩、倍率适配
-
-### 13. 环境拟真效果
-- 大气扰动（turbulence shader）、视宁度（seeing）、云层移动和遮挡
-- 光污染（sky_brightness）、暗适应（dark adaptation）、侧视法（averted vision）
-- 地球自转漂移（drift）、追踪架和追踪速率
-
-### 14. 观测完成和日志系统
-- Mission Complete 界面：奖励、徽章和概念知识
-- Club Logbook 替代百科式日志
-- 日志保存设备、倍率、环境、操作和结果
-
-### 15. 统计终端
-- 望远镜性能显示、观测历史、社团积分
-- 发现数量和已解锁设备/知识卡
-
-### 16. L1-L24 基础教学主线
-- L1-L2 肉眼观测 → L3-L6 折射镜 → L7-L9 深空入门
-- L10-L13 倍率和目镜比较 → L14-L17 坐标导航和寻星镜校准
-- L18-L21 星云、口径、暗适应和光污染 → L22-L24 追踪和长时间观测
-
-### 17. L25-L91 高级内容框架
-- 牛顿反射式、多布森式、卡塞格林式、格里高利式
-- 空间分段反射镜、红外观测、FAST 射电观测和多波段综合观测
-- 高级零件数据和场景框架（部分仍是占位素材）
-
-### 18. L92-L131 观测扩展
-- 新增行星、月面目标、深空目标和星座观测数据
-- 复用真实天体位置、方位/高度导航、观测技巧和 Club Logbook 记录
-- 扩展内容继续补充与基础观测一致的剧情、教学和可玩操作
-
-### 19. 高级组装和子蓝图
-- 高级主组装台和光学镜筒子蓝图
-- 准直界面、FAST 射电观测界面、多波段证据选择界面
-- 正在修正：接入正式牛顿反射式蓝图替代 Agent 占位图
-
----
-
-## 版本进度记录
-
-### v0.1 - 项目初始化
-
-- 建立 Godot 4.7 项目
-- 建立主菜单、观测室、组装台、观测界面、学习卡基础场景
-- 建立 GameManager、SaveManager、TelescopeMath、AssemblyManager、ObservationSystem
-- 支持本地 JSON 存档
-
-### v0.2 - 第一版观测流程
-
-- 任务系统和关卡数据雏形
-- 组装台按顺序安装基础零件
-- Telescope View 支持识别目标
-- Learning Journal 记录观测结果
-
-### v0.3 - UI 大厅与日志重构
-
-- Observatory Room 改成更完整的像素天文台大厅
-- 学习日志改成卡片式记录
-- 主菜单和组装台视觉初步优化
-- 增加更多任务和基础升级零件
-
-### v0.4 - SkyPositionService 与真实天空数据
-
-- 增加 SkyPositionService
-- Moon / Mars / Jupiter 支持 AstronomyAPI 在线位置
-- Polaris / Sirius / Betelgeuse / Orion Nebula / Andromeda 使用本地 RA/Dec 计算
-
-### v0.5 - Finder Scope / 局部视野
-
-- Sky Observation 从全天固定星图改成可旋转望远镜视野
-- 支持 azimuth / altitude 控制和 FOV 判定
-- 使用 shortest_angle_degrees 处理 0/360 度跨界
-
-### v0.6 - Telescope View 视觉与识别修复
-
-- Telescope View Back 返回 Observatory，不再错误返回 Assembly
-- Identify 选项限制为最多 4 个
-- 星体显示改用 PNG 图像，不再用几何图形拼
-
-### v0.7 - 玩家比例与大厅交互修复
-
-- 修正 Observatory Room 玩家角色比例
-- 保持脚底锚点和交互范围稳定
-
-### v1.0 - Pixel Observatory v2 教学主线
-
-- 重新规划 L1-L9，加入 naked eye observation、equipment_stage、focus training
-- 学习卡支持图解
-
-### v1.1 - Teaching Flow State Machine
-
-- 新增 TeachingFlowManager，使用 teaching_steps 数据驱动教学卡
-- 区分 seen brief 和 completed concept card
-
-### v1.2 - Focus Knob 成为真实零件
-
-- basic_focus_knob 加入 telescope_parts.json
-- L4 之后需要安装 Focus Knob 才能调焦
-
-### v1.3 - Story System / Maya 剧情框架
-
-- 新增 StoryManager 和 story_dialogues.json
-- 引入 Maya 作为天文俱乐部导师
-
-### v1.4 - 三段式 Sky Observation
-
-- 支持 Naked Eye / Finder Scope / Telescope Alignment 三模式
-- Guidance 显示具体转动角度
-
-### v1.5 - Focus 与 Quality 判定拆分
-
-- is_focus_acceptable() 只判断调焦
-- is_quality_acceptable() 只判断观测质量
-- 修复 Orion Nebula 永远像无法对焦的问题
-
-### v1.6 - 流程体验修复
-
-- 修复剧情/教学从设备触发后又退回大厅的问题
-- 大厅增加下一步引导和目标高亮
-- 远距离点击家具不再直接进入界面
-
-### v1.7 - Main Menu 重做
-
-- 主菜单替换为 Starlight Observatory 风格标题画面
-
-### v1.8 - L10-L24 章节规划与数据扩展
-
-- L10-L24 螺旋式重复练习结构
-- 新增 chapter_id、lesson_thread、practice_step、variation 等数据字段
-
-### v1.9 - Parts Cabinet 与 Telescope Assembly 视觉升级
-
-- 零件柜重做为可滚动装备列表
-- 新增 11 张正式零件图
-- 组装台使用正式零件图，删除粗糙几何零件图
-
----
-
-## 📋 详细更新日志
-
-| 日期 | 更新内容 |
-|------|---------|
-| 2026-07-06 | 开始加入全局中英文切换，改造主菜单、观测室、组装台、零件柜、观星界面和学习日志 |
-| 2026-07-06 | 修复语言切换后界面不刷新、硬编码英文、中文乱码和部分编译错误 |
-| 2026-07-06 | 完成主要 UI 的双语文本统一，改用 `GameManager.text()` |
-| 2026-07-06 | 观测界面加入双语标题、识别按钮、质量等级、模式按钮和返回按钮 |
-| 2026-07-06 | 零件柜、组装台、日志和统计界面完成双语化 |
-| 2026-07-06 | 学习日志重新设计，加入双语标题、质量标签和知识内容 |
-| 2026-07-07 ~ 08 | 修复大厅家具比例、主角大小、碰撞箱、人物方向和交互位置 |
-| 2026-07-07 ~ 08 | 主观测室改为完整伪 3D 背景，减少家具切片覆盖和错误交互区域 |
-| 2026-07-08 | 加入大厅路线高亮、目标暗化、箭头和靠近设备后的 E 提示 |
-| 2026-07-08 ~ 09 | 完成剧情系统、Maya 导师、教学拦截和任务完成后的下一步引导 |
-| 2026-07-09 | Git 提交确认完整国际化完成，所有主要 UI 场景支持语言切换 |
-| 2026-07-09 ~ 10 | 完成 Mission Board 任务中心，加入任务目标、设备需求、检查清单、奖励预览和显示路线 |
-| 2026-07-10 | 完成核心流程测试：任务板 → 大厅路线 → 设备交互 → 观测 → 结算 → 下一关路线 |
-| 2026-07-10 | 增加任务板动态内容：倍率比较、寻星镜校准、深空观测、暗适应、追踪支架和地球自转 |
-| 2026-07-10 | 增加环境拟真机制：大气扰动、云层、光污染、暗适应、侧视法、漂移和追踪 |
-| 2026-07-10 | 新增 L25-L45 高级关卡数据框架 |
-| 2026-07-10 | 新增高级组装台、准直界面、FAST 射电观测界面和多波段证据选择界面 |
-| 2026-07-10 | 新增高级零件数据和 placeholder 图集 |
-| 2026-07-10 ~ 11 | 加入光学镜筒子蓝图概念，实现"主组装台 → 镜筒子蓝图 → 完整镜筒组件" |
-| 2026-07-11 | 生成高级望远镜组装台概念图 |
-| 2026-07-11 | 抠出牛顿式支架、主镜、副镜蜘蛛、调焦座、准直盖、目镜等独立零件 PNG |
-| 2026-07-11 | 生成格里高利赤道仪支架和 18mm 高对比目镜 |
-| 2026-07-11 | 生成新版牛顿反射式蓝图界面，补齐主镜、副镜、镜座、蜘蛛支架、调焦座、准直盖等槽位 |
-| 2026-07-11 | 正在修正 Agent 使用错误占位图、蓝图图片过大、主蓝图裁切、动态 UI 覆盖和子蓝图接入问题 |
-| 2026-07-18 | 建立当前版本快照，整理高级望远镜、准直、镜筒子装配、观测 HUD、环境效果和测试工具的组合状态 |
-| 2026-07-19 | 接入正式观测 HUD 素材管线，记录素材来源、SHA-256、透明通道、裁切范围和运行时映射 |
-| 2026-07-19 | 修复 Eye、Finder、Scope 三种瞄准 UI 的中心、目标环、锁定判定和点击区域不一致问题 |
-| 2026-07-19 | 完善方位角/俯仰角刻度、0/360 度循环、实时指针、目标接近提示和锁定反馈 |
-| 2026-07-19 | 增加折射镜色差对比、织女星素材和牛顿镜准直视觉反馈，用于支撑望远镜升级剧情 |
-| 2026-07-19 | 增加组装吸附、调焦锁定、目标锁定、准直完成和观测成功/失败动画，支持减少动画设置 |
-| 2026-07-19 | 完成 Godot Web 导出与 Cloudflare Worker/R2 部署配置，准备 `pixelobservatorygame.com` 线上入口 |
-| 2026-07-20 | 增加移动端虚拟摇杆、互动按钮、触控观星拖动、触控调焦和准直方向控制 |
-| 2026-07-20 | 修复主线顺序、旧存档迁移、非法未来装备提前解锁、寻星镜教学顺序和高级关卡门槛问题 |
-| 2026-07-20 | 将扩展内容纳入 131 项 campaign order，加入新行星、月面、深空和星座观测数据 |
-
----
-
-## 📊 当前开发阶段
-
-```
-✅ 已完成：
-- 双语系统
-- 基础大厅
-- 基础组装
-- L1-L24 基础教学关卡
-- L25-L91 高级望远镜与多波段框架
-- L92-L131 扩展观测目录与主线顺序
-- 教学和剧情框架
-- 观测环境机制
-- Mission Board
-- 任务路线引导
-- 高级关卡数据框架
-- FAST 和多波段玩法初版
-- Web 版本与 Cloudflare 部署入口
-- 移动端触控输入层和虚拟摇杆初版
-
-⚠️ 正在完善：
-- 扩展关卡的首次引导、任务说明和中文/英文逐项校对
-- 高级望远镜家族之间的可选装配流程和零件兼容性提示
-- 移动端不同屏幕比例、触控按钮布局和准直/调焦操作体验
-- 线上 Web 构建与本地最新工作区的持续同步
-
-❌ 尚未完成：
-- 多布森、卡塞格林、格里高利、红外和 FAST 的完整独立素材与专属玩法
-- 所有扩展关卡都具备与基础关卡同等清晰的剧情动机和首次教学
-- 正式 Android APK/AAB 发布及不同手机型号测试
-- 面向公开发布的性能、存档迁移、无障碍和最终发行验收
-```
-
----
-
-## 🧪 测试与验证
-
-```bash
-# 编译检查
-C:/Users/tntsg/Downloads/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64.exe --headless --quit
-
-# 自动回归测试
-C:/Users/tntsg/Downloads/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64.exe --headless --script res://tools/flow_test.gd
-C:/Users/tntsg/Downloads/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64.exe --headless --script res://tools/v2_progression_test.gd
-C:/Users/tntsg/Downloads/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64.exe --headless --script res://tools/teaching_flow_test.gd
-C:/Users/tntsg/Downloads/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64.exe --headless --script res://tools/story_flow_test.gd
-C:/Users/tntsg/Downloads/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64.exe --headless --script res://tools/sky_view_test.gd
-C:/Users/tntsg/Downloads/Godot_v4.7-stable_win64.exe/Godot_v4.7-stable_win64.exe --headless --script res://tools/focus_nebula_test.gd
-```
-
----
-
-## 🛠 技术栈
-
-| 项目 | 内容 |
-|------|------|
-| 引擎 | Godot 4.7 |
-| 语言 | GDScript |
-| 分辨率 | 1024 × 768 |
-| 存档 | JSON 本地存档 |
-| 图像风格 | Pixel Art |
-| 星体位置 | AstronomyAPI + 本地 RA/Dec fallback |
-| UI | Godot Control 节点程序化构建 |
-| 测试 | Headless scene smoke tests + GDScript flow tests |
-
----
-
-## ⚠️ 开发约定
-
-1. `Dictionary.get()` 返回 Variant，必须显式标类型
-2. float 取模用 `fmod()`，`%` 只能整数
-3. autoload 脚本不用 `class_name`
-4. 面向玩家的字符串走 `GameManager.text("EN", "中文")`
-5. `TextureRect.expand_mode` / `Label.autowrap_mode` 必须在设 `size` 之前设置
-6. 分辨率 1024×768，像素图用 `TEXTURE_FILTER_NEAREST`
-7. 改完必须编译检查 + 跑相关测试
-8. 不要把 `data/local_api_keys.json` 提交到仓库
+The repository contains the active Godot project, the web export workflow, and
+the current educational content. The main systems include:
+
+- Maya-led story and first-use teaching flow.
+- Naked-eye, finder-scope, and telescope observation modes.
+- Telescope assembly with compatible part families and nested tube assembly.
+- Focus, magnification, seeing, clouds, drift, tracking, dark adaptation,
+  light pollution, and observation-quality feedback.
+- Mission observations and separate free observations for non-target objects.
+- Dynamic celestial coordinates, altitude/azimuth guidance, and site-aware
+  visibility rules.
+- Learning Cards, Mission Complete results, and the Club Logbook.
+- Touch input support for mobile-style controls and touch scrolling in the
+  parts cabinet.
+- A current campaign order maintained by `data/campaign_order.json`.
+
+The project is still in active development. The strongest remaining work is
+content consistency: every advanced target needs a clear purpose, first-use
+guidance, correct artwork, compatible equipment requirements, and a meaningful
+change in play rather than another copy of an earlier observation.
+
+## Latest Verified Update
+
+The latest update replaces the naked-eye limits teaching diagram with a larger
+light-gathering diagram and gives Concept Brief its intended visual hierarchy.
+The image keeps its aspect ratio and nearest-neighbour pixel rendering.
+
+The parts cabinet now supports mobile touch swiping. A short tap selects a
+card, while a vertical drag scrolls the list without accidentally equipping a
+part. Mouse-wheel scrolling remains available on desktop.
+
+Relevant files:
+
+- `data/learning_cards.json`
+- `assets/learning_diagrams/naked_eye_limits_light_gathering.png`
+- `scripts/ui/learning_card.gd`
+- `scripts/ui/parts_cabinet.gd`
+- `tools/learning_card_diagram_test.gd`
+- `tools/parts_cabinet_touch_test.gd`
+
+## Technology
+
+- Godot 4.7 stable
+- GDScript
+- JSON-driven levels, equipment, celestial objects, dialogue, and learning
+  cards
+- Godot Web export for browser play
+- GitHub Actions for web build and GitHub Pages deployment
+- Cloudflare configuration retained for the custom-domain delivery layer
+
+## Repository Layout
+
+| Path | Purpose |
+| --- | --- |
+| `scenes/` | Godot scenes for the base, assembly, teaching, sky, and telescope views |
+| `scripts/ui/` | Screen construction and interaction logic |
+| `scripts/systems/` | Save, mission, story, teaching, astronomy, and observation systems |
+| `data/` | Levels, campaign order, parts, objects, dialogue, and learning cards |
+| `assets/` | Backgrounds, UI art, telescope parts, celestial images, and diagrams |
+| `tools/` | Headless tests, capture scripts, and acceptance checks |
+| `docs/` | Status, deployment, progression, and release documentation |
+| `.github/workflows/` | Automated web export and deployment workflow |
+
+## Web Version
+
+Play the current public build at:
+
+<https://pixelobservatorygame.com/>
+
+The repository is:
+
+<https://github.com/tntsg1/Pixel-Observatory>
+
+The checked-in workflow exports the Godot Web build and deploys it through
+GitHub Pages. The custom domain is fronted by Cloudflare. See
+`docs/WEBSITE.md` before changing the web deployment path.
+
+## Development Notes
+
+The project is bilingual, with English as the primary presentation language
+and Chinese available through the language setting. New UI text should use the
+shared localization helpers instead of embedding mixed-language strings.
+
+When adding a new observation target or telescope family, update the data,
+story, teaching card, equipment gate, artwork, and regression coverage
+together. A new level is not complete until its requested operation is
+visible and understandable to a first-time player.
+
+## Validation
+
+The repository includes focused tests and capture tools for teaching cards,
+touch cabinet scrolling, progression, assembly, observation, and story flow.
+The latest Agent report states that the focused tests and the broader
+regression suites passed. A local Godot CLI is not installed in the current
+development shell, so a fresh local runtime run must be performed by Godot or
+the CI workflow before release.
+
+## License and Project Status
+
+This is an active educational game project and portfolio prototype. Asset
+provenance and release history are documented in `docs/`.
