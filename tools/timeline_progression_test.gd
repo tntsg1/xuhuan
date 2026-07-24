@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Acceptance test for the original 91-level campaign inside the expanded timeline:
+# Acceptance test for the campaign ending at FAST graduation:
 # timeline purity, strict 10-level family blocks, chromatic bridge L23-L25,
 # story coverage L1-L91, cabinet tabs, auto-equip compatibility, hints
 # toggle persistence, mojibake scan, save migration, and real mechanics.
@@ -19,11 +19,10 @@ func _initialize() -> void:
 		return
 	gm.new_game()
 
-	# (1)(16)(17) campaign size and final level.
-	_check(int(mm.get_max_level()) == 131, "1. campaign appends expansion after the original 91 levels")
-	_check(not mm.is_final_level(90), "16. L90 is NOT the final level")
-	_check(not mm.is_final_level(91), "17. L91 closes the original telescope block, not the expanded campaign")
-	_check(mm.is_final_level(131) and mm.order_index(131) > mm.order_index(91), "17b. L131 closes the appended constellation/observation expansion")
+	# (1)(16)(17) campaign endpoint.
+	_check(int(mm.get_max_level()) == 85, "1. campaign ends at FAST graduation L85")
+	_check(mm.is_final_level(85), "16. L85 is the final level")
+	_check(mm.get_level(86).is_empty() and mm.order_index(86) < 0, "17. post-FAST lessons are absent")
 
 	# (2) L1-24 contain no Newtonian content in data.
 	var forbidden := ["newtonian", "Newtonian", "牛顿", "reflector_tube", "primary_mirror", "secondary_mirror", "collimation_tool"]
@@ -79,18 +78,17 @@ func _initialize() -> void:
 			unlocks_newtonian = true
 	_check(unlocks_newtonian, "7. L25 unlocks Newtonian parts")
 
-	# (8-15) Family blocks: contiguous, dedicated, EXACTLY 10 levels each.
+	# (8-15) Family blocks through FAST.
 	var blocks := [
 		["newtonian", 26, 35], ["dobsonian", 36, 45], ["cassegrain", 46, 55],
-		["gregorian", 56, 65], ["space_segmented", 66, 75], ["fast_radio", 76, 85],
-		["multi_device", 86, 91]
+		["gregorian", 56, 65], ["space_segmented", 66, 75], ["fast_radio", 76, 85]
 	]
 	for block_value in blocks:
 		var family := str(block_value[0])
 		var first: int = int(block_value[1])
 		var last: int = int(block_value[2])
 		var count := 0
-		for level_number in range(25, 92):
+		for level_number in range(25, 86):
 			if str(mm.get_level(level_number).get("telescope_family", "")) == family:
 				count += 1
 				_check(level_number >= first and level_number <= last,
@@ -98,8 +96,8 @@ func _initialize() -> void:
 		var expected: int = last - first + 1
 		_check(count == expected, "15. %s has exactly %d dedicated levels (got %d)" % [family, expected, count])
 
-	# (18)(19) Story + board coverage for L1-L91.
-	for level_number in range(25, 92):
+	# (18)(19) Story + board coverage through L85.
+	for level_number in range(25, 86):
 		var has_before: bool = sm.dialogues.has("level_%d_before" % level_number) \
 			or sm.dialogues.has("level_%d_before_assembly" % level_number)
 		_check(has_before, "18. L%d has a before-story" % level_number)
@@ -173,7 +171,7 @@ func _initialize() -> void:
 	gm._migrate_progress_schema()
 	_check(int(gm.progress.get("current_level", 0)) == 41, "25. old save L40 migrates to L41")
 	_check(gm.progress.get("completed_levels", []) == [33, 35, 40], "25. completed levels shift with content")
-	_check(int(gm.progress.get("campaign_version", 0)) == 93, "25. campaign version stamped")
+	_check(int(gm.progress.get("campaign_version", 0)) == 94, "25. campaign version stamped")
 	gm.new_game()
 
 	# (26)(27) Story routing: plays once, never replays, returns to scene.
@@ -192,13 +190,11 @@ func _initialize() -> void:
 	_check(str(l33_env.get("seeing", "")) == "poor" and float(l33_env.get("cloud_cover", 0.0)) > 0.0,
 		"30. L33 seeing and clouds are real")
 
-	# (31)(32) Mode switches at FAST and multi-device stages.
+	# (31)(32) FAST remains radio-only and the retired mode is absent.
 	for level_number in range(76, 86):
 		_check(str(mm.get_level(level_number).get("observation_mode", "")) == "radio",
 			"31. L%d runs radio mode" % level_number)
-	for level_number in range(86, 92):
-		_check(str(mm.get_level(level_number).get("observation_mode", "")) == "multi_device",
-			"32. L%d runs multi-device mode" % level_number)
+	_check(mm.get_level(86).is_empty(), "32. retired multi-device chapter is absent")
 
 	if failures == 0:
 		print("TIMELINE PROGRESSION TEST PASS")

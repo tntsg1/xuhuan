@@ -11,7 +11,9 @@ const DeveloperConsoleScript := preload("res://scripts/ui/developer_console.gd")
 const ADVANCED_LEVELS_PATH := "res://data/advanced_levels.json"
 const ADVANCED_PARTS_PATH := "res://data/advanced_telescope_parts.json"
 const EXPANSION_DIR := "res://data/expansion/"
-const CAMPAIGN_VERSION := 93
+const CAMPAIGN_VERSION := 94
+const FINAL_CAMPAIGN_LEVEL := 85
+const RETIRED_POST_FAST_LEVEL := 86
 # Gregorian family (levels 56-65) removed 2026-07-22. A save parked on one of
 # these migrates forward to the first Infrared/Space level.
 const DEPRECATED_GREGORIAN_LEVELS := [56, 57, 58, 59, 60, 61, 62, 63, 64, 65]
@@ -89,7 +91,6 @@ func _ready() -> void:
 	objects_data.append_array(_load_json_array(EXPANSION_DIR + "celestial_objects.json"))
 	levels_data = _load_json_array("res://data/levels.json")
 	levels_data.append_array(_load_json_array(ADVANCED_LEVELS_PATH))
-	levels_data.append_array(_load_json_array(EXPANSION_DIR + "levels.json"))
 	learning_cards_data = _load_json_array("res://data/learning_cards.json")
 	learning_cards_data.append_array(_load_json_array(EXPANSION_DIR + "learning_cards.json"))
 	constellations_data = _load_json_array(EXPANSION_DIR + "constellations.json")
@@ -128,8 +129,17 @@ func toggle_developer_console() -> void:
 
 
 func debug_jump_to_level(level_number: int, prepare_equipment: bool = false) -> void:
-	var max_level: int = max(1, levels_data.size())
-	progress["current_level"] = clampi(level_number, 1, max_level)
+	var level_numbers := available_level_numbers()
+	if level_numbers.is_empty():
+		return
+	var resolved_level := level_number
+	if not level_numbers.has(resolved_level):
+		resolved_level = level_numbers[0]
+		for candidate in level_numbers:
+			if candidate > level_number:
+				break
+			resolved_level = candidate
+	progress["current_level"] = resolved_level
 	# A developer jump creates a complete test context for that lesson. Normal
 	# gameplay keeps the player's last bench choice; only this debug shortcut
 	# follows the jumped-to mission family automatically.
@@ -167,6 +177,12 @@ func debug_launch(scene_key: String, prepare_equipment: bool = false) -> void:
 
 
 func available_level_numbers() -> Array[int]:
+	var mission_manager: Variant = _mission_manager()
+	if mission_manager != null and not mission_manager.campaign_order.is_empty():
+		var active_levels: Array[int] = []
+		for level_number in mission_manager.campaign_order:
+			active_levels.append(int(level_number))
+		return active_levels
 	var result: Array[int] = []
 	for level_value in levels_data:
 		if not level_value is Dictionary:
@@ -1680,6 +1696,8 @@ func all_level_data_issues() -> Dictionary:
 		if not level_value is Dictionary:
 			continue
 		var level: Dictionary = level_value
+		if bool(level.get("deprecated", false)):
+			continue
 		var issues := level_data_issues(level)
 		if not issues.is_empty():
 			results[int(level.get("level_number", 0))] = issues
@@ -2625,16 +2643,22 @@ func _migrate_progress_schema() -> void:
 		# A stored Gregorian cabinet tab falls back to a valid family.
 		if str(progress.get("selected_family", "")) == "gregorian":
 			progress["selected_family"] = "cassegrain"
+	# Post-FAST missions were retired in campaign v94. Their celestial catalog,
+	# art, and free-observation records remain available, but no save may resume
+	# inside a removed lesson.
+	if int(progress.get("campaign_version", 0)) < 94:
+		var retired_level := int(progress.get("current_level", 1))
+		if retired_level >= RETIRED_POST_FAST_LEVEL:
+			progress["current_level"] = FINAL_CAMPAIGN_LEVEL
 	progress["language_mode"] = _normalized_language_mode(str(progress.get("language_mode", "en")))
 	language_mode = str(progress["language_mode"])
 	progress["campaign_version"] = CAMPAIGN_VERSION
 
 
 func _repair_campaign_progress() -> void:
-	# Versions that used a woven expansion order could leave a save pointing at
-	# L92+ after only the first couple of lessons. Keep every valid completion,
-	# then resume at the first unfinished mainline lesson instead of trusting
-	# the stale current_level value.
+	# Retired or malformed level ids resume at the nearest unfinished campaign
+	# lesson. Completed FAST campaigns settle on L85 instead of entering removed
+	# post-FAST content.
 	var mission_manager: Variant = _mission_manager()
 	if mission_manager == null:
 		return
@@ -2655,8 +2679,8 @@ func _repair_campaign_progress() -> void:
 	# on every launch - e.g. finishing L66 and relaunching to find yourself at
 	# L11 again, with the later parts pruned. A saved position is trusted when it
 	# is a real level and is no further than one step past the furthest level the
-	# player has actually completed; the L92-after-two-lessons corruption this
-	# guard was written for still fails that test and is still repaired.
+	# player has actually completed; retired or otherwise impossible ids still
+	# fail that test and are repaired.
 	var furthest_completed := 0
 	for completed_value in valid_completed:
 		furthest_completed = maxi(furthest_completed, int(completed_value))
@@ -2685,6 +2709,11 @@ func _repair_campaign_progress() -> void:
 		if selected_id != "" and not retained_parts.has(selected_id):
 			selected[part_type] = ""
 	progress["selected_parts"] = selected
+	var final_level: int = mission_manager.campaign_order[-1] if not mission_manager.campaign_order.is_empty() else FINAL_CAMPAIGN_LEVEL
+	if valid_completed.has(final_level):
+		progress["program_completed"] = true
+		if not progress["badges"].has("Young Observer"):
+			progress["badges"].append("Young Observer")
 	if changed_level or inventory_changed:
 		progress["telescope_ready"] = false
 

@@ -78,6 +78,7 @@ func _ready() -> void:
 	aim_az = fposmod(target_az + 24.0, 360.0)
 	aim_alt = clampf(target_alt - 12.0, 0.0, 90.0)
 	_build()
+	InteractionFeedback.page_enter(self)
 	set_process(true)
 	queue_redraw()
 

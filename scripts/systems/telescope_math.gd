@@ -57,6 +57,7 @@ static func calculate(parts: Dictionary, assembly_state: Dictionary) -> Dictiona
 		focus_control_score = clampf(focus_sensitivity * float(focus_knob_state.get("alignment_score", 0.0)), 0.0, 100.0)
 
 	return {
+		"aperture_mm": snapped(aperture, 0.1),
 		"magnification": snapped(magnification, 0.1),
 		"light_score": snapped(light_score, 0.1),
 		"stability_score": snapped(stability, 0.1),
@@ -86,6 +87,7 @@ static func get_assembly_score(assembly_state: Dictionary) -> float:
 
 static func _empty_stats() -> Dictionary:
 	return {
+		"aperture_mm": 0.0,
 		"magnification": 0.0,
 		"light_score": 0.0,
 		"stability_score": 0.0,

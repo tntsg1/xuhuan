@@ -14,6 +14,8 @@ extends Node
 
 const DIALOGUES_PATH := "res://data/story_dialogues.json"
 const EXPANSION_DIALOGUES_PATH := "res://data/expansion/story_dialogues.json"
+const REVISIONS_PATH := "res://data/story_revisions.json"
+const NARRATIVE_PATH := "res://data/story_narrative.json"
 
 # Events are found by naming convention against the loaded dialogue data:
 #   before_observation -> "level_N_before"
@@ -39,8 +41,10 @@ const MECHANIC_EVENTS := {
 const EPILOGUE_MIN_LEVEL := 25
 
 var dialogues: Dictionary = {}
+var narrative: Dictionary = {}
 var active_event_id := ""
 var active_lines: Array = []
+var active_context: Dictionary = {}
 var return_scene_key := ""
 var pending_trigger := ""
 
@@ -48,17 +52,12 @@ var pending_trigger := ""
 func _ready() -> void:
 	dialogues = _load_json_dict(DIALOGUES_PATH)
 	var expansion := _load_json_dict(EXPANSION_DIALOGUES_PATH)
-	for event_id in expansion:
-		# board_notes is a sub-dictionary keyed by level number: MERGE it so the
-		# expansion's 92-131 notes add to the base 1-91 notes instead of
-		# replacing the whole map (a plain assign would erase L1-91).
-		if event_id == "board_notes" and dialogues.get("board_notes") is Dictionary and expansion["board_notes"] is Dictionary:
-			var merged: Dictionary = dialogues["board_notes"]
-			for note_key in expansion["board_notes"]:
-				merged[note_key] = expansion["board_notes"][note_key]
-			dialogues["board_notes"] = merged
-		else:
-			dialogues[event_id] = expansion[event_id]
+	_merge_dialogue_pack(expansion)
+	# Story revisions are intentionally loaded last. They replace only the
+	# chapter-spine moments whose causal handoff changed, while preserving the
+	# target-specific science dialogue already authored for every other level.
+	_merge_dialogue_pack(_load_json_dict(REVISIONS_PATH))
+	narrative = _load_json_dict(NARRATIVE_PATH)
 
 
 # ------------------------------------------------------------------ queries
@@ -142,6 +141,82 @@ func board_note_for_level(level_number: int) -> Dictionary:
 	return {}
 
 
+func context_for_event(event_id: String) -> Dictionary:
+	var gm := _game_manager()
+	if gm == null:
+		return {}
+	var level_number := _event_level_number(event_id)
+	if event_id == "intro":
+		level_number = 1
+	if level_number <= 0:
+		level_number = int(gm.current_level().get("level_number", 0))
+	var narrative_level: Dictionary = gm.current_level()
+	var mission_manager := _mission_manager()
+	if mission_manager != null and mission_manager.has_method("get_level"):
+		var event_level: Dictionary = mission_manager.get_level(level_number)
+		if not event_level.is_empty():
+			narrative_level = event_level
+	var chapter := _chapter_for_level(level_number)
+	var locations: Dictionary = narrative.get("locations", {})
+	var event_routes: Dictionary = narrative.get("event_routes", {})
+	var override: Dictionary = event_routes.get(event_id, {})
+	var from_id := str(override.get("from", "mission_board"))
+	var to_id := str(override.get("to", "observation_pad"))
+	var phase := "before"
+	if event_id == "intro":
+		phase = "intro"
+	elif event_id.ends_with("_after"):
+		phase = "after"
+		from_id = _observation_location_for_level(narrative_level)
+		to_id = "club_logbook"
+	elif event_id.contains("before_assembly"):
+		from_id = "mission_board"
+		to_id = "assembly_table"
+	elif event_id.contains("before_focus"):
+		from_id = "assembly_table"
+		to_id = "observation_pad"
+	elif event_id.begins_with("first_"):
+		phase = "mechanic"
+	elif event_id.contains("_before"):
+		from_id = "mission_board"
+		to_id = _observation_location_for_level(narrative_level)
+
+	var from_info: Dictionary = locations.get(from_id, {})
+	var to_info: Dictionary = locations.get(to_id, {})
+	var reason_en := str(chapter.get("cause_en", "Tonight's result follows from the previous observation."))
+	var reason_zh := str(chapter.get("cause_zh", "今晚的任务来自上一项观测留下的问题。"))
+	if phase == "after":
+		reason_en = str(chapter.get("proof_en", reason_en))
+		reason_zh = str(chapter.get("proof_zh", reason_zh))
+	var action_en := str(override.get("action_en", ""))
+	var action_zh := str(override.get("action_zh", ""))
+	if action_en == "":
+		if phase == "after":
+			action_en = "Record the evidence, then use the Mission Board to begin the next question."
+			action_zh = "先记录证据，再通过任务板开始下一个问题。"
+		else:
+			action_en = "Continue at the " + str(to_info.get("name_en", to_id.capitalize())) + "."
+			action_zh = "前往" + str(to_info.get("name_zh", to_id)) + "继续。"
+	return {
+		"event_id": event_id,
+		"level_number": level_number,
+		"phase": phase,
+		"chapter_id": str(chapter.get("id", "")),
+		"chapter_en": str(chapter.get("title_en", "Astronomy Club")),
+		"chapter_zh": str(chapter.get("title_zh", "天文俱乐部")),
+		"reason_en": reason_en,
+		"reason_zh": reason_zh,
+		"from_id": from_id,
+		"from_en": str(from_info.get("name_en", from_id.capitalize())),
+		"from_zh": str(from_info.get("name_zh", from_id)),
+		"to_id": to_id,
+		"to_en": str(to_info.get("name_en", to_id.capitalize())),
+		"to_zh": str(to_info.get("name_zh", to_id)),
+		"action_en": action_en,
+		"action_zh": action_zh
+	}
+
+
 # ------------------------------------------------------------------- routing
 
 
@@ -156,6 +231,7 @@ func begin_event(event_id: String, scene_key: String, follow_trigger: String = "
 		return false
 	active_event_id = event_id
 	active_lines = lines
+	active_context = context_for_event(event_id)
 	return_scene_key = scene_key
 	pending_trigger = follow_trigger
 	gm.go("story")
@@ -197,10 +273,12 @@ func finish_active_event() -> void:
 		if not gm.progress["seen_story_events"].has(active_event_id):
 			gm.progress["seen_story_events"].append(active_event_id)
 	var completed_event_id := active_event_id
+	var completed_context := active_context.duplicate(true)
 	var scene := return_scene_key
 	var trigger := pending_trigger
 	active_event_id = ""
 	active_lines = []
+	active_context = {}
 	return_scene_key = ""
 	pending_trigger = ""
 	if scene == "":
@@ -210,21 +288,35 @@ func finish_active_event() -> void:
 	# player already chose; only the intro routes through the observatory
 	# with room guidance.
 	if completed_event_id == "intro":
-		gm.set_room_guidance("telescope", "Maya: Observation Pad", "Walk to the Observation Pad and press E.")
+		gm.set_room_guidance(
+			"telescope",
+			gm.text("Maya: Observation Pad", "玛雅：观测台"),
+			gm.text(
+				str(completed_context.get("action_en", "Walk to the Observation Pad and press E.")),
+				str(completed_context.get("action_zh", "前往观测台并按 E。"))
+			)
+		)
 	if trigger != "" and gm.try_teaching_intercept(trigger, scene):
 		return
+	if scene == "observatory" and completed_event_id != "intro":
+		gm.update_room_guidance_for_level()
 	gm.go(scene)
 
 
 func reset_flow() -> void:
 	active_event_id = ""
 	active_lines = []
+	active_context = {}
 	return_scene_key = ""
 	pending_trigger = ""
 
 
 func _game_manager() -> Node:
 	return get_node_or_null("/root/GameManager")
+
+
+func _mission_manager() -> Node:
+	return get_node_or_null("/root/MissionManager")
 
 
 func _load_json_dict(path: String) -> Dictionary:
@@ -238,3 +330,44 @@ func _load_json_dict(path: String) -> Dictionary:
 	if parsed is Dictionary:
 		return parsed
 	return {}
+
+
+func _merge_dialogue_pack(pack: Dictionary) -> void:
+	for event_id in pack:
+		# Supplemental dialogue packs may contribute board notes without
+		# replacing the base campaign's note map.
+		if event_id == "board_notes" and dialogues.get("board_notes") is Dictionary and pack[event_id] is Dictionary:
+			var merged: Dictionary = dialogues["board_notes"]
+			for note_key in pack[event_id]:
+				merged[note_key] = pack[event_id][note_key]
+			dialogues["board_notes"] = merged
+		else:
+			dialogues[event_id] = pack[event_id]
+
+
+func _event_level_number(event_id: String) -> int:
+	if not event_id.begins_with("level_"):
+		return 0
+	var remainder := event_id.trim_prefix("level_")
+	return int(remainder.get_slice("_", 0))
+
+
+func _chapter_for_level(level_number: int) -> Dictionary:
+	var chapters: Array = narrative.get("chapters", [])
+	for chapter_value in chapters:
+		if not chapter_value is Dictionary:
+			continue
+		var chapter: Dictionary = chapter_value
+		if level_number >= int(chapter.get("min_level", 0)) and level_number <= int(chapter.get("max_level", 0)):
+			return chapter
+	return {}
+
+
+func _observation_location_for_level(level: Dictionary) -> String:
+	match str(level.get("telescope_family", "")):
+		"space_segmented":
+			return "space_console"
+		"fast_radio":
+			return "radio_console"
+		_:
+			return "observation_pad"

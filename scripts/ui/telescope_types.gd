@@ -222,6 +222,10 @@ func _family_card(entry: Dictionary) -> Button:
 
 func _select(id: String) -> void:
 	selected_family = id
+	for family_id in cards.keys():
+		var family_card := cards.get(family_id) as Control
+		if family_card != null:
+			InteractionFeedback.selection(family_card, str(family_id) == id, GOLD, true, "telescope_family_selected")
 	var entry := _entry(id)
 	if entry.is_empty():
 		return

@@ -61,7 +61,7 @@ func _initialize() -> void:
 	_check((gm.progress["completed_levels"] as Array).has(55), "5. completed levels preserved")
 	_check((gm.progress["journal_entries"] as Array).size() == 1, "5. logbook preserved")
 	_check(not (gm.progress["unlocked_parts"] as Array).has("gregorian_optical_tube"), "5. Gregorian parts un-unlocked during migration")
-	_check(int(gm.progress["campaign_version"]) == 93, "5. campaign version bumped to 93")
+	_check(int(gm.progress["campaign_version"]) == 94, "5. campaign version includes post-FAST retirement")
 
 	# --- 6. Non-Gregorian saves untouched ---
 	gm.new_game()

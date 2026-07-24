@@ -81,6 +81,8 @@ PlayerCharacter/
 /.tmp_user_parts/
 /artifacts/*appdata*/
 /artifacts/observation_ui_isolated_tests/appdata_*/
+/artifacts/*_stdout.txt
+/artifacts/*_stderr.txt
 
 # Save files
 *.sav

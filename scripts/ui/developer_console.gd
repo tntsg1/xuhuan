@@ -15,6 +15,7 @@ func _ready() -> void:
 	selected_level = int(GameManager.progress.get("current_level", 1))
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build()
+	InteractionFeedback.page_enter(self, Vector2(0, 6))
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -48,8 +49,8 @@ func _build() -> void:
 	_refresh_selected_label()
 
 	panel.add_child(_label(GameManager.text("LEVEL SELECT (scroll)", "关卡选择（可滚轮滚动）"), Vector2(30, 138), Vector2(300, 20), 13, CYAN))
-	# 91 levels no longer fit a fixed grid: the grid lives in a mouse-wheel
-	# scrollable container so it never overlaps the test-entry buttons.
+	# The active campaign lives in a mouse-wheel scrollable grid so removed or
+	# deprecated lessons never leak into developer navigation.
 	var level_scroll := ScrollContainer.new()
 	level_scroll.position = Vector2(24, 162)
 	level_scroll.size = Vector2(770, 180)

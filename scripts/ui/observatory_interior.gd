@@ -10,6 +10,7 @@ var start_button: Button
 func _ready() -> void:
 	GameManager.language_changed.connect(_on_language_changed)
 	_build()
+	InteractionFeedback.page_enter(self)
 
 
 func _build() -> void:

@@ -1,10 +1,8 @@
 extends Node
 
 var levels: Array = []
-# Play sequence of level NUMBERS. This is the single mainline authority:
-# original lessons run first, then expansion lessons. Level ids/data stay
-# untouched, and old saves remain compatible because current_level is a
-# plain level_number repaired against this order on load.
+# Play sequence of level NUMBERS. This is the single mainline authority and
+# intentionally ends at the FAST graduation.
 var campaign_order: Array[int] = []
 
 
@@ -97,6 +95,8 @@ func has_level(level_number: int) -> bool:
 func campaign_order_issues() -> Array[String]:
 	var available: Array[int] = []
 	for level in levels:
+		if bool(level.get("deprecated", false)):
+			continue
 		var level_number := int(level.get("level_number", 0))
 		if level_number > 0 and not available.has(level_number):
 			available.append(level_number)
@@ -114,4 +114,4 @@ func is_final_level(level_number: int) -> bool:
 
 
 func get_max_level() -> int:
-	return levels.size()
+	return campaign_order[-1] if not campaign_order.is_empty() else 0

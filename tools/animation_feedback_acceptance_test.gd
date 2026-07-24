@@ -32,8 +32,33 @@ func _test_common_feedback_and_accessibility() -> void:
 	button.position = Vector2(100, 100)
 	button.size = Vector2(160, 44)
 	host.add_child(button)
+	var slider := HSlider.new()
+	slider.position = Vector2(100, 170)
+	slider.size = Vector2(220, 32)
+	slider.min_value = 0.0
+	slider.max_value = 100.0
+	host.add_child(slider)
 	await process_frame
 	_check(bool(button.get_meta("feedback_bound", false)), "important buttons receive the shared hover/click feedback")
+	_check(button.has_node("InteractionFeedbackShadow") and button.has_node("InteractionFeedbackShine"), "buttons receive depth and highlight layers")
+	button.mouse_entered.emit()
+	await create_timer(0.18).timeout
+	_check(button.scale.x > 1.0, "hover produces a restrained spring lift")
+	button.button_down.emit()
+	await create_timer(0.08).timeout
+	_check(button.scale.x < 1.0, "press visibly depresses the button")
+	button.button_up.emit()
+	button.pressed.emit()
+	await create_timer(0.03).timeout
+	_check(button.has_node("InteractionFeedbackClickEcho"), "confirmed clicks create a short gold echo")
+	feedback.selection(button, true, Color(1.0, 0.78, 0.32), true, "acceptance_selection")
+	await create_timer(0.15).timeout
+	_check(bool(button.get_meta("feedback_selected", false)), "selected controls keep a persistent state")
+	_check(bool(slider.get_meta("feedback_bound", false)), "sliders receive the shared adjustment feedback")
+	slider.value = 42.0
+	await create_timer(0.08).timeout
+	var slider_border := slider.get_node_or_null("InteractionFeedbackEffectBorder") as Panel
+	_check(slider_border != null and slider_border.modulate.a > 0.2, "slider movement produces visible active feedback")
 	feedback.set_reduced_motion(true)
 	var start_position := host.position
 	feedback.page_enter(host, Vector2(0, 20))

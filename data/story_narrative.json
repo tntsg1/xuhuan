@@ -1,0 +1,208 @@
+{
+  "locations": {
+    "observatory_room": {
+      "name_en": "Observatory Room",
+      "name_zh": "观测室",
+      "role_en": "The hub where Maya explains the question for the night and where every route begins.",
+      "role_zh": "玛雅说明今晚问题、所有行动路线开始的基地大厅。"
+    },
+    "mission_board": {
+      "name_en": "Mission Board",
+      "name_zh": "任务板",
+      "role_en": "Defines the scientific question and the success condition. It recommends equipment but never installs it for you.",
+      "role_zh": "说明科学问题和成功条件，只推荐设备，不会替玩家安装。"
+    },
+    "parts_cabinet": {
+      "name_en": "Parts Cabinet",
+      "name_zh": "零件柜",
+      "role_en": "Turns the mission requirement into a deliberate equipment choice.",
+      "role_zh": "把任务需求转化为玩家主动做出的设备选择。"
+    },
+    "assembly_table": {
+      "name_en": "Assembly Table",
+      "name_zh": "组装台",
+      "role_en": "Turns selected parts into a working optical system and exposes compatibility problems.",
+      "role_zh": "把选中的零件变成可工作的光学系统，并检查兼容性。"
+    },
+    "tube_blueprint": {
+      "name_en": "Tube Blueprint",
+      "name_zh": "镜筒子装配蓝图",
+      "role_en": "Explains the internal light path before the completed tube returns to the main assembly.",
+      "role_zh": "先解释镜筒内部光路，再把完整镜筒送回主装配。"
+    },
+    "collimation_bench": {
+      "name_en": "Collimation Bench",
+      "name_zh": "准直工作台",
+      "role_en": "Aligns the mirrors so the reflector's theoretical resolution becomes visible in the image.",
+      "role_zh": "校准镜面光轴，让反射镜的理论分辨率真正出现在画面中。"
+    },
+    "observation_pad": {
+      "name_en": "Observation Pad",
+      "name_zh": "观测台",
+      "role_en": "Tests the prediction in the real sky through aiming, focusing, tracking and identification.",
+      "role_zh": "通过瞄准、调焦、追踪和辨认，在真实天空中检验前面的判断。"
+    },
+    "site_map": {
+      "name_en": "Observation Site Map",
+      "name_zh": "观测地点地图",
+      "role_en": "Changes location only when the same target cannot be observed comfortably from the current horizon.",
+      "role_zh": "只有当前地点无法舒适观测同一目标时，才负责更换观测地点。"
+    },
+    "club_logbook": {
+      "name_en": "Club Logbook",
+      "name_zh": "俱乐部日志",
+      "role_en": "Records evidence and comparisons; it does not choose the next mission.",
+      "role_zh": "记录证据和对比结果，不负责选择下一项任务。"
+    },
+    "space_console": {
+      "name_en": "Space Telescope Console",
+      "name_zh": "空间望远镜控制台",
+      "role_en": "Replaces the ground telescope when the observation depends on a remote space platform.",
+      "role_zh": "当观测依赖远程空间平台时，取代地面观测台成为操作入口。"
+    },
+    "radio_console": {
+      "name_en": "FAST Control Console",
+      "name_zh": "FAST 控制台",
+      "role_en": "Turns an invisible radio signal into tunable, measurable data.",
+      "role_zh": "把肉眼看不见的射电信号转化成可以调谐和测量的数据。"
+    }
+  },
+  "chapters": [
+    {
+      "id": "first_light",
+      "min_level": 1,
+      "max_level": 2,
+      "title_en": "First Light: Establish a Baseline",
+      "title_zh": "初见星光：建立观测基线",
+      "cause_en": "Before comparing telescopes, we need to learn what unaided eyes can and cannot reveal.",
+      "cause_zh": "在比较望远镜之前，必须先知道肉眼能看见什么、又会遗漏什么。",
+      "proof_en": "Brightness makes an object visible, but aperture and magnification reveal structure.",
+      "proof_zh": "亮度决定能否看见，口径和倍率才决定能否看清结构。"
+    },
+    {
+      "id": "refractor_foundations",
+      "min_level": 3,
+      "max_level": 10,
+      "title_en": "Refractor Foundations",
+      "title_zh": "折射镜基础",
+      "cause_en": "The naked-eye baseline showed missing detail, so we build a stable lens telescope and learn its controls one at a time.",
+      "cause_zh": "肉眼基线暴露了细节不足，因此先组装稳定的透镜望远镜，并逐项学习它的控制。",
+      "proof_en": "A telescope only helps when its parts, focus, field of view and mount work as one system.",
+      "proof_zh": "只有零件、焦点、视场和支架作为一个系统协同工作，望远镜才真正有用。"
+    },
+    {
+      "id": "observer_skills",
+      "min_level": 11,
+      "max_level": 18,
+      "title_en": "The Sky Fights Back",
+      "title_zh": "天空并不配合",
+      "cause_en": "The instrument now works; the next errors come from darkness, clouds, atmosphere, drift and the observer.",
+      "cause_zh": "仪器已经能工作，接下来的误差来自暗适应、云层、大气、漂移和观察者自身。",
+      "proof_en": "Good observing is active correction, not simply owning better optics.",
+      "proof_zh": "好的观测来自持续修正，而不是只拥有更好的光学零件。"
+    },
+    {
+      "id": "independent_refractor",
+      "min_level": 19,
+      "max_level": 24,
+      "title_en": "Independent Refractor Nights",
+      "title_zh": "独立折射镜观测",
+      "cause_en": "Maya stops isolating one control at a time so the player must combine the complete workflow.",
+      "cause_zh": "玛雅不再一次只考一个操作，玩家必须把完整观测流程组合起来。",
+      "proof_en": "The player can plan, assemble, aim, focus, track and judge evidence without step-by-step rescue.",
+      "proof_zh": "玩家能够独立规划、组装、瞄准、调焦、追踪并判断证据。"
+    },
+    {
+      "id": "chromatic_limit",
+      "min_level": 25,
+      "max_level": 25,
+      "title_en": "A Limit of Lenses",
+      "title_zh": "透镜的极限",
+      "cause_en": "A bright, distant star exposes colored fringes that better focusing cannot remove.",
+      "cause_zh": "明亮而遥远的恒星暴露出无法靠继续调焦消除的彩色边缘。",
+      "proof_en": "Some image defects belong to the optical design, so the correct response is a different light path.",
+      "proof_zh": "有些像差来自光学结构本身，正确答案不是继续拧旋钮，而是更换光路。"
+    },
+    {
+      "id": "newtonian_reflector",
+      "min_level": 26,
+      "max_level": 35,
+      "title_en": "Newtonian: Replace Refraction with Reflection",
+      "title_zh": "牛顿式：用反射取代折射",
+      "cause_en": "Mirrors bring every visible color to the same focus, but their open light path introduces collimation.",
+      "cause_zh": "镜面能让可见光各颜色落在同一焦点，却也让开放光路带来准直要求。",
+      "proof_en": "The reflector removes lens color fringing only when its primary, secondary and focuser share one optical axis.",
+      "proof_zh": "只有主镜、副镜和调焦器共用一条光轴，反射镜才能兑现没有透镜色差的优势。"
+    },
+    {
+      "id": "dobsonian_aperture",
+      "min_level": 36,
+      "max_level": 45,
+      "title_en": "Dobsonian: Trade Automation for Aperture",
+      "title_zh": "多布森式：用自动化换取大口径",
+      "cause_en": "The Newtonian light path works, so a simple rocker mount lets us spend more of the design on a larger mirror.",
+      "cause_zh": "牛顿光路已经成立，简单的摇臂底座让更多成本可以用于更大的主镜。",
+      "proof_en": "Large aperture reveals fainter targets, while manual nudging makes tracking an observer skill.",
+      "proof_zh": "大口径揭示更暗弱的目标，而手动推镜让追踪成为观察者必须掌握的技能。"
+    },
+    {
+      "id": "cassegrain_precision",
+      "min_level": 46,
+      "max_level": 55,
+      "title_en": "Cassegrain: Fold Distance into a Compact Tube",
+      "title_zh": "卡塞格林式：把长焦距折进短镜筒",
+      "cause_en": "Deep-sky aperture is not the answer to every target; small planetary detail needs a long effective focal length and precise pointing.",
+      "cause_zh": "大口径深空观测并非万能，小尺度行星细节需要更长的有效焦距和更精确的指向。",
+      "proof_en": "A folded light path makes high magnification practical, but narrows the field and raises the cost of every aiming error.",
+      "proof_zh": "折叠光路让高倍率更实用，却缩小视场并放大每一次瞄准误差。"
+    },
+    {
+      "id": "space_infrared",
+      "min_level": 66,
+      "max_level": 75,
+      "title_en": "Beyond the Ground and Visible Light",
+      "title_zh": "越过地面与可见光",
+      "cause_en": "Ground telescopes are limited by atmosphere and visible wavelengths, so Maya moves the experiment to a cold infrared observatory in space.",
+      "cause_zh": "地面望远镜受大气和可见光波段限制，因此玛雅把实验转移到太空中的低温红外观测站。",
+      "proof_en": "Location and wavelength can reveal information that no increase in visible-light magnification can recover.",
+      "proof_zh": "改变位置和波段，能揭示单纯提高可见光倍率永远无法恢复的信息。"
+    },
+    {
+      "id": "fast_radio",
+      "min_level": 76,
+      "max_level": 85,
+      "title_en": "FAST: When Data Becomes the Image",
+      "title_zh": "FAST：当数据本身成为图像",
+      "cause_en": "Infrared expanded the spectrum; radio astronomy completes the lesson by replacing the eyepiece image with a measurable signal.",
+      "cause_zh": "红外观测扩展了光谱，射电天文则进一步用可测量信号取代目镜图像。",
+      "proof_en": "Astronomy is not defined by what the eye sees, but by repeatable evidence collected with the right instrument.",
+      "proof_zh": "天文学不由眼睛看见什么定义，而由正确仪器收集到的可重复证据定义。"
+    }
+  ],
+  "event_routes": {
+    "intro": {
+      "from": "observatory_room",
+      "to": "observation_pad",
+      "action_en": "Use the central Observation Pad to establish a naked-eye baseline.",
+      "action_zh": "前往中央观测台，建立肉眼观测基线。"
+    },
+    "first_tube_subassembly": {
+      "from": "assembly_table",
+      "to": "tube_blueprint",
+      "action_en": "Build the internal optical path first, then return the completed tube to the main blueprint.",
+      "action_zh": "先完成内部光路，再把完整镜筒送回主蓝图。"
+    },
+    "first_collimation": {
+      "from": "assembly_table",
+      "to": "collimation_bench",
+      "action_en": "Align the primary, secondary and focuser before asking the reflector for a sharp image.",
+      "action_zh": "先让主镜、副镜和调焦器共轴，再要求反射镜给出清晰图像。"
+    },
+    "first_below_horizon": {
+      "from": "observation_pad",
+      "to": "site_map",
+      "action_en": "Keep the same target and choose a site where it has already risen.",
+      "action_zh": "保留同一目标，选择一个它已经升起的观测地点。"
+    }
+  }
+}

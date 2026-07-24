@@ -43,7 +43,10 @@ const Z_OBJECTS := 20
 # still feeds the existing visibility/quality code, but the texture itself can
 # no longer paint an opaque rectangle over a target.
 const Z_ATMOSPHERE := 14
-const Z_OPTICAL_GLASS := 50
+# The search-window lens bends the background star field and environment, but
+# stays below clickable catalog objects so their visual and hit rects cannot
+# diverge near the curved edge.
+const Z_OPTICAL_GLASS := 19
 const Z_TARGET_FEEDBACK := 60
 const Z_AIM_OVERLAY := 70
 const Z_DYNAMIC_READOUT := 75
@@ -1835,6 +1838,7 @@ func _update_mode_buttons() -> void:
 		caption.add_theme_color_override("font_color", CYAN if active else (Color(0.58, 0.58, 0.58) if not available else TEXT))
 		status.text = "!" if not available else ""
 		button.disabled = not available
+		InteractionFeedback.selection(button, active, CYAN, true, "mode_selected")
 		button.tooltip_text = _mode_label(mode) if available else GameManager.text(str(availability.get("en", "Unavailable")), str(availability.get("zh", "不可用")))
 	if view_mode_caption != null:
 		var captions := {"naked_eye": GameManager.text("EYE VIEW", "肉眼视野"), "finder": GameManager.text("FINDER VIEW", "寻星镜视野"), "telescope": GameManager.text("SCOPE VIEW", "望远镜视野")}

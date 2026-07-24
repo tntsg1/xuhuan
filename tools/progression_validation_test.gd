@@ -62,7 +62,7 @@ func old_save_migration_test(gm: Node) -> void:
 	gm._normalize_progress()
 	_check(int(gm.progress.get("current_level", 0)) == 3, "old_save_migration_test: old L114 jump resumes at L3")
 	_check(int(gm.progress.get("credits", 0)) == 321, "old_save_migration_test: credits are retained")
-	_check((gm.progress.get("completed_levels", []) as Array).has(114), "old_save_migration_test: historic completion is retained")
+	_check(not (gm.progress.get("completed_levels", []) as Array).has(114), "old_save_migration_test: retired completion ids are discarded")
 	_check(not (gm.progress.get("unlocked_parts", []) as Array).has("newtonian_primary_mirror"), "old_save_migration_test: leaked advanced equipment is removed")
 	gm.progress["current_level"] = 999
 	gm._normalize_progress()
@@ -71,8 +71,9 @@ func old_save_migration_test(gm: Node) -> void:
 
 func campaign_order_integrity_test(mm: Node) -> void:
 	_check(mm.campaign_order_issues().is_empty(), "campaign_order_integrity_test: no duplicates, missing levels, or invalid ids")
-	_check(mm.campaign_order.size() == 131, "campaign_order_integrity_test: all 131 levels are present")
-	_check(mm.campaign_order[0] == 1 and mm.campaign_order[90] == 91 and mm.campaign_order[91] == 92, "campaign_order_integrity_test: expansion begins after L91")
+	_check(mm.campaign_order.size() == 75, "campaign_order_integrity_test: 75 active lessons remain after deprecated and post-FAST removal")
+	_check(mm.campaign_order[0] == 1 and mm.campaign_order[-1] == 85, "campaign_order_integrity_test: campaign runs from L1 through FAST graduation L85")
+	_check((mm.campaign_order as Array).all(func(value): return int(value) <= 85), "campaign_order_integrity_test: no post-FAST lesson remains")
 
 
 func assembly_gate_test(gm: Node) -> void:

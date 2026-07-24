@@ -36,6 +36,9 @@ var next_button: Button
 var diagram_rect: TextureRect
 var diagram_tween: Tween
 var default_visual_rect: TextureRect
+var chapter_label: Label
+var reason_label: Label
+var route_label: Label
 
 
 func _ready() -> void:
@@ -82,6 +85,22 @@ func _build() -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
 
+	# A compact narrative compass connects Maya's explanation to the physical
+	# observatory. It is deliberately separate from the spoken text: the player
+	# can always see why this scene exists and where the next action happens.
+	var context_panel := Panel.new()
+	context_panel.position = Vector2(72, 430)
+	context_panel.size = Vector2(880, 76)
+	context_panel.add_theme_stylebox_override("panel", _style(Color(0.022, 0.038, 0.071, 0.96), Color(0.30, 0.57, 0.70), 2, 4))
+	context_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(context_panel)
+	chapter_label = _label("", Vector2(92, 438), Vector2(420, 20), 13, NAME_COLOR)
+	reason_label = _label("", Vector2(92, 460), Vector2(420, 38), 10, MUTED)
+	reason_label.max_lines_visible = 2
+	route_label = _label("", Vector2(530, 440), Vector2(398, 60), 10, Color(0.55, 0.91, 0.96), HORIZONTAL_ALIGNMENT_RIGHT)
+	route_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	route_label.max_lines_visible = 3
+
 	portrait_rect = TextureRect.new()
 	portrait_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait_rect.stretch_mode = TextureRect.STRETCH_SCALE
@@ -105,8 +124,8 @@ func _build() -> void:
 	diagram_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	diagram_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	diagram_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	diagram_rect.position = Vector2(152, 140)
-	diagram_rect.size = Vector2(720, 366)
+	diagram_rect.position = Vector2(152, 136)
+	diagram_rect.size = Vector2(720, 280)
 	diagram_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	diagram_rect.modulate = Color(1, 1, 1, 0)
 	add_child(diagram_rect)
@@ -176,6 +195,36 @@ func _show_line() -> void:
 	else:
 		next_button.text = GameManager.text("Next", "继续").replace("\n", " · ")
 	_update_line_image(line)
+	_update_context_panel()
+
+
+func _update_context_panel() -> void:
+	var context: Dictionary = StoryManager.active_context
+	if context.is_empty():
+		chapter_label.text = ""
+		reason_label.text = ""
+		route_label.text = ""
+		return
+	chapter_label.text = GameManager.text(
+		str(context.get("chapter_en", "Astronomy Club")),
+		str(context.get("chapter_zh", "天文俱乐部"))
+	)
+	reason_label.text = GameManager.text(
+		"WHY NOW  " + str(context.get("reason_en", "")),
+		"为什么是现在  " + str(context.get("reason_zh", ""))
+	)
+	route_label.text = GameManager.text(
+		"%s  >  %s\n%s" % [
+			str(context.get("from_en", "")),
+			str(context.get("to_en", "")),
+			str(context.get("action_en", ""))
+		],
+		"%s  >  %s\n%s" % [
+			str(context.get("from_zh", "")),
+			str(context.get("to_zh", "")),
+			str(context.get("action_zh", ""))
+		]
+	)
 
 
 func _update_line_image(line: Dictionary) -> void:
@@ -240,4 +289,5 @@ func _label(text: String, pos: Vector2, size: Vector2, font_size: int, color: Co
 	return label
 
 func _on_language_changed() -> void:
-	_build()
+	if not StoryManager.active_lines.is_empty():
+		_show_line()

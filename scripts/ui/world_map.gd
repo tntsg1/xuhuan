@@ -39,7 +39,7 @@ enum Phase { INTRO, SCAN, FOUND, ROUTE, READY, CONFIRM, TRAVEL, DEPART }
 
 const DURATIONS := {
 	Phase.INTRO: 1.7, Phase.SCAN: 1.5, Phase.FOUND: 0.7, Phase.ROUTE: 1.5,
-	Phase.CONFIRM: 1.1, Phase.TRAVEL: 1.7, Phase.DEPART: 0.9
+	Phase.CONFIRM: 0.85, Phase.TRAVEL: 2.65, Phase.DEPART: 1.05
 }
 
 var utc: Dictionary = {}
@@ -68,8 +68,16 @@ var arc_progress := 0.0
 var scan_radius := 0.0
 var confirm_ring := 0.0
 var travel_blend := 0.0
+var travel_marker_progress := 0.0
+var arrival_flash := 0.0
 var depart_shrink := 0.0
 var panel_reveal := 0.0
+var display_latitude := 0.0
+var display_longitude := 0.0
+var travel_distance_km := 0.0
+var travel_bearing_degrees := 0.0
+var travel_geo_from := Vector2.ZERO
+var travel_geo_to := Vector2.ZERO
 
 # view transform
 var map_scale := 0.0
@@ -81,6 +89,8 @@ var pan := Vector2.ZERO
 var zoom_boost := 0.0
 var travel_pan_from := Vector2.ZERO
 var travel_pan_to := Vector2.ZERO
+var confirm_pan_from := Vector2.ZERO
+var confirm_pan_to := Vector2.ZERO
 var dragging := false
 var pinch_points: Dictionary = {}
 var pinch_start_dist := -1.0
@@ -96,6 +106,11 @@ var back_button: Button
 var home_button: Button
 var status_label: Label
 var headline_label: Label
+var travel_hud: Panel
+var travel_title_label: Label
+var travel_coords_label: Label
+var travel_meta_label: Label
+var travel_progress_bar: ProgressBar
 var panel_rows: Array = []   # [{labels:[Label], order:int}] for staggered reveal
 var tutorial_overlay: Control
 var tutorial_highlight: Panel
@@ -281,21 +296,33 @@ func _build() -> void:
 	var shader := Shader.new()
 	shader.code = """shader_type canvas_item;
 uniform float reveal : hint_range(0.0, 1.6) = 0.0;
+uniform float travel : hint_range(0.0, 1.0) = 0.0;
+uniform float arrival : hint_range(0.0, 1.0) = 0.0;
 uniform float aspect = 1.78;
 void fragment() {
-	vec4 c = texture(TEXTURE, UV);
+	vec2 sample_uv = UV;
+	float flight_wave = sin((UV.y * 24.0 + travel * 9.0) * 3.14159) * 0.0012 * travel * (1.0 - arrival);
+	sample_uv.x += flight_wave;
+	vec4 c = texture(TEXTURE, sample_uv);
 	vec2 d = UV - vec2(0.5);
 	d.x *= aspect;
 	float r = length(d);
 	float edge = smoothstep(reveal, reveal - 0.06, r);
 	float rim = smoothstep(reveal - 0.02, reveal, r) * smoothstep(reveal + 0.05, reveal, r);
 	c.rgb += vec3(0.55, 0.42, 0.16) * rim * 1.4;
+	float scan = 1.0 - smoothstep(0.0, 0.055, abs(UV.y - fract(travel * 0.72 + 0.12)));
+	c.rgb += vec3(0.10, 0.34, 0.46) * scan * travel * (1.0 - arrival) * 0.12;
+	float vignette = 1.0 - smoothstep(0.22, 0.82, length(UV - vec2(0.5)));
+	c.rgb *= mix(0.78, 1.0, vignette);
+	c.rgb += vec3(0.95, 0.65, 0.22) * arrival * (1.0 - r) * 0.18;
 	c.a *= edge;
 	COLOR = c;
 }"""
 	map_material = ShaderMaterial.new()
 	map_material.shader = shader
 	map_material.set_shader_parameter("reveal", 0.0)
+	map_material.set_shader_parameter("travel", 0.0)
+	map_material.set_shader_parameter("arrival", 0.0)
 	map_material.set_shader_parameter("aspect", MAP_SIZE.x / MAP_SIZE.y)
 	map_image.material = map_material
 	add_child(map_image)
@@ -338,7 +365,72 @@ void fragment() {
 	add_child(home_button)
 
 	_build_site_buttons()
+	_build_travel_hud()
 	_refresh_info()
+
+
+func _build_travel_hud() -> void:
+	travel_hud = Panel.new()
+	travel_hud.name = "TravelCoordinateHUD"
+	travel_hud.position = Vector2(132, 600)
+	travel_hud.size = Vector2(500, 76)
+	travel_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	travel_hud.z_index = 35
+	var hud_style := StyleBoxFlat.new()
+	hud_style.bg_color = Color(0.015, 0.026, 0.055, 0.94)
+	hud_style.border_color = Color(GOLD.r, GOLD.g, GOLD.b, 0.86)
+	hud_style.set_border_width_all(2)
+	hud_style.set_corner_radius_all(4)
+	hud_style.shadow_color = Color(0.0, 0.0, 0.0, 0.72)
+	hud_style.shadow_size = 7
+	travel_hud.add_theme_stylebox_override("panel", hud_style)
+	travel_hud.modulate.a = 0.0
+	travel_hud.visible = false
+	add_child(travel_hud)
+
+	travel_title_label = Label.new()
+	travel_title_label.position = Vector2(14, 7)
+	travel_title_label.size = Vector2(472, 18)
+	travel_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	travel_title_label.add_theme_font_size_override("font_size", 11)
+	travel_title_label.add_theme_color_override("font_color", GOLD_BRIGHT)
+	travel_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	travel_hud.add_child(travel_title_label)
+
+	travel_coords_label = Label.new()
+	travel_coords_label.position = Vector2(14, 25)
+	travel_coords_label.size = Vector2(472, 22)
+	travel_coords_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	travel_coords_label.add_theme_font_size_override("font_size", 16)
+	travel_coords_label.add_theme_color_override("font_color", WHITE_DATA)
+	travel_coords_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	travel_hud.add_child(travel_coords_label)
+
+	travel_meta_label = Label.new()
+	travel_meta_label.position = Vector2(14, 47)
+	travel_meta_label.size = Vector2(472, 15)
+	travel_meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	travel_meta_label.add_theme_font_size_override("font_size", 10)
+	travel_meta_label.add_theme_color_override("font_color", CYAN_BRIGHT)
+	travel_meta_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	travel_hud.add_child(travel_meta_label)
+
+	travel_progress_bar = ProgressBar.new()
+	travel_progress_bar.position = Vector2(14, 65)
+	travel_progress_bar.size = Vector2(472, 4)
+	travel_progress_bar.min_value = 0.0
+	travel_progress_bar.max_value = 1.0
+	travel_progress_bar.show_percentage = false
+	travel_progress_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var progress_bg := StyleBoxFlat.new()
+	progress_bg.bg_color = Color(0.10, 0.16, 0.24, 0.92)
+	progress_bg.set_corner_radius_all(2)
+	var progress_fill := StyleBoxFlat.new()
+	progress_fill.bg_color = GOLD_BRIGHT
+	progress_fill.set_corner_radius_all(2)
+	travel_progress_bar.add_theme_stylebox_override("background", progress_bg)
+	travel_progress_bar.add_theme_stylebox_override("fill", progress_fill)
+	travel_hud.add_child(travel_progress_bar)
 
 
 func _show_first_map_tutorial() -> void:
@@ -502,6 +594,11 @@ func _pick_site(id: String) -> void:
 	if not _is_resolved(id):
 		return
 	selected_id = id
+	for site_value in sites:
+		var site_id := str((site_value as Dictionary).get("id", ""))
+		var site_button := get_node_or_null(NodePath("site_" + site_id)) as Control
+		if site_button != null:
+			InteractionFeedback.selection(site_button, site_id == selected_id, GOLD_BRIGHT, true, "site_selected")
 	arc_progress = 0.0
 	if phase == Phase.READY:
 		_set_phase(Phase.ROUTE)
@@ -527,15 +624,32 @@ func _set_phase(p: int) -> void:
 		Phase.READY:
 			resolved_count = scan_order.size()
 			arc_progress = 1.0
+			travel_blend = 0.0
+			travel_marker_progress = 0.0
+			arrival_flash = 0.0
+			zoom_boost = 0.0
 		Phase.CONFIRM:
 			confirm_ring = 0.0
+			travel_blend = 0.0
+			travel_marker_progress = 0.0
+			arrival_flash = 0.0
+			confirm_pan_from = pan
+			confirm_pan_to = _pan_to_coordinates(
+				float(current_site.get("lat", 0.0)),
+				float(current_site.get("lon", 0.0))
+			)
+			_prepare_travel_coordinates()
 		Phase.TRAVEL:
 			travel_pan_from = pan
 			travel_pan_to = _pan_to_center(selected_id)
+			travel_blend = 0.0
+			travel_marker_progress = 0.0
 		Phase.DEPART:
 			depart_shrink = 0.0
+			arrival_flash = 1.0
 	_update_status_text()
 	_update_button_states()
+	_update_travel_hud()
 
 
 func _pan_to_center(id: String) -> Vector2:
@@ -543,14 +657,29 @@ func _pan_to_center(id: String) -> Vector2:
 	var s: Dictionary = v.get("site", {})
 	if s.is_empty():
 		return pan
+	return _pan_to_coordinates(float(s.get("lat", 0.0)), float(s.get("lon", 0.0)))
+
+
+func _pan_to_coordinates(lat: float, lon: float) -> Vector2:
 	# pan so the destination sits at the middle of the map area
 	var target_img := Vector2(
-		MAP_INNER.position.x + (float(s.get("lon", 0.0)) + 180.0) / 360.0 * MAP_INNER.size.x,
-		MAP_INNER.position.y + (90.0 - float(s.get("lat", 0.0))) / 180.0 * MAP_INNER.size.y)
+		MAP_INNER.position.x + (lon + 180.0) / 360.0 * MAP_INNER.size.x,
+		MAP_INNER.position.y + (90.0 - lat) / 180.0 * MAP_INNER.size.y)
 	var centre := MAP_AREA.position + MAP_AREA.size * 0.5
 	var drawn := MAP_SIZE * map_scale
 	var origin_wanted := centre - target_img * map_scale
 	return origin_wanted - (MAP_AREA.position + (MAP_AREA.size - drawn) * 0.5)
+
+
+func _prepare_travel_coordinates() -> void:
+	var v: Dictionary = site_visibility.get(selected_id, {})
+	var destination: Dictionary = v.get("site", {})
+	travel_geo_from = Vector2(float(current_site.get("lon", 0.0)), float(current_site.get("lat", 0.0)))
+	travel_geo_to = Vector2(float(destination.get("lon", 0.0)), float(destination.get("lat", 0.0)))
+	display_longitude = travel_geo_from.x
+	display_latitude = travel_geo_from.y
+	travel_distance_km = _great_circle_distance_km(travel_geo_from.y, travel_geo_from.x, travel_geo_to.y, travel_geo_to.x)
+	travel_bearing_degrees = _initial_bearing_degrees(travel_geo_from.y, travel_geo_from.x, travel_geo_to.y, travel_geo_to.x)
 
 
 func _update_status_text() -> void:
@@ -580,14 +709,14 @@ func _update_status_text() -> void:
 				float(selected.get("altitude", 0.0))]
 			c = GOLD
 		Phase.CONFIRM:
-			t = GameManager.text("The target is now above the horizon.", "目标现在已经升到地平线以上。")
-			c = GREEN
+			t = GameManager.text("Route locked. Synchronizing coordinates...", "路线已锁定，正在同步坐标……")
+			c = GOLD_BRIGHT
 		Phase.TRAVEL:
 			t = GameManager.text("Travelling to the observing site...", "正在前往观测地点……")
 			c = GOLD_BRIGHT
 		Phase.DEPART:
-			t = GameManager.text("Arriving...", "抵达中……")
-			c = GOLD_BRIGHT
+			t = GameManager.text("Coordinates synchronized. Target position recalculated.", "坐标同步完成，目标位置已重新计算。")
+			c = GREEN
 	status_label.text = t
 	status_label.add_theme_color_override("font_color", c)
 
@@ -632,19 +761,40 @@ func _process(delta: float) -> void:
 		Phase.READY:
 			pass
 		Phase.CONFIRM:
-			confirm_ring = clampf(phase_t / d, 0.0, 1.0)
-			zoom_boost = _ease_out(confirm_ring) * 0.16
+			var k := clampf(phase_t / d, 0.0, 1.0)
+			confirm_ring = _ease_out(k)
+			pan = confirm_pan_from.lerp(confirm_pan_to, _smoother_step(k))
+			zoom_boost = sin(k * PI) * 0.075 + k * 0.10
 			if phase_t >= d:
 				_set_phase(Phase.TRAVEL)
 		Phase.TRAVEL:
-			travel_blend = _ease_in_out(clampf(phase_t / d, 0.0, 1.0))
+			var raw := clampf(phase_t / d, 0.0, 1.0)
+			travel_blend = _smoother_step(raw)
+			travel_marker_progress = _ease_in_out_sine(raw)
 			pan = travel_pan_from.lerp(travel_pan_to, travel_blend)
-			zoom_boost = 0.16 + travel_blend * 0.22
+			if not _reduced():
+				pan += Vector2(0.0, -18.0 * sin(raw * PI))
+			# Pull back during the long middle leg, then settle decisively on
+			# the destination. This keeps both endpoints legible.
+			zoom_boost = 0.10 - sin(raw * PI) * 0.15 + pow(raw, 2.0) * 0.38
+			var geo_t := _smoother_step(raw)
+			display_latitude = lerpf(travel_geo_from.y, travel_geo_to.y, geo_t)
+			display_longitude = _lerp_longitude(travel_geo_from.x, travel_geo_to.x, geo_t)
+			arrival_flash = _ease_out(clampf((raw - 0.76) / 0.24, 0.0, 1.0))
+			if status_label != null:
+				status_label.text = GameManager.text(
+					"Relocating observatory • %d%%" % roundi(raw * 100.0),
+					"正在切换观测地点 • %d%%" % roundi(raw * 100.0)
+				)
 			if phase_t >= d:
+				display_latitude = travel_geo_to.y
+				display_longitude = travel_geo_to.x
+				arrival_flash = 1.0
 				_set_phase(Phase.DEPART)
 		Phase.DEPART:
 			depart_shrink = clampf(phase_t / d, 0.0, 1.0)
-			zoom_boost = 0.38 - depart_shrink * 0.9
+			arrival_flash = 1.0 - _ease_out(depart_shrink) * 0.82
+			zoom_boost = 0.48 - _ease_in_out(depart_shrink) * 0.93
 			reveal = 1.25 * (1.0 - _ease_in_out(depart_shrink))
 			if phase_t >= d:
 				_enter_sky()
@@ -658,12 +808,16 @@ func _process(delta: float) -> void:
 			node.modulate = Color(1, 1, 1, clampf(panel_reveal * 14.0 - float(row["order"]), 0.0, 1.0))
 	if map_material != null:
 		map_material.set_shader_parameter("reveal", reveal)
+		map_material.set_shader_parameter("travel", travel_blend if phase >= Phase.TRAVEL else 0.0)
+		map_material.set_shader_parameter("arrival", arrival_flash)
 	_recompute_view()
 	if map_image != null:
 		map_image.position = map_origin
 		map_image.size = MAP_SIZE * map_scale
 	_update_site_button_positions()
 	_update_button_states()
+	_update_travel_hud()
+	_update_travel_chrome()
 	if overlay != null:
 		overlay.queue_redraw()
 
@@ -685,6 +839,119 @@ func _ease_out(t: float) -> float:
 
 func _ease_in_out(t: float) -> float:
 	return t * t * (3.0 - 2.0 * t)
+
+
+func _smoother_step(t: float) -> float:
+	var k := clampf(t, 0.0, 1.0)
+	return k * k * k * (k * (k * 6.0 - 15.0) + 10.0)
+
+
+func _ease_in_out_sine(t: float) -> float:
+	return -(cos(PI * clampf(t, 0.0, 1.0)) - 1.0) * 0.5
+
+
+func _update_travel_hud() -> void:
+	if travel_hud == null:
+		return
+	var active := phase >= Phase.CONFIRM
+	travel_hud.visible = active
+	if not active:
+		travel_hud.modulate.a = 0.0
+		return
+	var alpha := 1.0
+	if phase == Phase.CONFIRM:
+		alpha = clampf(confirm_ring * 1.8, 0.0, 1.0)
+	elif phase == Phase.DEPART:
+		alpha = 1.0 - _ease_in_out(depart_shrink)
+	travel_hud.modulate.a = alpha
+	travel_hud.position.y = 600.0 + (1.0 - alpha) * (4.0 if _reduced() else 12.0)
+
+	match phase:
+		Phase.CONFIRM:
+			travel_title_label.text = GameManager.text("ROUTE LOCKED • COORDINATE HANDOFF", "路线锁定 • 坐标交接")
+		Phase.TRAVEL:
+			travel_title_label.text = GameManager.text("RELOCATING OBSERVATORY", "正在切换观测地点")
+		_:
+			travel_title_label.text = GameManager.text("COORDINATES SYNCHRONIZED", "坐标同步完成")
+
+	travel_coords_label.text = GameManager.text(
+		"LAT %s    LON %s" % [_latitude_text(display_latitude), _longitude_text(display_longitude)],
+		"纬度 %s    经度 %s" % [_latitude_text(display_latitude), _longitude_text(display_longitude)]
+	)
+	var progress := 0.0
+	if phase == Phase.TRAVEL:
+		progress = travel_marker_progress
+	elif phase == Phase.DEPART:
+		progress = 1.0
+	var remaining := maxi(0, roundi(travel_distance_km * (1.0 - progress)))
+	travel_meta_label.text = GameManager.text(
+		"%s • bearing %03d° • %s" % [
+			_format_distance(remaining),
+			roundi(travel_bearing_degrees),
+			"target sky recalculating" if phase == Phase.TRAVEL else "target sky ready"
+		],
+		"%s • 航向 %03d° • %s" % [
+			_format_distance(remaining),
+			roundi(travel_bearing_degrees),
+			"正在重新计算目标天空" if phase == Phase.TRAVEL else "目标天空已就绪"
+		]
+	)
+	travel_progress_bar.value = progress
+
+
+func _update_travel_chrome() -> void:
+	var focus := 0.0
+	if phase == Phase.CONFIRM:
+		focus = clampf(confirm_ring, 0.0, 1.0) * 0.72
+	elif phase >= Phase.TRAVEL:
+		focus = 0.82
+	if phase == Phase.DEPART:
+		focus = lerpf(0.82, 1.0, depart_shrink)
+	if info_panel != null:
+		info_panel.modulate.a = lerpf(1.0, 0.28, focus)
+	for control in [confirm_button, skip_button, back_button, home_button]:
+		if control != null:
+			(control as Control).modulate.a = lerpf(1.0, 0.18, focus)
+
+
+func _latitude_text(value: float) -> String:
+	return "%06.3f°%s" % [absf(value), "N" if value >= 0.0 else "S"]
+
+
+func _longitude_text(value: float) -> String:
+	return "%07.3f°%s" % [absf(value), "E" if value >= 0.0 else "W"]
+
+
+func _format_distance(kilometres: int) -> String:
+	var raw := str(kilometres)
+	var grouped := ""
+	while raw.length() > 3:
+		grouped = "," + raw.right(3) + grouped
+		raw = raw.left(raw.length() - 3)
+	return raw + grouped + " km"
+
+
+func _lerp_longitude(from_lon: float, to_lon: float, weight: float) -> float:
+	var shortest := fposmod(to_lon - from_lon + 180.0, 360.0) - 180.0
+	return wrapf(from_lon + shortest * weight, -180.0, 180.0)
+
+
+func _great_circle_distance_km(from_lat: float, from_lon: float, to_lat: float, to_lon: float) -> float:
+	var lat_a := deg_to_rad(from_lat)
+	var lat_b := deg_to_rad(to_lat)
+	var d_lat := lat_b - lat_a
+	var d_lon := deg_to_rad(fposmod(to_lon - from_lon + 180.0, 360.0) - 180.0)
+	var h := pow(sin(d_lat * 0.5), 2.0) + cos(lat_a) * cos(lat_b) * pow(sin(d_lon * 0.5), 2.0)
+	return 6371.0 * 2.0 * atan2(sqrt(h), sqrt(maxf(1.0 - h, 0.0)))
+
+
+func _initial_bearing_degrees(from_lat: float, from_lon: float, to_lat: float, to_lon: float) -> float:
+	var lat_a := deg_to_rad(from_lat)
+	var lat_b := deg_to_rad(to_lat)
+	var d_lon := deg_to_rad(fposmod(to_lon - from_lon + 180.0, 360.0) - 180.0)
+	var y := sin(d_lon) * cos(lat_b)
+	var x := cos(lat_a) * sin(lat_b) - sin(lat_a) * cos(lat_b) * cos(d_lon)
+	return fposmod(rad_to_deg(atan2(y, x)), 360.0)
 
 
 # ------------------------------------------------------------------ input
@@ -866,20 +1133,16 @@ func _draw_markers(font: Font, fade: float) -> void:
 func _draw_route(font: Font, fade: float) -> void:
 	if selected_id == "" or phase < Phase.ROUTE or arc_progress <= 0.0:
 		return
-	var v: Dictionary = site_visibility.get(selected_id, {})
-	var s: Dictionary = v.get("site", {})
-	if s.is_empty():
+	if _selected_site().is_empty():
 		return
 	var a := _project(float(current_site.get("lat", 0.0)), float(current_site.get("lon", 0.0)))
-	var b := _project(float(s.get("lat", 0.0)), float(s.get("lon", 0.0)))
-	var mid := (a + b) * 0.5 - Vector2(0, a.distance_to(b) * 0.34)
 	var last := a
 	var segments := 52
 	for i in range(1, segments + 1):
 		var t := float(i) / float(segments)
 		if t > arc_progress:
 			break
-		var q := a.lerp(mid, t).lerp(mid.lerp(b, t), t)
+		var q := _route_point(t)
 		if MAP_AREA.has_point(last) and MAP_AREA.has_point(q):
 			# double-stroke: soft glow under a crisp core
 			overlay.draw_line(last, q, Color(GOLD.r, GOLD.g, GOLD.b, 0.28 * fade), 5.0)
@@ -893,6 +1156,41 @@ func _draw_route(font: Font, fade: float) -> void:
 			var sp := last - (last - a).normalized() * float(k + 1) * 7.0
 			if MAP_AREA.has_point(sp):
 				overlay.draw_circle(sp, 1.4, Color(GOLD_BRIGHT.r, GOLD_BRIGHT.g, GOLD_BRIGHT.b, 0.42 - float(k) * 0.09))
+
+	# During relocation, the observing-site beacon actually travels along the
+	# route. A soft tail keeps it readable without covering country labels.
+	if phase >= Phase.CONFIRM:
+		for k in range(12, 0, -1):
+			var tail_t := maxf(0.0, travel_marker_progress - float(k) * 0.014)
+			var tail := _route_point(tail_t)
+			if MAP_AREA.has_point(tail):
+				var tail_alpha := (1.0 - float(k) / 13.0) * 0.36 * (1.0 - depart_shrink)
+				overlay.draw_circle(tail, 1.2 + (12.0 - float(k)) * 0.08, Color(GOLD_BRIGHT.r, GOLD_BRIGHT.g, GOLD_BRIGHT.b, tail_alpha))
+		var traveller := _route_point(travel_marker_progress)
+		if MAP_AREA.has_point(traveller):
+			var pulse := 1.0 + sin(anim_t * 9.0) * 0.12
+			overlay.draw_circle(traveller, 15.0 * pulse, Color(GOLD.r, GOLD.g, GOLD.b, 0.12 * (1.0 - depart_shrink)))
+			overlay.draw_arc(traveller, 9.0 * pulse, 0.0, TAU, 24, Color(GOLD_BRIGHT.r, GOLD_BRIGHT.g, GOLD_BRIGHT.b, 0.92 * (1.0 - depart_shrink)), 2.0)
+			overlay.draw_line(traveller + Vector2(-5, 0), traveller + Vector2(5, 0), Color.WHITE, 1.0)
+			overlay.draw_line(traveller + Vector2(0, -5), traveller + Vector2(0, 5), Color.WHITE, 1.0)
+
+
+func _selected_site() -> Dictionary:
+	var v: Dictionary = site_visibility.get(selected_id, {})
+	return v.get("site", {})
+
+
+func _route_point(t: float) -> Vector2:
+	var s := _selected_site()
+	if s.is_empty():
+		return Vector2.ZERO
+	var a := _project(float(current_site.get("lat", 0.0)), float(current_site.get("lon", 0.0)))
+	var b := _project(float(s.get("lat", 0.0)), float(s.get("lon", 0.0)))
+	var distance := a.distance_to(b)
+	var lift := clampf(distance * 0.34, 54.0, 170.0)
+	var mid := (a + b) * 0.5 - Vector2(0.0, lift)
+	var k := clampf(t, 0.0, 1.0)
+	return a.lerp(mid, k).lerp(mid.lerp(b, k), k)
 
 
 func _draw_confirm_fx(font: Font) -> void:
@@ -912,7 +1210,7 @@ func _draw_confirm_fx(font: Font) -> void:
 			overlay.draw_arc(p, 10.0 + t * 70.0, 0.0, TAU, 40, Color(GOLD_BRIGHT.r, GOLD_BRIGHT.g, GOLD_BRIGHT.b, (1.0 - t) * 0.8), 2.5)
 	# arrival burst
 	if phase >= Phase.TRAVEL and MAP_AREA.has_point(p):
-		var burst: float = clampf(travel_blend, 0.0, 1.0)
+		var burst: float = clampf(arrival_flash, 0.0, 1.0)
 		for i in range(10):
 			var ang := TAU * float(i) / 10.0 + anim_t * 0.4
 			var rr := 12.0 + burst * 30.0

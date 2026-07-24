@@ -43,7 +43,12 @@ const SPRITE_MAP := {
 	"m13": "res://assets/telescope_view/expansion/m13.svg",
 	"ring_nebula": "res://assets/telescope_view/expansion/ring_nebula.svg",
 	"lagoon_nebula": "res://assets/telescope_view/expansion/lagoon_nebula.svg",
-	"sombrero_galaxy": "res://assets/telescope_view/expansion/sombrero.svg"
+	"sombrero_galaxy": "res://assets/telescope_view/expansion/sombrero.svg",
+	"crab_nebula": "res://assets/telescope_view/temporary/crab_nebula.svg",
+	"dumbbell_nebula": "res://assets/telescope_view/temporary/dumbbell_nebula.svg",
+	"double_cluster": "res://assets/telescope_view/temporary/double_cluster.svg",
+	"whirlpool_galaxy": "res://assets/telescope_view/temporary/whirlpool_galaxy.svg",
+	"needle_galaxy": "res://assets/telescope_view/temporary/needle_galaxy.svg"
 }
 
 # Per-object state textures: clear (sharp art) / blurry (defocus photo,
@@ -2406,6 +2411,11 @@ func _object_view_scale(id: String) -> float:
 		"ring_nebula": return 0.42
 		"lagoon_nebula": return 0.82
 		"sombrero_galaxy": return 0.68
+		"crab_nebula": return 0.62
+		"dumbbell_nebula": return 0.58
+		"double_cluster": return 0.92
+		"whirlpool_galaxy": return 0.66
+		"needle_galaxy": return 0.76
 	return 1.0
 
 

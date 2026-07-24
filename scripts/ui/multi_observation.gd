@@ -162,6 +162,7 @@ func _refresh_cards() -> void:
 		var is_sel: bool = band == selected_band
 		if panel != null:
 			panel.add_theme_stylebox_override("panel", _flat(PANEL_SEL if is_sel else PANEL, GOLD if is_sel else accent, 4 if is_sel else 2))
+			InteractionFeedback.selection(panel, is_sel, GOLD, false, "evidence_selected")
 		var button := select_buttons.get(band) as Button
 		if button != null:
 			button.text = GameManager.text("Selected", "已选择") if is_sel else GameManager.text("Select Evidence", "选择证据")

@@ -1,7 +1,7 @@
 extends SceneTree
 
-# Story-system audit regression: every level L1-45 must have a trackable
-# narrative/teaching entry, L25-45 must have real (non-fallback) story
+# Story-system audit regression: every active campaign level must have a trackable
+# narrative/teaching entry, L25+ must have real (non-fallback) story
 # content, mechanics with first-time stories must exist, nothing replays,
 # and journal entries never duplicate identical knowledge cards.
 
@@ -23,10 +23,11 @@ func _initialize() -> void:
 	var wired_triggers := ["before_observation", "before_assembly", "before_focus", "before_identify", "before_collimation"]
 	var family_intro := {
 		"newtonian": 26, "dobsonian": 36, "cassegrain": 46,
-		"gregorian": 56, "space_segmented": 66, "fast_radio": 76, "multi_device": 86
+		"gregorian": 56, "space_segmented": 66, "fast_radio": 76
 	}
 
-	for level_number in range(1, 92):
+	for level_value in mm.campaign_order:
+		var level_number := int(level_value)
 		var level: Dictionary = mm.get_level(level_number)
 		_check(not level.is_empty(), "L%d exists" % level_number)
 		if level.is_empty():

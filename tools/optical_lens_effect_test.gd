@@ -47,6 +47,12 @@ func _test_sky_observation() -> void:
 	var reticle := view.get("scope_reticle_layer") as Control
 	_check(overlay != null, "Sky Observation owns one optical glass overlay")
 	_check(overlay != null and overlay.mouse_filter == Control.MOUSE_FILTER_IGNORE, "optical glass never blocks mouse or touch input")
+	var star_pool: Array = view.get("star_pool")
+	var object_icons: Dictionary = view.get("object_icons")
+	_check(not star_pool.is_empty() and overlay != null and (star_pool[0] as Control).z_index < overlay.z_index, "background stars are curved below the optical glass")
+	if not object_icons.is_empty():
+		var icon := object_icons.values()[0] as Control
+		_check(overlay != null and overlay.z_index < icon.z_index, "clickable celestial objects stay aligned above curved glass")
 	_check(overlay != null and reticle != null and overlay.z_index < reticle.z_index, "reticle remains straight and readable above curved glass")
 	var curvatures: Array[float] = []
 	for mode in ["naked_eye", "finder", "telescope"]:

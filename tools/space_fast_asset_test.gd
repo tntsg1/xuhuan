@@ -174,7 +174,7 @@ func _verify_legacy(gm: Node) -> void:
 	if mm != null:
 		_check(str(mm.get_level(2).get("required_concept_card", "")) == "naked_eye_limits",
 			"8. L2 mainline data untouched")
-		_check(int(mm.get_max_level()) >= 131, "8. campaign length unchanged (%d)" % int(mm.get_max_level()))
+		_check(int(mm.get_max_level()) == 85, "8. campaign ends at FAST graduation L85")
 	for pid in ["basic_tripod", "objective_60mm", "eyepiece_20mm", "basic_finder_scope"]:
 		var part: Dictionary = gm.get_part(pid)
 		_check(not part.is_empty(), "8. refractor part '%s' still present" % pid)

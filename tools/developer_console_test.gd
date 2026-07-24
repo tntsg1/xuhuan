@@ -15,14 +15,23 @@ func _initialize() -> void:
 	await process_frame
 	gm.toggle_developer_console()
 	_check(gm.developer_console != null and is_instance_valid(gm.developer_console), "developer console opens over the current scene")
-	_check(gm.available_level_numbers().size() == gm.levels_data.size(), "developer console reads the full level dataset")
+	var mm: Node = root.get_node_or_null("/root/MissionManager")
+	_check(mm != null and gm.available_level_numbers() == mm.campaign_order, "developer console mirrors the active campaign order")
 	_check(gm.available_level_numbers().has(45), "developer console includes L45")
+	_check(gm.available_level_numbers().has(85), "developer console includes FAST graduation L85")
+	_check(not gm.available_level_numbers().has(86), "developer console excludes retired post-FAST levels")
 	var has_l45_button := false
 	for node in gm.developer_console.find_children("*", "Button", true, false):
 		if str(node.get("text")) == "L45":
 			has_l45_button = true
 			break
 	_check(has_l45_button, "developer console renders an L45 button")
+	var has_l86_button := false
+	for node in gm.developer_console.find_children("*", "Button", true, false):
+		if str(node.get("text")) == "L86":
+			has_l86_button = true
+			break
+	_check(not has_l86_button, "developer console renders no retired L86 button")
 	gm.debug_jump_to_level(18, true)
 	_check(int(gm.progress.get("current_level", 0)) == 18, "developer console can select L18")
 	_check(gm.selected_object_id == "orion_nebula", "selected target follows the chosen lesson")

@@ -1,5 +1,6 @@
 extends Control
 
+const FurnitureAnimator = preload("res://scripts/ui/observatory_furniture_animator.gd")
 const W := 1024.0
 const H := 768.0
 const ROOM_RECT := Rect2(36, 118, 952, 570)
@@ -44,6 +45,7 @@ var route_arrow_label: Label
 var route_distance_label: Label
 var focus_label: Label
 var feedback_label: Label
+var furniture_animator: ObservatoryFurnitureAnimator
 var interactables: Array[Dictionary] = []
 var obstacles: Array[Rect2] = []
 var nearby_id := ""
@@ -58,6 +60,8 @@ var player_anim_frame := 0
 var player_anim_time := 0.0
 var player_is_moving := false
 var room_transition_active := false
+var furniture_interaction_active := false
+var arrival_furniture_id := ""
 
 
 func _ready() -> void:
@@ -74,10 +78,13 @@ func _ready() -> void:
 		GameManager.last_guidance = ""
 	elif GameManager.room_guidance_target != "":
 		active_guidance = "room_guidance"
-	player_pos = _spawn_position(GameManager.take_observatory_spawn())
+	var arrival_id := GameManager.take_observatory_spawn()
+	arrival_furniture_id = arrival_id
+	player_pos = _spawn_position(arrival_id)
 	_build()
 	InteractionFeedback.page_enter(self)
 	set_process(true)
+	call_deferred("_animate_arrival_furniture_close")
 	call_deferred("_maybe_show_unlock_popup")
 	call_deferred("_show_room_tutorial")
 
@@ -109,6 +116,8 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if room_transition_active:
+		return
+	if furniture_interaction_active:
 		return
 	# The Mission Board is a modal task center. Do not let its hotkeys also
 	# activate furniture behind it while the player is reading the route.
@@ -165,6 +174,7 @@ func _build() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 
 	_draw_full_background()
+	_draw_furniture_animation_overlays()
 	_register_hitboxes()
 	_draw_player()
 	_draw_hud()
@@ -185,6 +195,24 @@ func _draw_full_background() -> void:
 	add_child(bg)
 	if _space_console_active():
 		_draw_space_console_overlay()
+
+
+func _draw_furniture_animation_overlays() -> void:
+	furniture_animator = FurnitureAnimator.new()
+	furniture_animator.name = "FurnitureAnimator"
+	add_child(furniture_animator)
+	furniture_animator.setup()
+
+
+func _animate_arrival_furniture_close() -> void:
+	if furniture_animator == null or not furniture_animator.has_rig(arrival_furniture_id):
+		return
+	furniture_interaction_active = true
+	furniture_animator.open_immediately(arrival_furniture_id)
+	await get_tree().create_timer(0.08).timeout
+	furniture_animator.play_close(arrival_furniture_id, func() -> void:
+		furniture_interaction_active = false
+	)
 
 
 func _space_console_active() -> bool:
@@ -560,36 +588,17 @@ func _click_interactable(id: String) -> void:
 
 
 func _handle_interaction(id: String) -> void:
+	if furniture_interaction_active:
+		return
 	if id == "mission":
 		GameManager.set_observatory_spawn("mission")
 		_toggle_mission_board()
 	elif id == "cabinet":
-		GameManager.set_observatory_spawn("cabinet")
-		GameManager.clear_room_guidance()
-		GameManager.go("parts")
+		_play_furniture_action("cabinet", _enter_parts_cabinet)
 	elif id == "assembly":
-		GameManager.set_observatory_spawn("assembly")
-		# Re-enter the last bench directly. Telescope families are switched from
-		# the Type button inside the blueprint, not through a repeated gate here.
-		var assembly_dest := "assembly"
-		if GameManager.try_story_for_trigger("before_assembly", assembly_dest):
-			return
-		if GameManager.try_teaching_intercept("before_assembly", assembly_dest):
-			return
-		GameManager.clear_room_guidance()
-		GameManager.go(assembly_dest)
+		_play_furniture_action("assembly", _enter_assembly_table)
 	elif id == "door":
-		GameManager.set_observatory_spawn("door")
-		if GameManager.current_observation_mode() == "naked_eye":
-			if GameManager.try_story_for_trigger("before_observation", "sky"):
-				return
-			if GameManager.try_teaching_intercept("before_observation", "sky"):
-				return
-			GameManager.clear_room_guidance()
-			_enter_sky_or_relocate("door")
-		else:
-			GameManager.clear_room_guidance()
-			GameManager.go("interior")
+		_play_furniture_action("door", _enter_observatory_door)
 	elif id == "telescope":
 		if GameManager.try_story_for_trigger("before_observation", "sky"):
 			GameManager.set_observatory_spawn("telescope")
@@ -608,15 +617,70 @@ func _handle_interaction(id: String) -> void:
 				str(gate.get("reason_zh", "望远镜还没有准备好。请到组装台安装核心部件。"))
 			), 3600)
 	elif id == "journal":
-		GameManager.set_observatory_spawn("journal")
-		GameManager.clear_room_guidance()
-		GameManager.go("journal")
+		_play_furniture_action("journal", _enter_learning_journal)
 	elif id == "computer":
-		GameManager.set_observatory_spawn("computer")
-		if _space_console_active():
-			_enter_space_console()
-		else:
-			_toggle_stats_terminal()
+		_play_furniture_action("computer", _open_computer_station)
+
+
+func _play_furniture_action(id: String, action: Callable) -> void:
+	if furniture_interaction_active:
+		return
+	if furniture_animator == null or not furniture_animator.has_rig(id):
+		action.call()
+		return
+	furniture_interaction_active = true
+	furniture_animator.play_open(id, func() -> void:
+		furniture_interaction_active = false
+		if action.is_valid():
+			action.call()
+	)
+
+
+func _enter_parts_cabinet() -> void:
+	GameManager.set_observatory_spawn("cabinet")
+	GameManager.clear_room_guidance()
+	GameManager.go("parts")
+
+
+func _enter_assembly_table() -> void:
+	GameManager.set_observatory_spawn("assembly")
+	# Re-enter the last bench directly. Telescope families are switched from
+	# the Type button inside the blueprint, not through a repeated gate here.
+	var assembly_dest := "assembly"
+	if GameManager.try_story_for_trigger("before_assembly", assembly_dest):
+		return
+	if GameManager.try_teaching_intercept("before_assembly", assembly_dest):
+		return
+	GameManager.clear_room_guidance()
+	GameManager.go(assembly_dest)
+
+
+func _enter_observatory_door() -> void:
+	GameManager.set_observatory_spawn("door")
+	if GameManager.current_observation_mode() == "naked_eye":
+		if GameManager.try_story_for_trigger("before_observation", "sky"):
+			return
+		if GameManager.try_teaching_intercept("before_observation", "sky"):
+			return
+		GameManager.clear_room_guidance()
+		_enter_sky_or_relocate("door")
+	else:
+		GameManager.clear_room_guidance()
+		GameManager.go("interior")
+
+
+func _enter_learning_journal() -> void:
+	GameManager.set_observatory_spawn("journal")
+	GameManager.clear_room_guidance()
+	GameManager.go("journal")
+
+
+func _open_computer_station() -> void:
+	GameManager.set_observatory_spawn("computer")
+	if _space_console_active():
+		_enter_space_console()
+	else:
+		_toggle_stats_terminal()
 
 
 func _enter_space_console() -> void:
@@ -681,7 +745,7 @@ func _toggle_mission_board() -> void:
 	if mission_board_popup != null:
 		_close_mission_board(true)
 		return
-	_open_mission_board()
+	_play_furniture_action("mission", _open_mission_board)
 
 
 func _open_mission_board() -> void:
@@ -748,6 +812,8 @@ func _close_mission_board(show_guidance: bool) -> void:
 		var popup := mission_board_popup
 		mission_board_popup = null
 		InteractionFeedback.fade_then(popup, popup.queue_free)
+	if furniture_animator != null:
+		furniture_animator.play_close("mission")
 	if show_guidance:
 		var route := _mission_board_route()
 		GameManager.set_room_guidance(str(route.get("target", "")), str(route.get("title", "")), str(route.get("hint", "")))
@@ -1237,6 +1303,8 @@ func _toggle_stats_terminal() -> void:
 	if stats_terminal_popup != null:
 		stats_terminal_popup.queue_free()
 		stats_terminal_popup = null
+		if furniture_animator != null:
+			furniture_animator.play_close("computer")
 		return
 	var stats := GameManager.calculate_stats()
 

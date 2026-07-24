@@ -784,8 +784,11 @@ func _refresh_selection_outlines() -> void:
 		if not child.has_meta("part_id"):
 			continue
 		var outline := child.get_node_or_null("SelectionOutline") as Control
+		var is_selected := str(child.get_meta("part_id", "")) == selected_part_id
 		if outline != null:
-			outline.visible = str(child.get_meta("part_id", "")) == selected_part_id
+			outline.visible = is_selected
+		if child is Control:
+			InteractionFeedback.selection(child as Control, is_selected, SELECTION, false, "part_selected")
 
 
 func _scroll_to_next_step() -> void:

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="224" height="160" viewBox="0 0 224 160" shape-rendering="crispEdges">
+  <g opacity=".18" fill="#8db1c6">
+    <path d="M18 77 55 64 112 59 169 64 206 77 169 90 112 95 55 90Z"/>
+    <path d="M38 78 70 56 112 50 154 56 186 78 154 100 112 106 70 100Z"/>
+  </g>
+  <path d="M27 78 62 67 111 63 163 68 197 78 163 88 111 93 62 88Z" fill="#d7d2bd" opacity=".55"/>
+  <path d="M37 78 76 73 112 71 151 73 188 78 151 83 112 85 76 83Z" fill="#f1dfb4" opacity=".72"/>
+  <path d="M31 79 74 77 112 76 153 77 193 79 153 82 112 83 74 82Z" fill="#26333e" opacity=".92"/>
+  <rect x="106" y="70" width="13" height="16" fill="#fff0c7" opacity=".90"/>
+  <rect x="109" y="74" width="7" height="8" fill="#ffffff"/>
+  <g fill="#dce8ed">
+    <rect x="25" y="38" width="3" height="3"/><rect x="194" y="112" width="3" height="3"/>
+    <rect x="60" y="119" width="2" height="2"/><rect x="177" y="43" width="2" height="2"/>
+    <rect x="101" y="28" width="2" height="2"/>
+  </g>
+</svg>
