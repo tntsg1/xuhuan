@@ -17,6 +17,10 @@ func _load_campaign_order() -> void:
 	campaign_order.clear()
 	var available: Array[int] = []
 	for level in levels:
+		# Deprecated lessons (e.g. the removed Gregorian family) stay in the data
+		# file for save compatibility but are NOT part of the play sequence.
+		if bool(level.get("deprecated", false)):
+			continue
 		var level_number := int(level.get("level_number", 0))
 		if level_number > 0 and not available.has(level_number):
 			available.append(level_number)

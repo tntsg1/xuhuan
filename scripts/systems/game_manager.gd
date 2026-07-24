@@ -11,7 +11,12 @@ const DeveloperConsoleScript := preload("res://scripts/ui/developer_console.gd")
 const ADVANCED_LEVELS_PATH := "res://data/advanced_levels.json"
 const ADVANCED_PARTS_PATH := "res://data/advanced_telescope_parts.json"
 const EXPANSION_DIR := "res://data/expansion/"
-const CAMPAIGN_VERSION := 92
+const CAMPAIGN_VERSION := 93
+# Gregorian family (levels 56-65) removed 2026-07-22. A save parked on one of
+# these migrates forward to the first Infrared/Space level.
+const DEPRECATED_GREGORIAN_LEVELS := [56, 57, 58, 59, 60, 61, 62, 63, 64, 65]
+const FIRST_INFRARED_LEVEL := 66
+const ASSEMBLY_FAMILIES := ["refractor", "newtonian", "dobsonian", "cassegrain", "gregorian", "space_segmented", "fast_radio"]
 
 const SCENES := {
 	"menu": "res://scenes/main_menu.tscn",
@@ -26,6 +31,7 @@ const SCENES := {
 	"collimation": "res://scenes/collimation.tscn",
 	"radio_observation": "res://scenes/radio_observation.tscn",
 	"multi_observation": "res://scenes/multi_observation.tscn",
+	"space_observation": "res://scenes/space_observation.tscn",
 	"constellation": "res://scenes/constellation_observation.tscn",
 	"sky": "res://scenes/sky_observation.tscn",
 	"telescope": "res://scenes/telescope_view.tscn",
@@ -42,6 +48,13 @@ var constellations_data: Array = []
 var world_locations: Dictionary = {}
 var progress: Dictionary = {}
 var selected_object_id := ""
+# The selected catalog object may survive a Telescope View or world-map round
+# trip, but it must never leak into a different mission.
+var selected_object_level := 0
+# Transient authoritative sky snapshot for the active observing site. This is
+# intentionally not saved: it is recomputed whenever Sky Observation opens.
+var current_sky_positions: Dictionary = {}
+var current_sky_location_id := ""
 var last_observation: Dictionary = {}
 var last_learning_card: Dictionary = {}
 var last_guidance := ""
@@ -50,8 +63,22 @@ var room_guidance_title := ""
 var room_guidance_hint := ""
 var language_mode := "en"
 var observatory_spawn_id := "default"
+# The map can be opened from either the observatory or an already-active sky
+# view. Keep that return route transient: it is navigation state, not progress.
+var world_map_return_scene := "sky"
+# The world map follows the object that opened it. This may be tonight's
+# mission target or a player-selected free-observation object.
+var world_map_target_id := ""
+var world_map_observation_context: Dictionary = {}
+var world_map_arrival_context: Dictionary = {}
+# An explicit Return Home is allowed even when the mission target is below the
+# home horizon. Consume this once in Sky Observation to avoid reopening the map.
+var suppress_next_world_map_redirect := false
 # Last sky-observation aim, restored when re-entering the pad.
 var last_sky_aim: Dictionary = {"valid": false}
+# Active bench choice. Missions may recommend a family, but the assembly table
+# remembers the player's explicit selection without rewriting level data.
+var assembly_family_id := ""
 var developer_console: Control
 
 
@@ -103,7 +130,17 @@ func toggle_developer_console() -> void:
 func debug_jump_to_level(level_number: int, prepare_equipment: bool = false) -> void:
 	var max_level: int = max(1, levels_data.size())
 	progress["current_level"] = clampi(level_number, 1, max_level)
+	# A developer jump creates a complete test context for that lesson. Normal
+	# gameplay keeps the player's last bench choice; only this debug shortcut
+	# follows the jumped-to mission family automatically.
+	var debug_family := str(current_level().get("telescope_family", "refractor"))
+	if debug_family in ASSEMBLY_FAMILIES:
+		assembly_family_id = debug_family
+		progress["selected_telescope_family"] = debug_family
 	selected_object_id = current_target_object_id()
+	selected_object_level = int(progress.get("current_level", 1))
+	current_sky_positions.clear()
+	current_sky_location_id = ""
 	last_observation = {}
 	last_learning_card = {}
 	last_sky_aim = {"valid": false}
@@ -122,6 +159,7 @@ func debug_launch(scene_key: String, prepare_equipment: bool = false) -> void:
 	if prepare_equipment:
 		_debug_prepare_equipment()
 	selected_object_id = current_target_object_id()
+	selected_object_level = int(progress.get("current_level", 1))
 	if scene_key == "observatory":
 		update_room_guidance_for_level()
 		set_observatory_spawn("default")
@@ -134,6 +172,9 @@ func available_level_numbers() -> Array[int]:
 		if not level_value is Dictionary:
 			continue
 		var level: Dictionary = level_value
+		# Deprecated families (Gregorian) never appear in the developer panel.
+		if bool(level.get("deprecated", false)):
+			continue
 		var number := int(level.get("level_number", 0))
 		if number > 0 and not result.has(number):
 			result.append(number)
@@ -241,6 +282,7 @@ func default_progress() -> Dictionary:
 	return {
 		"campaign_version": CAMPAIGN_VERSION,
 		"current_level": 1,
+		"selected_telescope_family": "refractor",
 		"credits": 0,
 		"completed_levels": [],
 		"unlocked_parts": ["basic_tripod", "basic_mount", "starter_tube", "objective_60mm", "eyepiece_20mm"],
@@ -279,12 +321,21 @@ func new_game() -> void:
 	progress = SaveManager.reset_progress(default_progress())
 	language_mode = _normalized_language_mode(str(progress.get("language_mode", "en")))
 	selected_object_id = ""
+	selected_object_level = 0
+	world_map_return_scene = "sky"
+	world_map_target_id = ""
+	world_map_observation_context.clear()
+	world_map_arrival_context.clear()
+	suppress_next_world_map_redirect = false
+	current_sky_positions.clear()
+	current_sky_location_id = ""
 	last_observation = {}
 	last_learning_card = {}
 	last_guidance = ""
 	clear_room_guidance()
 	observatory_spawn_id = "default"
 	last_sky_aim = {"valid": false}
+	assembly_family_id = str(progress.get("selected_telescope_family", "refractor"))
 	TeachingFlowManager.reset_flow()
 	StoryManager.reset_flow()
 	progress_changed.emit()
@@ -305,8 +356,9 @@ func go(scene_key: String) -> void:
 		match current_observation_mode():
 			"radio": scene_key = "radio_observation"
 			"multi_device": scene_key = "multi_observation"
-			"telescope" when str(current_level().get("telescope_family", "")) == "space_segmented": scene_key = "multi_observation"
-	if scene_key == "assembly" and str(current_level().get("assembly_mode", "")) == "advanced":
+			"space_infrared": scene_key = "space_observation"
+			"telescope" when str(current_level().get("telescope_family", "")) == "space_segmented": scene_key = "space_observation"
+	if scene_key == "assembly" and assembly_family() != "refractor":
 		scene_key = "advanced_assembly"
 	if not SCENES.has(scene_key):
 		push_error("Unknown scene key: " + scene_key)
@@ -376,6 +428,48 @@ func current_level() -> Dictionary:
 	if mission_manager == null:
 		return {}
 	return mission_manager.get_level(int(progress.get("current_level", 1)))
+
+
+func select_assembly_family(family: String) -> void:
+	if not family in ASSEMBLY_FAMILIES:
+		push_warning("Unknown telescope family: " + family)
+		return
+	assembly_family_id = family
+	progress["selected_telescope_family"] = family
+	save()
+
+
+func assembly_family() -> String:
+	if assembly_family_id != "":
+		return assembly_family_id
+	var saved := str(progress.get("selected_telescope_family", "refractor"))
+	return saved if saved in ASSEMBLY_FAMILIES else "refractor"
+
+
+func assembly_scene_key() -> String:
+	return "assembly" if assembly_family() == "refractor" else "advanced_assembly"
+
+
+func assembly_level_context() -> Dictionary:
+	var family := assembly_family()
+	var current := current_level()
+	if str(current.get("telescope_family", "refractor")) == family:
+		return current
+	var reached := int(progress.get("current_level", 1))
+	var best: Dictionary = {}
+	var best_number := -1
+	for level_value in levels_data:
+		if not level_value is Dictionary:
+			continue
+		var level: Dictionary = level_value
+		var number := int(level.get("level_number", level.get("id", 0)))
+		if number > reached or str(level.get("telescope_family", "refractor")) != family:
+			continue
+		if str(level.get("assembly_mode", "")) == "" or number <= best_number:
+			continue
+		best = level
+		best_number = number
+	return best if not best.is_empty() else current
 
 
 func current_target() -> Dictionary:
@@ -612,24 +706,27 @@ func is_at_home_location() -> bool:
 
 func set_observing_location(location: Dictionary) -> void:
 	progress["observing_location"] = location.duplicate(true)
-	last_sky_aim = {"valid": false}
 	save()
 
 
 func reset_observing_location() -> void:
 	progress["observing_location"] = home_location().duplicate(true)
-	last_sky_aim = {"valid": false}
 	save()
 
 
 func current_target_radec() -> Dictionary:
-	# The mission target's RA/Dec, resolving planet ephemeris when the catalog
-	# entry has no baked coordinates. {} if the target has no sky coordinates.
-	var target_id := current_target_object_id()
+	return object_radec(current_target_object_id())
+
+
+func object_radec(object_id: String) -> Dictionary:
+	# Resolve any catalog object through the same local ephemeris used by the
+	# mission target. This keeps free observation and the map on one data source.
+	if object_id == "":
+		return {}
 	var service := SkyPositionService.new()
 	for entry_value in service.catalog:
 		var entry: Dictionary = entry_value
-		if str(entry.get("id", "")) != target_id:
+		if str(entry.get("id", "")) != object_id:
 			continue
 		if entry.has("ra_hours") and entry.has("dec_degrees"):
 			return {"ra_hours": float(entry["ra_hours"]), "dec_degrees": float(entry["dec_degrees"])}
@@ -638,16 +735,31 @@ func current_target_radec() -> Dictionary:
 			if not eph.is_empty():
 				return {"ra_hours": float(eph["ra_hours"]), "dec_degrees": float(eph["dec_degrees"])}
 	# Constellations carry their anchor coordinates separately.
-	var constellation := get_constellation(target_id)
+	var constellation := get_constellation(object_id)
 	if constellation.has("ra_hours") and constellation.has("dec_degrees"):
 		return {"ra_hours": float(constellation["ra_hours"]), "dec_degrees": float(constellation["dec_degrees"])}
 	return {}
 
 
 func target_visibility() -> Dictionary:
+	return object_visibility(current_target_object_id())
+
+
+func object_visibility(object_id: String) -> Dictionary:
 	# Real visibility of tonight's target from the current observing location.
 	# {has_coords:false} for targets without sky coordinates (never gated).
-	var radec := current_target_radec()
+	var shared := current_sky_position(object_id)
+	if not shared.is_empty():
+		return {
+			"has_coords": true,
+			"visible": bool(shared.get("visible", false)),
+			"below_horizon": bool(shared.get("below_horizon", float(shared.get("altitude", 0.0)) < 0.0)),
+			"altitude": float(shared.get("altitude", 0.0)),
+			"azimuth": float(shared.get("azimuth", 0.0)),
+			"direction_text": str(shared.get("direction_text", "")),
+			"source": str(shared.get("source", "calculated"))
+		}
+	var radec := object_radec(object_id)
 	if radec.is_empty():
 		return {"has_coords": false, "visible": true, "below_horizon": false}
 	var loc := observing_location()
@@ -660,12 +772,47 @@ func target_visibility() -> Dictionary:
 
 
 func recommend_observation_location() -> Dictionary:
-	# Best site (from world_locations) where tonight's target is comfortably up.
-	var radec := current_target_radec()
+	return recommend_location_for_object(current_target_object_id())
+
+
+func recommend_location_for_object(object_id: String, comfortable_altitude := 18.0) -> Dictionary:
+	# Prefer a comfortably high target, then reward dark skies. Fall back to any
+	# legal above-horizon station so a rare target can never dead-end the player.
+	var radec := object_radec(object_id)
 	if radec.is_empty():
 		return {}
 	var service := SkyPositionService.new()
-	return service.recommend_location(float(radec["ra_hours"]), float(radec["dec_degrees"]), location_sites())
+	var best: Dictionary = {}
+	var fallback: Dictionary = {}
+	var best_score := -INF
+	var fallback_score := -INF
+	for site_value in location_sites():
+		var site: Dictionary = site_value
+		var vis: Dictionary = service.visibility_at(
+			float(radec["ra_hours"]), float(radec["dec_degrees"]),
+			float(site.get("lat", 0.0)), float(site.get("lon", 0.0)))
+		var altitude := float(vis.get("altitude", -90.0))
+		if altitude < 0.0:
+			continue
+		var bortle := float(site.get("bortle", 5))
+		var score := altitude * 4.0 + (9.0 - bortle) * 6.0
+		var candidate := {
+			"site": site,
+			"altitude": altitude,
+			"azimuth": float(vis.get("azimuth", 0.0)),
+			"direction_text": str(vis.get("direction_text", "")),
+			"local_time": service.local_time_string(float(site.get("lon", 0.0))),
+			"visible_hours": service.visible_duration_hours(
+				float(radec["ra_hours"]), float(radec["dec_degrees"]),
+				float(site.get("lat", 0.0)), float(site.get("lon", 0.0)))
+		}
+		if score > fallback_score:
+			fallback_score = score
+			fallback = candidate
+		if altitude >= comfortable_altitude and score > best_score:
+			best_score = score
+			best = candidate
+	return best if not best.is_empty() else fallback
 
 
 func position_source_label(source: String) -> String:
@@ -673,15 +820,15 @@ func position_source_label(source: String) -> String:
 	# Local calculation is a FEATURE, never an error state.
 	match source:
 		"online":
-			return text("Live position", "实时位置")
+			return text("Live calculation", "实时计算")
 		"cached":
-			return text("Cached position", "使用缓存位置")
-		"calculated", "constellation", "planet", "moon":
+			return text("Local calculation", "本地计算")
+		"calculated", "constellation", "planet", "moon", "planet_ephemeris":
 			return text("Local calculation", "本地计算")
 		"fallback":
 			return text("Teaching simulation", "教学模拟")
 		_:
-			return text("Local calculation", "本地计算")
+			return text("Offline fallback", "离线备用")
 
 
 func is_free_observation() -> bool:
@@ -689,6 +836,18 @@ func is_free_observation() -> bool:
 	# mission target. Free observations never complete or fail the mission.
 	var sel := selected_object_id
 	return sel != "" and sel != current_target_object_id()
+
+
+func publish_sky_positions(positions: Dictionary) -> void:
+	current_sky_positions = positions.duplicate(true)
+	current_sky_location_id = str(observing_location().get("id", "home"))
+
+
+func current_sky_position(object_id: String) -> Dictionary:
+	if current_sky_location_id != str(observing_location().get("id", "home")):
+		return {}
+	var item: Variant = current_sky_positions.get(object_id, {})
+	return (item as Dictionary).duplicate(true) if item is Dictionary else {}
 
 
 func is_observed(object_id: String) -> bool:
@@ -708,13 +867,17 @@ func object_detail(object_id: String) -> Dictionary:
 		"type_en": str(obj.get("type_en", "Object")),
 		"type_zh": str(obj.get("type_zh", "天体")),
 		"magnitude": obj.get("apparent_magnitude", null),
+		"constellation_en": str(obj.get("constellation_en", obj.get("constellation", ""))),
+		"constellation_zh": str(obj.get("constellation_zh", obj.get("constellation", ""))),
+		"distance_en": str(obj.get("distance_en", obj.get("distance", ""))),
+		"distance_zh": str(obj.get("distance_zh", obj.get("distance", ""))),
 		"learning_en": str(obj.get("learning_text_en", "")),
 		"learning_zh": str(obj.get("learning_text_zh", "")),
 		"is_mission_target": object_id == current_target_object_id(),
 		"is_observed": is_observed(object_id),
 		"has_coords": false
 	}
-	# RA/Dec + live alt/az from the current observing location.
+	# RA/Dec plus the exact alt/az snapshot currently used by Sky Observation.
 	var service := SkyPositionService.new()
 	var ra := NAN
 	var dec := NAN
@@ -732,23 +895,31 @@ func object_detail(object_id: String) -> Dictionary:
 				dec = float(eph["dec_degrees"])
 		break
 	var loc := observing_location()
+	var shared_position := current_sky_position(object_id)
 	if not is_nan(ra):
 		detail["has_coords"] = true
 		detail["ra_hours"] = ra
 		detail["dec_degrees"] = dec
-		var vis := service.visibility_at(ra, dec, float(loc.get("lat", 34.0522)), float(loc.get("lon", -118.2437)))
-		detail["altitude"] = float(vis["altitude"])
-		detail["azimuth"] = float(vis["azimuth"])
-		detail["visible"] = bool(vis["visible"])
-		detail["below_horizon"] = bool(vis["below_horizon"])
-		detail["direction_text"] = str(vis["direction_text"])
+		if not shared_position.is_empty():
+			detail["altitude"] = float(shared_position.get("altitude", 0.0))
+			detail["azimuth"] = float(shared_position.get("azimuth", 0.0))
+			detail["visible"] = bool(shared_position.get("visible", false))
+			detail["below_horizon"] = bool(shared_position.get("below_horizon", float(shared_position.get("altitude", 0.0)) < 0.0))
+			detail["direction_text"] = str(shared_position.get("direction_text", ""))
+		else:
+			var vis := service.visibility_at(ra, dec, float(loc.get("lat", 34.0522)), float(loc.get("lon", -118.2437)))
+			detail["altitude"] = float(vis["altitude"])
+			detail["azimuth"] = float(vis["azimuth"])
+			detail["visible"] = bool(vis["visible"])
+			detail["below_horizon"] = bool(vis["below_horizon"])
+			detail["direction_text"] = str(vis["direction_text"])
 	detail["location_en"] = str(dict_text_for(loc, "name", "en"))
 	detail["location_zh"] = str(dict_text_for(loc, "name", "zh"))
 	detail["local_time"] = service.local_time_string(float(loc.get("lon", -118.2437)))
 	# Data provenance (separate from the astronomy itself): planets/Moon use the
 	# local ephemeris; catalog stars use local RA/Dec math; anything without
 	# coordinates falls back to a teaching position.
-	var src := "calculated" if detail["has_coords"] else "fallback"
+	var src := str(shared_position.get("source", "calculated" if detail["has_coords"] else "fallback"))
 	detail["position_source_en"] = position_source_label_for(src, "en")
 	detail["position_source_zh"] = position_source_label_for(src, "zh")
 	detail["weather_source_en"] = "Local model" if bool(_sky_service_offline()) else "Local model (weather API optional)"
@@ -865,16 +1036,23 @@ func record_horizon_lesson_if_first() -> void:
 
 
 func go_to_observation(spawn: String) -> void:
-	# THE single entry from any observation door (open pad or dome interior) to
-	# the sky. Routes below-horizon targets through the world map (Maya lesson
-	# once) so no path can bypass the horizon check.
+	# Observation doors always enter Sky Observation. Sky owns the decision to
+	# offer relocation; the base/lobby never opens or controls the world map.
 	set_observatory_spawn(spawn)
-	if target_requires_relocation():
-		var story := get_node_or_null("/root/StoryManager")
-		if story != null and story.begin_event("first_below_horizon", "world_map"):
-			return
-		go("world_map")
+	go("sky")
+
+
+func open_world_map(return_scene_key := "sky") -> void:
+	# The map never owns mission progression. It only changes an observing site
+	# after a deliberate confirmation. It is a child workflow of Sky Observation.
+	if return_scene_key != "sky":
 		return
+	world_map_return_scene = "sky"
+	go("world_map")
+
+
+func return_from_world_map() -> void:
+	world_map_return_scene = "sky"
 	go("sky")
 
 
@@ -885,7 +1063,9 @@ func target_requires_relocation() -> bool:
 	var vis := target_visibility()
 	if not bool(vis.get("has_coords", false)):
 		return false
-	if bool(vis.get("visible", true)):
+	# "Too low for a good observation" belongs in Sky's guidance. Automatic
+	# relocation is reserved for a body that is physically below the horizon.
+	if not bool(vis.get("below_horizon", false)):
 		return false
 	return not recommend_observation_location().is_empty()
 
@@ -1164,14 +1344,14 @@ func current_room_route() -> Dictionary:
 	# this one decision. It keeps the next physical action consistent.
 	var target_name := dict_text(current_target(), "name")
 	if current_observation_mode() == "naked_eye":
-		return {
+		return _with_site_route_status({
 			"target": "telescope",
 			"title": text("Maya: Observation Pad", "Maya：观测台"),
 			"hint": text("Use naked-eye observation to find " + target_name + ".", "用肉眼观测寻找" + target_name + "。"),
 			"action": text("Go to the Observation Pad", "前往观测台"),
 			"outcome": route_outcome_text(),
 			"ready": true
-		}
+		})
 
 	if has_locked_required_equipment():
 		var lock_reason := required_equipment_lock_reason()
@@ -1238,14 +1418,52 @@ func current_room_route() -> Dictionary:
 			"ready": false
 		}
 
-	return {
+	if str(current_level().get("telescope_family", "")) == "space_segmented":
+		return _with_site_route_status({
+			"target": "computer",
+			"title": text("Maya: Space Telescope Console", "Maya：空间望远镜控制台"),
+			"hint": text("The L2 observatory is ready for %s. Use the bottom-right console to open the command link." % target_name,
+				"L2 望远镜已经准备观测%s。使用右下角控制台打开指挥链路。" % target_name),
+			"action": text("Command the infrared observation of " + target_name, "指挥红外观测" + target_name),
+			"outcome": route_outcome_text(),
+			"ready": true
+		})
+	return _with_site_route_status({
 		"target": "telescope",
 		"title": text("Maya: Observation Pad", "Maya：观测台"),
 		"hint": text("The telescope is ready. Find and observe " + target_name + ".", "望远镜已准备好。寻找并观测" + target_name + "。"),
 		"action": text("Observe " + target_name, "观测" + target_name),
 		"outcome": route_outcome_text(),
 		"ready": true
-	}
+	})
+
+
+func _with_site_route_status(route: Dictionary) -> Dictionary:
+	# The lobby never opens the map. It only explains what will happen after the
+	# player enters the Observation Pad, keeping travel under Sky Observation.
+	#
+	# A SPACE observatory is not on the ground: an object below the local horizon
+	# is irrelevant to a telescope at Sun-Earth L2, and telling the player to
+	# "travel to a visible site" would be both wrong and unfollowable. Space
+	# levels use their own attitude / sun-angle constraints inside the space
+	# observation screen instead.
+	if str(current_level().get("telescope_family", "")) == "space_segmented":
+		route["needs_site_change"] = false
+		route["space_constraints"] = true
+		return route
+	var visibility := target_visibility()
+	var altitude := float(visibility.get("altitude", 0.0))
+	var needs_site_change := bool(visibility.get("has_coords", false)) and bool(visibility.get("below_horizon", false))
+	route["needs_site_change"] = needs_site_change
+	route["target_altitude"] = altitude
+	if needs_site_change:
+		route["hint"] = text(
+			"%s is below the horizon here (Alt %.1f°). Enter the Observation Pad; it will explain the horizon and open the Site Map." % [dict_text(current_target(), "name"), altitude],
+			"%s 在当前地点位于地平线以下（高度角 %.1f°）。进入观测台后，系统会讲解地平线并打开地点地图。" % [dict_text(current_target(), "name"), altitude]
+		)
+		route["action"] = text("Enter Observation, then choose a visible site", "进入观测台，再选择可见地点")
+		route["outcome"] = text("The same target and mission resume after travel.", "移动后会恢复同一目标和当前任务。")
+	return route
 
 
 func _part_name_list(part_ids: Array) -> String:
@@ -1506,6 +1724,9 @@ func _is_internal_advanced_tube_type(level: Dictionary, part_type: String) -> bo
 	var family := str(level.get("telescope_family", ""))
 	if family in ["newtonian", "dobsonian"]:
 		return part_type in ["mirror_cell", "secondary_spider", "collimation_tool"]
+	if family == "cassegrain":
+		# Internal tube parts that must never appear on the MAIN cassegrain bench.
+		return part_type in ["reflector_tube", "mirror_cell", "primary_mirror", "secondary_mirror", "central_baffle", "focuser", "eyepiece", "collimation_tool"]
 	return false
 
 
@@ -1738,7 +1959,10 @@ func tube_subassembly_config() -> Dictionary:
 		"dobsonian":
 			return {"family": family, "order": ["reflector_tube", "mirror_cell", "primary_mirror", "secondary_spider", "secondary_mirror", "focuser", "eyepiece", "collimation_tool"], "ids": ["dobsonian_reflector_tube", "dobsonian_mirror_cell", "dobsonian_primary_mirror", "dobsonian_secondary_spider", "dobsonian_secondary_mirror", "dobsonian_crayford_focuser", "dobsonian_30mm_eyepiece", "dobsonian_collimation_tool"]}
 		"cassegrain":
-			return {"family": family, "order": ["reflector_tube", "primary_mirror", "secondary_mirror", "central_baffle", "focuser", "eyepiece"], "ids": ["cassegrain_compact_tube", "cassegrain_primary_mirror", "cassegrain_convex_secondary", "cassegrain_central_baffle", "cassegrain_rear_focuser", "cassegrain_12mm_eyepiece"]}
+			# Eight-slot folded path: tube -> primary cell -> concave primary ->
+			# convex secondary -> central baffle -> rear focuser -> eyepiece ->
+			# collimation tool (matches the user's tube blueprint art).
+			return {"family": family, "order": ["reflector_tube", "mirror_cell", "primary_mirror", "secondary_mirror", "central_baffle", "focuser", "eyepiece", "collimation_tool"], "ids": ["cassegrain_compact_tube", "cassegrain_mirror_cell", "cassegrain_primary_mirror", "cassegrain_convex_secondary", "cassegrain_central_baffle", "cassegrain_rear_focuser", "cassegrain_12mm_eyepiece", "cassegrain_collimation_tool"]}
 		"gregorian":
 			return {"family": family, "order": ["reflector_tube", "primary_mirror", "optical_support", "secondary_mirror", "focuser", "eyepiece"], "ids": ["gregorian_optical_tube", "gregorian_primary_mirror", "gregorian_optical_support", "gregorian_concave_secondary", "gregorian_focuser", "gregorian_18mm_eyepiece"]}
 	return {}
@@ -2328,6 +2552,11 @@ func _normalize_progress() -> void:
 	_ensure_progress_array("seen_concept_briefs")
 	_ensure_progress_array("seen_story_events")
 	_ensure_progress_array("pending_unlock_notice")
+	var saved_family := str(progress.get("selected_telescope_family", "refractor"))
+	if not saved_family in ASSEMBLY_FAMILIES:
+		saved_family = "refractor"
+	progress["selected_telescope_family"] = saved_family
+	assembly_family_id = saved_family
 	_migrate_progress_schema()
 	_repair_campaign_progress()
 	_unlock_parts_for_current_level()
@@ -2383,6 +2612,19 @@ func _migrate_progress_schema() -> void:
 		progress["collimation_scores"]["newtonian"] = 0.0
 	if not progress.get("tube_assemblies") is Dictionary:
 		progress["tube_assemblies"] = {}
+	# Gregorian removal (2026-07-22): a save currently ON a Gregorian level jumps
+	# to the first Infrared/Space lesson; credits, logbook and completed levels
+	# are all preserved, and no Gregorian part is unlocked.
+	if int(progress.get("campaign_version", 0)) < 93:
+		if DEPRECATED_GREGORIAN_LEVELS.has(int(progress.get("current_level", 1))):
+			progress["current_level"] = FIRST_INFRARED_LEVEL
+		# Drop any Gregorian part that a broken save might have unlocked.
+		if progress.get("unlocked_parts") is Array:
+			progress["unlocked_parts"] = (progress["unlocked_parts"] as Array).filter(
+				func(pid): return not str(pid).begins_with("gregorian_"))
+		# A stored Gregorian cabinet tab falls back to a valid family.
+		if str(progress.get("selected_family", "")) == "gregorian":
+			progress["selected_family"] = "cassegrain"
 	progress["language_mode"] = _normalized_language_mode(str(progress.get("language_mode", "en")))
 	language_mode = str(progress["language_mode"])
 	progress["campaign_version"] = CAMPAIGN_VERSION
@@ -2406,6 +2648,22 @@ func _repair_campaign_progress() -> void:
 	if repaired_level <= 0:
 		repaired_level = 1
 	var previous_level := int(progress.get("current_level", 1))
+
+	# Only rewind a save that is genuinely impossible. The old rule ALWAYS reset
+	# current_level to the first incomplete lesson, so any save with a gap in
+	# completed_levels (a level jump, a skipped optional lesson) was dragged back
+	# on every launch - e.g. finishing L66 and relaunching to find yourself at
+	# L11 again, with the later parts pruned. A saved position is trusted when it
+	# is a real level and is no further than one step past the furthest level the
+	# player has actually completed; the L92-after-two-lessons corruption this
+	# guard was written for still fails that test and is still repaired.
+	var furthest_completed := 0
+	for completed_value in valid_completed:
+		furthest_completed = maxi(furthest_completed, int(completed_value))
+	var saved_is_plausible: bool = mission_manager.has_level(previous_level) \
+		and previous_level <= maxi(furthest_completed + 1, repaired_level)
+	if saved_is_plausible:
+		repaired_level = previous_level
 	var changed_level: bool = previous_level != repaired_level
 	progress["current_level"] = repaired_level
 

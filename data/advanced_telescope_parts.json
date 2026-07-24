@@ -235,7 +235,8 @@
     "tracking": 45,
     "tracking_capable": true,
     "unlock_level": 45,
-    "is_placeholder": true
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/cassegrain/cassegrain_fork_mount.png"
   },
   {
     "id": "cassegrain_compact_tube",
@@ -250,7 +251,8 @@
     "aperture_mm": 203,
     "focal_length_mm": 2032,
     "unlock_level": 45,
-    "is_placeholder": true
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/cassegrain/cassegrain_compact_tube.png"
   },
   {
     "id": "cassegrain_primary_mirror",
@@ -265,7 +267,8 @@
     "focal_length_mm": 2032,
     "quality": 88,
     "unlock_level": 45,
-    "is_placeholder": true
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/cassegrain/cassegrain_primary_mirror.png"
   },
   {
     "id": "cassegrain_convex_secondary",
@@ -278,7 +281,8 @@
     "optical_role": "secondary_mirror",
     "quality": 88,
     "unlock_level": 45,
-    "is_placeholder": true
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/cassegrain/cassegrain_convex_secondary.png"
   },
   {
     "id": "cassegrain_rear_focuser",
@@ -292,7 +296,8 @@
     "focus_sensitivity": 0.9,
     "focus_stability": 0.88,
     "unlock_level": 45,
-    "is_placeholder": true
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/cassegrain/cassegrain_rear_focuser.png"
   },
   {
     "id": "cassegrain_12mm_eyepiece",
@@ -307,7 +312,8 @@
     "field_of_view": 58,
     "quality": 90,
     "unlock_level": 45,
-    "is_placeholder": true
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/cassegrain/cassegrain_12mm_eyepiece.png"
   },
   {
     "id": "gregorian_equatorial_mount",
@@ -323,7 +329,8 @@
     "tracking_capable": true,
     "icon_path": "res://assets/telescope_parts/gregorian_equatorial_mount.png",
     "unlock_level": 55,
-    "is_placeholder": false
+    "is_placeholder": false,
+    "deprecated": true
   },
   {
     "id": "gregorian_optical_tube",
@@ -338,7 +345,8 @@
     "aperture_mm": 250,
     "focal_length_mm": 1800,
     "unlock_level": 55,
-    "is_placeholder": true
+    "is_placeholder": true,
+    "deprecated": true
   },
   {
     "id": "gregorian_primary_mirror",
@@ -353,7 +361,8 @@
     "focal_length_mm": 1800,
     "quality": 91,
     "unlock_level": 55,
-    "is_placeholder": true
+    "is_placeholder": true,
+    "deprecated": true
   },
   {
     "id": "gregorian_concave_secondary",
@@ -366,7 +375,8 @@
     "optical_role": "secondary_mirror",
     "quality": 90,
     "unlock_level": 55,
-    "is_placeholder": true
+    "is_placeholder": true,
+    "deprecated": true
   },
   {
     "id": "gregorian_focuser",
@@ -380,7 +390,8 @@
     "focus_sensitivity": 0.94,
     "focus_stability": 0.9,
     "unlock_level": 55,
-    "is_placeholder": true
+    "is_placeholder": true,
+    "deprecated": true
   },
   {
     "id": "gregorian_18mm_eyepiece",
@@ -396,7 +407,8 @@
     "quality": 91,
     "icon_path": "res://assets/telescope_parts/gregorian_18mm_eyepiece.png",
     "unlock_level": 55,
-    "is_placeholder": false
+    "is_placeholder": false,
+    "deprecated": true
   },
   {
     "id": "segmented_primary_array",
@@ -410,8 +422,10 @@
     "aperture_mm": 6500,
     "focal_length_mm": 131000,
     "quality": 96,
-    "unlock_level": 65,
-    "is_placeholder": true
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/space_segmented/segmented_primary_array.png",
+    "temporary_art": true
   },
   {
     "id": "space_secondary_mirror",
@@ -423,8 +437,10 @@
     "telescope_family": "space_segmented",
     "optical_role": "secondary_mirror",
     "quality": 95,
-    "unlock_level": 65,
-    "is_placeholder": true
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/space_segmented/deployable_secondary_mirror.png",
+    "temporary_art": true
   },
   {
     "id": "infrared_instrument_package",
@@ -436,8 +452,10 @@
     "telescope_family": "space_segmented",
     "optical_role": "infrared_detector",
     "quality": 96,
-    "unlock_level": 65,
-    "is_placeholder": true
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/space_segmented/infrared_instrument_package.png",
+    "temporary_art": true
   },
   {
     "id": "space_sunshield",
@@ -448,8 +466,10 @@
     "description_zh": "通过阻挡阳光和热量，让红外仪器保持低温。",
     "telescope_family": "space_segmented",
     "optical_role": "thermal_control",
-    "unlock_level": 65,
-    "is_placeholder": true
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/space_segmented/five_layer_sunshield.png",
+    "temporary_art": true
   },
   {
     "id": "fast_active_dish",
@@ -463,7 +483,9 @@
     "aperture_mm": 500000,
     "quality": 94,
     "unlock_level": 75,
-    "is_placeholder": true
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/fast_radio/fast_active_dish.png",
+    "temporary_art": true
   },
   {
     "id": "fast_feed_cabin",
@@ -476,7 +498,9 @@
     "optical_role": "feed_receiver",
     "quality": 93,
     "unlock_level": 75,
-    "is_placeholder": true
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/fast_radio/suspended_feed_cabin.png",
+    "temporary_art": true
   },
   {
     "id": "fast_signal_processor",
@@ -489,7 +513,9 @@
     "optical_role": "signal_processing",
     "quality": 92,
     "unlock_level": 75,
-    "is_placeholder": true
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/fast_radio/radio_signal_processor.png",
+    "temporary_art": true
   },
   {
     "id": "dobsonian_mirror_cell",
@@ -521,13 +547,14 @@
     "id": "cassegrain_central_baffle",
     "type": "central_baffle",
     "name_en": "Cassegrain Central Baffle",
-    "name_zh": "Cassegrain Central Baffle",
+    "name_zh": "卡塞格林中央挡板",
     "description_en": "Blocks stray light along the folded central optical path.",
     "description_zh": "Blocks stray light along the folded central optical path.",
     "telescope_family": "cassegrain",
     "optical_role": "stray_light_control",
     "unlock_level": 45,
-    "is_placeholder": true
+    "is_placeholder": false,
+    "icon_path": "res://assets/telescope_parts/cassegrain/cassegrain_central_baffle.png"
   },
   {
     "id": "gregorian_optical_support",
@@ -539,7 +566,8 @@
     "telescope_family": "gregorian",
     "optical_role": "secondary_support",
     "unlock_level": 55,
-    "is_placeholder": true
+    "is_placeholder": true,
+    "deprecated": true
   },
   {
     "id": "dobsonian_collimation_tool",
@@ -552,5 +580,426 @@
     "icon_path": "res://assets/telescope_parts/newtonian/newtonian_collimation_cap.png",
     "is_placeholder": false,
     "unlock_level": 35
+  },
+  {
+    "id": "cassegrain_mirror_cell",
+    "type": "mirror_cell",
+    "telescope_family": "cassegrain",
+    "name_en": "Primary Mirror Cell",
+    "name_zh": "主镜座",
+    "unlock_level": 45,
+    "description_en": "Holds and supports the concave primary mirror at the rear of the tube.",
+    "description_zh": "在镜筒后端固定并支撑凹面主镜。",
+    "icon_path": "res://assets/telescope_parts/cassegrain/cassegrain_mirror_cell.png"
+  },
+  {
+    "id": "cassegrain_collimation_tool",
+    "type": "collimation_tool",
+    "telescope_family": "cassegrain",
+    "name_en": "Collimation Tool",
+    "name_zh": "准直工具",
+    "unlock_level": 45,
+    "description_en": "Aligns the primary and convex secondary along the folded optical axis.",
+    "description_zh": "沿折叠光轴对准主镜与凸面副镜。",
+    "icon_path": "res://assets/telescope_parts/cassegrain/cassegrain_collimation_tool.png"
+  },
+  {
+    "id": "space_fine_steering_mirror",
+    "type": "steering_mirror",
+    "name_en": "Fine Steering Mirror",
+    "name_zh": "精细导向镜",
+    "description_en": "Tips a few microradians at a time to hold the target still on the detector.",
+    "description_zh": "以微弧度级别快速偏转，把目标稳定地压在探测器同一位置上。",
+    "telescope_family": "space_segmented",
+    "optical_role": "fine_steering",
+    "quality": 92,
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/fine_steering_mirror.png",
+    "pointing_stability": 95
+  },
+  {
+    "id": "space_tertiary_mirror",
+    "type": "tertiary_mirror",
+    "name_en": "Tertiary Mirror Module",
+    "name_zh": "三级反射镜组件",
+    "description_en": "Folds the beam from the secondary toward the instrument bay.",
+    "description_zh": "把副镜反射回来的光束折向仪器舱。",
+    "telescope_family": "space_segmented",
+    "optical_role": "tertiary",
+    "quality": 90,
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/tertiary_mirror_module.png"
+  },
+  {
+    "id": "space_bus",
+    "type": "spacecraft_bus",
+    "name_en": "Space Telescope Bus",
+    "name_zh": "航天器平台",
+    "description_en": "Carries power, propulsion, avionics and the downlink on the warm sun side.",
+    "description_zh": "位于向阳的热面，承载供电、推进、航电与数据下行。",
+    "telescope_family": "space_segmented",
+    "optical_role": "bus",
+    "quality": 88,
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/space_telescope_bus.png",
+    "station_keeping": 90
+  },
+  {
+    "id": "space_deployable_tower",
+    "type": "deployable_tower",
+    "name_en": "Deployable Tower",
+    "name_zh": "可展开塔架",
+    "description_en": "Extends after launch to separate the cold optics from the warm bus.",
+    "description_zh": "入轨后伸展，把低温光学部分与温热平台分开。",
+    "telescope_family": "space_segmented",
+    "optical_role": "tower",
+    "quality": 86,
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/deployable_tower.png"
+  },
+  {
+    "id": "space_deployment_hinges",
+    "type": "deployment_hinges",
+    "name_en": "Deployment Hinges",
+    "name_zh": "展开铰链组",
+    "description_en": "Motorised hinges that unfold the mirror wings and the sunshield.",
+    "description_zh": "带电机的铰链，负责展开镜翼与遮阳罩。",
+    "telescope_family": "space_segmented",
+    "optical_role": "hinges",
+    "quality": 84,
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/deployment_hinges.png"
+  },
+  {
+    "id": "space_nircam",
+    "type": "nircam",
+    "name_en": "NIRCam Instrument",
+    "name_zh": "NIRCam 近红外相机",
+    "description_en": "Near-infrared camera, 0.6-5 microns. Best for imaging stars, galaxies and star-forming regions.",
+    "description_zh": "近红外相机，覆盖 0.6-5 微米，最适合拍摄恒星、星系与恒星形成区的图像。",
+    "telescope_family": "space_segmented",
+    "optical_role": "near_infrared_imager",
+    "quality": 94,
+    "unlock_level": 67,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/nircam_instrument.png",
+    "band": "near_infrared",
+    "mode": "imaging",
+    "wavelength_min_um": 0.6,
+    "wavelength_max_um": 5.0
+  },
+  {
+    "id": "space_nirspec",
+    "type": "nirspec",
+    "name_en": "NIRSpec Instrument",
+    "name_zh": "NIRSpec 近红外光谱仪",
+    "description_en": "Near-infrared spectrograph. Splits light into a spectrum to read composition, temperature, motion and redshift.",
+    "description_zh": "近红外光谱仪，把光分解成光谱，用来读出成分、温度、运动速度与红移。",
+    "telescope_family": "space_segmented",
+    "optical_role": "near_infrared_spectrograph",
+    "quality": 94,
+    "unlock_level": 68,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/nirspec_instrument.png",
+    "band": "near_infrared",
+    "mode": "spectroscopy",
+    "wavelength_min_um": 0.6,
+    "wavelength_max_um": 5.3
+  },
+  {
+    "id": "space_miri",
+    "type": "miri",
+    "name_en": "MIRI Instrument",
+    "name_zh": "MIRI 中红外仪器",
+    "description_en": "Mid-infrared imager and spectrograph, 5-28 microns. Sees cold dust and planet-forming disks, but needs about 7 K.",
+    "description_zh": "中红外成像与光谱仪，覆盖 5-28 微米，可观测冷尘埃与行星形成盘，但需要约 7K 的极低温。",
+    "telescope_family": "space_segmented",
+    "optical_role": "mid_infrared_instrument",
+    "quality": 95,
+    "unlock_level": 69,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/miri_instrument.png",
+    "band": "mid_infrared",
+    "mode": "imaging_spectroscopy",
+    "wavelength_min_um": 5.0,
+    "wavelength_max_um": 28.0,
+    "requires_active_cooling": true,
+    "max_operating_temp_k": 7.0
+  },
+  {
+    "id": "space_fgs_niriss",
+    "type": "fgs_niriss",
+    "name_en": "FGS/NIRISS Guidance Instrument",
+    "name_zh": "FGS/NIRISS 导星与成像仪",
+    "description_en": "Fine Guidance Sensor keeps the pointing locked; NIRISS adds slitless near-infrared imaging and spectroscopy.",
+    "description_zh": "精细导星敏感器负责锁定指向；NIRISS 提供无缝隙近红外成像与光谱观测。",
+    "telescope_family": "space_segmented",
+    "optical_role": "guidance_and_imaging",
+    "quality": 92,
+    "unlock_level": 70,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/fgs_niriss_instrument.png",
+    "band": "near_infrared",
+    "mode": "guidance",
+    "wavelength_min_um": 0.8,
+    "wavelength_max_um": 5.0
+  },
+  {
+    "id": "space_solar_array",
+    "type": "solar_array",
+    "name_en": "Solar Array",
+    "name_zh": "太阳能电池阵",
+    "description_en": "Photovoltaic wing on the sun-facing side of the sunshield.",
+    "description_zh": "安装在遮阳罩向阳一侧的光伏板。",
+    "telescope_family": "space_segmented",
+    "optical_role": "power",
+    "quality": 82,
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/solar_array.png"
+  },
+  {
+    "id": "space_antenna",
+    "type": "antenna",
+    "name_en": "Communication Antenna",
+    "name_zh": "通信天线",
+    "description_en": "Steerable high-gain antenna that sends the science data home.",
+    "description_zh": "可指向的高增益天线，把科学数据传回地面。",
+    "telescope_family": "space_segmented",
+    "optical_role": "downlink",
+    "quality": 80,
+    "unlock_level": 66,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/communication_antenna.png"
+  },
+  {
+    "id": "space_radiator",
+    "type": "radiator",
+    "name_en": "Thermal Radiator",
+    "name_zh": "热辐射散热器",
+    "description_en": "Radiates instrument heat away to deep space on the cold side.",
+    "description_zh": "在冷面把仪器热量辐射到深空。",
+    "telescope_family": "space_segmented",
+    "optical_role": "thermal",
+    "quality": 88,
+    "unlock_level": 67,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/thermal_radiator.png",
+    "cooling_power": 90
+  },
+  {
+    "id": "space_instrument_bay",
+    "type": "instrument_bay",
+    "name_en": "Instrument Bay",
+    "name_zh": "仪器舱",
+    "description_en": "The cold frame that holds the four science instruments.",
+    "description_zh": "承载四台科学仪器的低温框架。",
+    "telescope_family": "space_segmented",
+    "optical_role": "bay",
+    "quality": 86,
+    "unlock_level": 67,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/instrument_bay.png"
+  },
+  {
+    "id": "space_detector_module",
+    "type": "detector_module",
+    "name_en": "Infrared Detector Module",
+    "name_zh": "红外探测器模块",
+    "description_en": "Converts infrared photons into electrons, read out frame by frame.",
+    "description_zh": "把红外光子转换成电子信号，逐帧读出。",
+    "telescope_family": "space_segmented",
+    "optical_role": "detector",
+    "quality": 90,
+    "unlock_level": 68,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/space_segmented/infrared_detector_module.png"
+  },
+  {
+    "id": "fast_panel_segment",
+    "type": "panel_segment",
+    "name_en": "Reflector Panel Segment",
+    "name_zh": "反射面板单元",
+    "description_en": "One perforated triangular panel of the 500 m active surface.",
+    "description_zh": "500 米主动反射面上的一块三角形冲孔面板。",
+    "telescope_family": "fast_radio",
+    "optical_role": "reflector_panel",
+    "quality": 84,
+    "unlock_level": 76,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/reflector_panel_segment.png"
+  },
+  {
+    "id": "fast_panel_actuator",
+    "type": "panel_actuator",
+    "name_en": "Panel Actuator",
+    "name_zh": "面板促动器",
+    "description_en": "Down-tied jack that pulls panels into a 300 m parabola aimed at the target.",
+    "description_zh": "下拉式促动器，把面板拉成朝向目标的 300 米瞬时抛物面。",
+    "telescope_family": "fast_radio",
+    "optical_role": "surface_actuator",
+    "quality": 86,
+    "unlock_level": 76,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/panel_actuator.png"
+  },
+  {
+    "id": "fast_feed_receiver",
+    "type": "feed_receiver",
+    "name_en": "Feed Cabin Receiver",
+    "name_zh": "馈源舱接收机",
+    "description_en": "Cryogenic feed horn and low-noise front end inside the cabin.",
+    "description_zh": "馈源舱内的低温馈源喇叭与低噪声前端。",
+    "telescope_family": "fast_radio",
+    "optical_role": "front_end",
+    "quality": 92,
+    "unlock_level": 77,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/feed_cabin_receiver.png",
+    "system_temperature_k": 20.0
+  },
+  {
+    "id": "fast_cable_system",
+    "type": "cable_system",
+    "name_en": "Feed Cabin Cable System",
+    "name_zh": "馈源舱索驱动系统",
+    "description_en": "Six tower cables that fly the feed cabin across the dish.",
+    "description_zh": "六座塔的钢索，牵引馈源舱在反射面上方移动。",
+    "telescope_family": "fast_radio",
+    "optical_role": "suspension",
+    "quality": 88,
+    "unlock_level": 76,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/feed_cabin_cable_system.png"
+  },
+  {
+    "id": "fast_tension_controller",
+    "type": "tension_controller",
+    "name_en": "Cable Tension Controller",
+    "name_zh": "缆索张力控制器",
+    "description_en": "Keeps cable tension inside limits while the cabin moves.",
+    "description_zh": "在馈源舱移动时把缆索张力保持在安全范围内。",
+    "telescope_family": "fast_radio",
+    "optical_role": "cable_control",
+    "quality": 85,
+    "unlock_level": 77,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/cable_tension_controller.png"
+  },
+  {
+    "id": "fast_rf_receiver",
+    "type": "rf_receiver",
+    "name_en": "Radio Frequency Receiver",
+    "name_zh": "射频接收机",
+    "description_en": "Wideband front end. Sets the observing band and the gain.",
+    "description_zh": "宽带前端，决定观测频段与增益。",
+    "telescope_family": "fast_radio",
+    "optical_role": "receiver_chain",
+    "quality": 90,
+    "unlock_level": 77,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/radio_frequency_receiver.png",
+    "band_min_mhz": 70.0,
+    "band_max_mhz": 3000.0
+  },
+  {
+    "id": "fast_spectrum_monitor",
+    "type": "spectrum_monitor",
+    "name_en": "Signal Spectrum Monitor",
+    "name_zh": "频谱监视器",
+    "description_en": "Shows the live spectrum so you can place the band away from interference.",
+    "description_zh": "显示实时频谱，帮助把观测频段放在干扰之外。",
+    "telescope_family": "fast_radio",
+    "optical_role": "spectrum",
+    "quality": 88,
+    "unlock_level": 78,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/signal_spectrum_monitor.png"
+  },
+  {
+    "id": "fast_pulsar_console",
+    "type": "timing_console",
+    "name_en": "Pulsar Timing Console",
+    "name_zh": "脉冲星计时终端",
+    "description_en": "Folds the time series at a trial period and searches dispersion measure.",
+    "description_zh": "按试验周期折叠时间序列，并搜索色散量。",
+    "telescope_family": "fast_radio",
+    "optical_role": "pulsar_timing",
+    "quality": 93,
+    "unlock_level": 78,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/pulsar_timing_console.png"
+  },
+  {
+    "id": "fast_rfi_monitor",
+    "type": "rfi_monitor",
+    "name_en": "RFI Monitor",
+    "name_zh": "射电干扰监视器",
+    "description_en": "Flags man-made peaks: radar, satellites, phones, power lines.",
+    "description_zh": "标记人造干扰峰：雷达、卫星、手机与电网噪声。",
+    "telescope_family": "fast_radio",
+    "optical_role": "interference",
+    "quality": 90,
+    "unlock_level": 79,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/rfi_monitor.png"
+  },
+  {
+    "id": "fast_data_recorder",
+    "type": "data_recorder",
+    "name_en": "Data Recording Console",
+    "name_zh": "数据记录终端",
+    "description_en": "Records the integrated observation into the archive.",
+    "description_zh": "把积分完成的观测记录进档案库。",
+    "telescope_family": "fast_radio",
+    "optical_role": "archive",
+    "quality": 84,
+    "unlock_level": 79,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/data_recording_console.png"
+  },
+  {
+    "id": "fast_control_terminal",
+    "type": "control_terminal",
+    "name_en": "Observatory Control Terminal",
+    "name_zh": "观测站控制终端",
+    "description_en": "Master console: target list, schedule and observation state.",
+    "description_zh": "总控台：目标列表、观测计划与状态。",
+    "telescope_family": "fast_radio",
+    "optical_role": "control",
+    "quality": 82,
+    "unlock_level": 76,
+    "is_placeholder": false,
+    "temporary_art": true,
+    "icon_path": "res://assets/telescope_parts/fast_radio/observatory_control_terminal.png"
   }
 ]

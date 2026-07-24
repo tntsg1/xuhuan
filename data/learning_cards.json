@@ -190,5 +190,45 @@
     "image": "",
     "text_en": "Visible light shows stars, infrared reveals warm dust, radio traces cold gas. No single instrument sees everything. Modern astronomy compares evidence from several wavelength windows and builds one conclusion supported by all of them.",
     "text_zh": "可见光展示恒星，红外揭示温暖的尘埃，无线电描出寒冷的气体。没有一台仪器能看到全部。现代天文学比较多个波段窗口的证据，得出被所有证据共同支持的结论。"
+  },
+  {
+    "id": "jwst_infrared_light",
+    "title_en": "Why Infrared, Why Space",
+    "title_zh": "为什么用红外、为什么去太空",
+    "image": "res://assets/learning_diagrams/jwst_spectrum.png",
+    "text_en": "Visible light is only a sliver of the spectrum. Cold dust, young stars and very distant galaxies glow in the infrared, which the eye cannot see. Warm air and a warm telescope also glow in infrared, so the observatory must be cold and in space.",
+    "text_zh": "可见光只是光谱的一小段。冷尘埃、年轻恒星和极遥远的星系在红外波段发光，而人眼看不到红外。温暖的空气和温暖的望远镜自身也会发红外，所以望远镜必须又冷又在太空中。"
+  },
+  {
+    "id": "jwst_segmented_mirror",
+    "title_en": "An 18-Segment Golden Mirror",
+    "title_zh": "18 块的金色分段主镜",
+    "image": "res://assets/learning_diagrams/jwst_mirror.png",
+    "text_en": "JWST's 6.5 m primary mirror is 18 hexagonal beryllium segments coated in gold to reflect infrared well. It folds for launch, unfolds in space, and each segment is nudged by actuators until 18 star images merge into one - wavefront alignment.",
+    "text_zh": "JWST 的 6.5 米主镜由 18 块六边形铍镜片组成，镀金以更好地反射红外。它折叠发射、在太空展开，每块镜片由执行器微调，直到 18 个星点合并成一个——这就是波前校准。"
+  },
+  {
+    "id": "jwst_sunshield_l2",
+    "title_en": "The Sunshield and L2",
+    "title_zh": "遮阳罩与 L2 轨道",
+    "image": "res://assets/learning_diagrams/jwst_l2.png",
+    "text_en": "Five sunshield layers block the heat of the Sun, Earth and Moon so the cold side reaches about 40 K (MIRI needs even colder). JWST sits near the Sun-Earth L2 point, ~1.5 million km from Earth, orbiting the SUN in a halo orbit - it does NOT orbit the Earth. There the Sun, Earth and Moon stay on one side, behind the shield.",
+    "text_zh": "五层遮阳罩挡住太阳、地球和月球的热量，使冷侧达到约 40K（MIRI 还需更冷）。JWST 位于日地 L2 点附近，距地球约 150 万公里，绕太阳做 halo 轨道运行——它不绕地球运行。在那里太阳、地球和月球始终在遮阳罩同一侧。"
+  },
+  {
+    "id": "jwst_instruments",
+    "title_en": "Four Science Instruments",
+    "title_zh": "四台科学仪器",
+    "image": "res://assets/learning_diagrams/jwst_instruments_diagram.png",
+    "text_en": "NIRCam images in the near infrared. NIRSpec takes spectra to read composition, motion and redshift. MIRI sees cold dust and molecules in the mid infrared but needs extra cooling. FGS/NIRISS guides precisely and adds niche near-infrared work. The right instrument depends on the science question.",
+    "text_zh": "NIRCam 进行近红外成像。NIRSpec 拍摄光谱，读出成分、运动和红移。MIRI 观测中红外的冷尘埃和分子，但需要额外制冷。FGS/NIRISS 负责精确导星并承担特定近红外任务。选哪台取决于你的科学问题。"
+  },
+  {
+    "id": "jwst_false_colour",
+    "title_en": "Data, Not a Photograph",
+    "title_zh": "数据，而非普通照片",
+    "image": "res://assets/learning_diagrams/jwst_false_colour_diagram.png",
+    "text_en": "The detector records infrared photons, not eye colours. Each filter's data is mapped to red, green or blue to make a science image. Different colour mappings highlight dust, gas, temperature or star-forming regions. The final answer is a scientific interpretation, not just a pretty picture.",
+    "text_zh": "探测器记录的是红外光子，不是人眼的颜色。每个滤镜的数据被映射到红、绿或蓝，合成科学图像。不同的颜色映射能突出尘埃、气体、温度或恒星形成区。最终得到的是科学解释，而不仅仅是一张好看的图。"
   }
 ]

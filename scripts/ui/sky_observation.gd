@@ -17,6 +17,7 @@ const BG_TEXTURE := "res://assets/reference/sky_observation_ui_bg_v2_1024.png"
 const MODE_BUTTONS_TEXTURE := "res://assets/reference/sky_view_mode_cards.png"
 const BRIGHT_STARS_PATH := "res://data/bright_stars.json"
 const SkyPositionServiceScript := preload("res://scripts/systems/sky_position_service.gd")
+const OPTICAL_LENS_SHADER := preload("res://shaders/optical_lens.gdshader")
 const ICON_DIR := "res://assets/celestial_icons/"
 const OBS_UI_DIR := "res://assets/ui/observation/suc/processed/"
 const AZ_SCALE_TEXTURE := OBS_UI_DIR + "azimuth_scale_shell.png"
@@ -36,8 +37,13 @@ const MODE_RETICLE_TEXTURES := {
 }
 
 const Z_SKY := 0
+const Z_STARS := 18
 const Z_OBJECTS := 20
-const Z_ATMOSPHERE := 30
+# Atmospheric art remains below catalog stars and target icons. Cloud strength
+# still feeds the existing visibility/quality code, but the texture itself can
+# no longer paint an opaque rectangle over a target.
+const Z_ATMOSPHERE := 14
+const Z_OPTICAL_GLASS := 50
 const Z_TARGET_FEEDBACK := 60
 const Z_AIM_OVERLAY := 70
 const Z_DYNAMIC_READOUT := 75
@@ -84,6 +90,7 @@ const HORIZON_COLOR := Color(0.42, 0.62, 0.44, 0.75)
 const AZIMUTH_SPEED := 45.0
 const ALTITUDE_SPEED := 32.0
 const MINIMUM_VISIBLE_ALTITUDE := 10.0
+const COMFORTABLE_OBSERVING_ALTITUDE := 18.0
 const STAR_POOL_SIZE := 320
 const AZ_TICK_POOL := 64
 const AZ_LABEL_POOL := 16
@@ -179,6 +186,8 @@ var sky_data: Dictionary = {}
 var in_view_targets: Dictionary = {}
 
 var view_layer: Control
+var optical_lens_overlay: ColorRect
+var optical_lens_material: ShaderMaterial
 var az_band_layer: Control
 var alt_band_layer: Control
 var star_points: Array[Vector4] = []
@@ -217,9 +226,17 @@ var _az_knob_activity := 0.0
 var _alt_knob_activity := 0.0
 var target_state_ring: TextureRect
 var target_lock_state := "search"
+var edge_target_indicator: Panel
+var edge_target_arrow: Polygon2D
+var edge_target_name: Label
+var edge_target_delta: Label
+var edge_target_tween: Tween
 var constellation_overlay: ConstellationPatternOverlay
 var constellation_target_button: Button
 var mouse_aim_dragging := false
+var mouse_aim_press_position := Vector2.ZERO
+var mouse_aim_drag_distance := 0.0
+var touch_press_points: Dictionary = {}
 var observe_button: Button
 var observe_disabled_shade: ColorRect
 var observe_transition_active := false
@@ -250,6 +267,8 @@ var mission_tonight_label: Label
 var sky_condition_label: Label
 var aim_label: Label
 var selected_title: Label
+var selected_badge: Label
+var selected_panel_border: Panel
 var selected_detail: Label
 var guidance_label: Label
 var visited_modes: Dictionary = {}
@@ -266,6 +285,13 @@ var workflow_elapsed := 0.0
 var workflow_move_count := 0
 var workflow_move_tick := 0
 var workflow_prompt_shown := false
+var location_transition_active := false
+var horizon_explanation_active := false
+var horizon_explanation_layer: Control
+var horizon_explanation_tween: Tween
+var horizon_skip_button: Button
+var low_altitude_notice_active := false
+var arrival_hint_until := 0
 
 
 func _ready() -> void:
@@ -274,8 +300,21 @@ func _ready() -> void:
 		GameManager.seed_finder_offset_if_needed()
 	target_id = GameManager.current_target_object_id()
 	observation_mode = GameManager.current_observation_mode()
-	selected_object_id = ""
-	GameManager.selected_object_id = ""
+	# A world-map detour and a return from Telescope View must not silently throw
+	# away a free-observation selection. Keep it only when it belongs to a real
+	# catalog object; the normal mission panel still defaults to target_id.
+	var current_level_number := int(GameManager.progress.get("current_level", 1))
+	if GameManager.selected_object_level != current_level_number:
+		GameManager.selected_object_id = target_id
+		GameManager.selected_object_level = current_level_number
+	selected_object_id = GameManager.selected_object_id
+	if selected_object_id != "" and GameManager.get_object(selected_object_id).is_empty():
+		selected_object_id = ""
+		GameManager.selected_object_id = ""
+	if selected_object_id == "":
+		selected_object_id = target_id
+		GameManager.selected_object_id = target_id
+	GameManager.selected_object_level = current_level_number
 	view_mode = "naked_eye"
 	# Restore the aim from the previous visit instead of resetting to south.
 	var saved_aim: Dictionary = GameManager.last_sky_aim
@@ -297,11 +336,14 @@ func _ready() -> void:
 	var loc: Dictionary = GameManager.observing_location()
 	sky_data = sky_service.get_sky_positions(VIEW_RECT, {}, float(loc.get("lat", 34.0522)), float(loc.get("lon", -118.2437)))
 	_ensure_target_observable()
+	GameManager.publish_sky_positions(sky_data)
 	_load_real_star_points()
 	_build()
 	InteractionFeedback.page_enter(self)
+	_show_world_map_arrival_feedback()
 	call_deferred("_show_sky_feature_tutorial")
-	sky_service.request_online_planet_data(self, VIEW_RECT, _apply_online_sky_data)
+	sky_service.request_online_planet_data(self, VIEW_RECT, _apply_online_sky_data, float(loc.get("lat", 34.0522)), float(loc.get("lon", -118.2437)))
+	call_deferred("_redirect_to_world_map_if_needed")
 
 
 func _show_sky_feature_tutorial() -> void:
@@ -320,6 +362,7 @@ func _show_sky_feature_tutorial() -> void:
 
 
 func _process(delta: float) -> void:
+	horizon_cloud_drift += delta
 	_ensure_scope_reticle_visible()
 	_update_lock_ring_pulse()
 	_handle_aim_input(delta)
@@ -420,9 +463,18 @@ func _input(event: InputEvent) -> void:
 			KEY_3:
 				_set_view_mode("telescope")
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		mouse_aim_dragging = event.pressed and VIEW_RECT.has_point(event.position)
+		if event.pressed:
+			mouse_aim_dragging = VIEW_RECT.has_point(event.position)
+			mouse_aim_press_position = event.position
+			mouse_aim_drag_distance = 0.0
+		else:
+			var was_short_click := mouse_aim_dragging and mouse_aim_drag_distance <= 7.0 and VIEW_RECT.has_point(event.position)
+			mouse_aim_dragging = false
+			if was_short_click:
+				_select_object_at_screen_position(event.position)
 	if event is InputEventMouseMotion and mouse_aim_dragging:
 		var motion := event as InputEventMouseMotion
+		mouse_aim_drag_distance += motion.relative.length()
 		# Touch drags arrive here too via Godot's mouse emulation; mobile
 		# sensitivity and pitch inversion apply only in mobile mode so PC
 		# mouse aiming keeps its exact historical feel.
@@ -440,9 +492,15 @@ func _input(event: InputEvent) -> void:
 		var touch := event as InputEventScreenTouch
 		if touch.pressed:
 			pinch_points[touch.index] = touch.position
+			touch_press_points[touch.index] = touch.position
 		else:
+			var was_single_touch := pinch_points.size() <= 1
+			var touch_start: Vector2 = touch_press_points.get(touch.index, touch.position)
 			pinch_points.erase(touch.index)
+			touch_press_points.erase(touch.index)
 			pinch_start_distance = -1.0
+			if was_single_touch and touch_start.distance_to(touch.position) <= 12.0:
+				_select_object_at_screen_position(touch.position)
 	elif event is InputEventScreenDrag:
 		var drag := event as InputEventScreenDrag
 		if pinch_points.has(drag.index):
@@ -757,6 +815,7 @@ func _set_view_mode(mode: String) -> void:
 	view_mode = mode
 	visited_modes[view_mode] = true
 	_apply_view_mode()
+	_update_optical_lens_mode()
 	_update_mode_buttons()
 	if cloud_layer != null:
 		# Cloud screen-size/speed scale with FOV, so switching views rebuilds
@@ -812,6 +871,16 @@ func _target_screen_distance(object_id: String) -> float:
 	return rect.get_center().distance_to(VIEW_RECT.size * 0.5)
 
 
+func _active_observation_object_id() -> String:
+	# A clicked non-mission body is a valid observing target in its own right.
+	# Do not fall back to tonight's mission target once the player has selected it.
+	return selected_object_id if selected_object_id != "" else target_id
+
+
+func _is_free_selection() -> bool:
+	return _active_observation_object_id() != "" and _active_observation_object_id() != target_id
+
+
 func _is_target_centered(object_id: String) -> bool:
 	if not in_view_targets.has(object_id):
 		return false
@@ -826,87 +895,244 @@ func _is_target_centered(object_id: String) -> bool:
 func _apply_online_sky_data(online_data: Dictionary) -> void:
 	for object_id_value in online_data.keys():
 		var object_id: String = str(object_id_value)
-		sky_data[object_id] = online_data[object_id]
+		var online_item: Variant = online_data[object_id]
+		if not sky_service.is_valid_position_item(online_item):
+			continue
+		# Invalid or partial API data never replaces the local ephemeris.
+		sky_data[object_id] = (online_item as Dictionary).duplicate(true)
 	_ensure_target_observable()
+	GameManager.publish_sky_positions(sky_data)
 	_update_mission_tonight_text()
 	_update_selected_text()
 	_rebuild_view()
+	call_deferred("_redirect_to_world_map_if_needed")
 
 
 func _ensure_target_observable() -> void:
-	# Keep every level completable: if tonight's real position of the mission
-	# target is below the visible horizon, move it to a simulated observable
-	# spot and mark the data as a fallback estimate.
-	var constellation := GameManager.get_constellation(target_id)
-	if not constellation.is_empty():
-		var constellation_azimuth := float(constellation.get("azimuth", 180.0))
-		var constellation_altitude := float(constellation.get("altitude", 48.0))
-		sky_data[target_id] = {
-			"id": target_id,
-			"name": GameManager.dict_text(GameManager.get_object(target_id), "name"),
-			"type": "Constellation",
-			"altitude": constellation_altitude,
-			"azimuth": constellation_azimuth,
-			"visible": true,
-			"visibility_text": "Seasonal teaching position",
-			"direction_text": _direction_text_for_azimuth(constellation_azimuth),
-			"source": "constellation"
-		}
+	_ensure_object_observable(target_id)
+	var active_id := _active_observation_object_id()
+	if active_id != target_id:
+		_ensure_object_observable(active_id)
+
+
+func _ensure_object_observable(object_id: String) -> void:
+	# Keep the mission target represented even when an online request fails. Do
+	# not rewrite a valid local result or move a below-horizon body into view.
+	if object_id == "" or sky_data.has(object_id):
 		return
-	if not sky_data.has(target_id):
-		var seed_value: int = absi(target_id.hash())
-		var fallback_azimuth := 120.0 + float(seed_value % 140)
-		sky_data[target_id] = {
-			"id": target_id,
-			"name": GameManager.dict_text(GameManager.get_object(target_id), "name"),
-			"type": str(GameManager.get_object(target_id).get("type_en", "Object")),
-			"altitude": 32.0 + float(seed_value % 26),
-			"azimuth": fallback_azimuth,
-			"visible": true,
-			"visibility_text": "Offline estimate",
-			"direction_text": _direction_text_for_azimuth(fallback_azimuth),
-			"source": "fallback"
-		}
-		push_warning("Mission target '%s' is missing from celestial_catalog.json; using a temporary sky position." % target_id)
-	var item: Dictionary = sky_data[target_id]
-	var seed_value: int = absi(target_id.hash())
-	# L25 is a controlled chromatic-aberration lesson. Keep Vega west of
-	# the prescribed 142-degree starting aim so the A-key guidance and the
-	# visual demonstration remain deterministic across dates and machines.
-	if int(GameManager.current_level().get("level_number", 0)) == 25 and target_id == "vega":
-		item["azimuth"] = 90.0
-		item["altitude"] = 56.0
-		item["visible"] = true
-		item["direction_text"] = _direction_text_for_azimuth(90.0)
-		item["source"] = "fallback"
-		sky_data[target_id] = item
-	var altitude_bias := _target_altitude_bias()
-	if altitude_bias == "low":
-		# The mission deliberately wants a low-altitude target (seeing lesson):
-		# pin it into a 12-18 deg band regardless of tonight's real position.
-		var azimuth: float = float(item.get("azimuth", 0.0))
-		if azimuth <= 0.001:
-			azimuth = 120.0 + float(seed_value % 140)
-		item["altitude"] = 12.0 + float(seed_value % 7)
-		item["azimuth"] = azimuth
-		item["visible"] = true
-		item["visibility_text"] = "Offline estimate"
-		item["direction_text"] = _direction_text_for_azimuth(azimuth)
-		item["source"] = "fallback"
-		sky_data[target_id] = item
+	var location := GameManager.observing_location()
+	var local_positions: Dictionary = sky_service.get_sky_positions(
+		VIEW_RECT, {}, float(location.get("lat", 34.0522)), float(location.get("lon", -118.2437)))
+	if local_positions.has(object_id):
+		sky_data[object_id] = local_positions[object_id]
 		return
-	if float(item.get("altitude", 0.0)) >= MINIMUM_VISIBLE_ALTITUDE:
+	# Expansion targets such as constellation fields have valid catalog RA/Dec
+	# but are not individual entries in SkyPositionService's star list. Resolve
+	# them through the same observer/time transform instead of hiding them.
+	var radec: Dictionary = GameManager.object_radec(object_id)
+	if radec.has("ra_hours") and radec.has("dec_degrees"):
+		var computed: Dictionary = sky_service.visibility_at(
+			float(radec.get("ra_hours", 0.0)),
+			float(radec.get("dec_degrees", 0.0)),
+			float(location.get("lat", 34.0522)),
+			float(location.get("lon", -118.2437)))
+		computed["source"] = "calculated"
+		sky_data[object_id] = computed
 		return
-	var azimuth: float = float(item.get("azimuth", 0.0))
-	if azimuth <= 0.001:
-		azimuth = 120.0 + float(seed_value % 140)
-	item["altitude"] = 32.0 + float(seed_value % 26)
-	item["azimuth"] = azimuth
-	item["visible"] = true
-	item["visibility_text"] = "Offline estimate"
-	item["direction_text"] = _direction_text_for_azimuth(azimuth)
-	item["source"] = "fallback"
-	sky_data[target_id] = item
+	var fallbacks: Dictionary = sky_service.fallback_positions(VIEW_RECT)
+	if fallbacks.has(object_id):
+		sky_data[object_id] = fallbacks[object_id]
+
+
+func _redirect_to_world_map_if_needed() -> void:
+	if not is_inside_tree() or location_transition_active or horizon_explanation_active:
+		return
+	if GameManager.suppress_next_world_map_redirect:
+		GameManager.suppress_next_world_map_redirect = false
+		return
+	var active_id := _active_observation_object_id()
+	var item := _sky_item(active_id)
+	if active_id == "" or item.is_empty():
+		return
+	var altitude := float(item.get("altitude", 0.0))
+	if altitude < 0.0:
+		_start_below_horizon_explanation()
+		return
+	_update_low_altitude_notice(altitude < COMFORTABLE_OBSERVING_ALTITUDE)
+
+
+func _start_below_horizon_explanation() -> void:
+	if horizon_explanation_active or view_layer == null:
+		return
+	horizon_explanation_active = true
+	_update_low_altitude_notice(false)
+	var active_id := _active_observation_object_id()
+	var item := _sky_item(active_id)
+	GameManager.world_map_target_id = active_id
+	GameManager.world_map_observation_context = {
+		"target_id": active_id,
+		"free_observation": active_id != target_id,
+		"level": int(GameManager.progress.get("current_level", 1)),
+		"view_mode": view_mode,
+		"azimuth": telescope_azimuth,
+		"altitude": telescope_altitude
+	}
+
+	horizon_explanation_layer = Control.new()
+	horizon_explanation_layer.name = "BelowHorizonExplanation"
+	horizon_explanation_layer.size = VIEW_RECT.size
+	horizon_explanation_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	horizon_explanation_layer.z_index = 240
+	view_layer.add_child(horizon_explanation_layer)
+	var dim := _rect(horizon_explanation_layer, Vector2.ZERO, VIEW_RECT.size, Color(0.005, 0.012, 0.030, 0.44))
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var horizon_y := 390.0
+	var ground := _rect(horizon_explanation_layer, Vector2(0, horizon_y), Vector2(VIEW_RECT.size.x, VIEW_RECT.size.y - horizon_y), Color(0.012, 0.020, 0.032, 0.94))
+	ground.z_index = 5
+	var horizon_glow := _rect(horizon_explanation_layer, Vector2(0, horizon_y - 1), Vector2(VIEW_RECT.size.x, 2), Color(0.95, 0.48, 0.28, 0.78))
+	horizon_glow.z_index = 6
+	var horizon_soft := _rect(horizon_explanation_layer, Vector2(0, horizon_y - 5), Vector2(VIEW_RECT.size.x, 10), Color(0.28, 0.55, 0.78, 0.12))
+	horizon_soft.z_index = 6
+
+	var ghost_group := Control.new()
+	ghost_group.name = "BelowHorizonGhostTarget"
+	ghost_group.size = Vector2(72, 72)
+	var delta_az := shortest_angle_degrees(display_azimuth, float(item.get("azimuth", display_azimuth)))
+	var projected_x := _fov_to_local(delta_az, 0.0).x
+	ghost_group.position = Vector2(clampf(projected_x - 36.0, 54.0, VIEW_RECT.size.x - 126.0), horizon_y - 70.0)
+	ghost_group.z_index = 4
+	horizon_explanation_layer.add_child(ghost_group)
+	var icon_path := _icon_path_for_object(active_id)
+	if ResourceLoader.exists(icon_path):
+		for echo_data in [
+			{"offset": Vector2(-3, 0), "color": Color(0.25, 0.65, 1.0, 0.25)},
+			{"offset": Vector2(3, 0), "color": Color(1.0, 0.28, 0.34, 0.20)},
+			{"offset": Vector2.ZERO, "color": Color(0.72, 0.82, 1.0, 0.50)}
+		]:
+			var ghost := TextureRect.new()
+			ghost.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ghost.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			ghost.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			ghost.texture = load(icon_path)
+			ghost.position = Vector2(-4, -4) + (echo_data as Dictionary)["offset"]
+			ghost.size = Vector2(80, 80)
+			ghost.modulate = (echo_data as Dictionary)["color"]
+			ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			ghost_group.add_child(ghost)
+
+	var title := _label(horizon_explanation_layer,
+		GameManager.text("TARGET BELOW THE HORIZON", "目标位于当前地点地平线以下"),
+		Vector2(42, 38), Vector2(546, 34), 22, WARNING, HORIZONTAL_ALIGNMENT_CENTER)
+	title.z_index = 8
+	var explanation := _label(horizon_explanation_layer,
+		GameManager.text("This object cannot be observed from the current site now.", "当前地点现在无法观测这个天体。"),
+		Vector2(48, 78), Vector2(534, 42), 15, TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	explanation.z_index = 8
+	var maya_name := _label(horizon_explanation_layer, "MAYA", Vector2(54, 132), Vector2(76, 28), 17, GOLD)
+	maya_name.z_index = 8
+	var maya := _label(horizon_explanation_layer,
+		GameManager.text("The sky changes with location and time.\nLet's find a site where the target has risen.", "不同地点和时间看到的天空不同。\n我们去寻找目标已经升起的观测地点。"),
+		Vector2(126, 124), Vector2(438, 74), 14, Color(0.72, 0.88, 1.0))
+	maya.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	maya.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	maya.z_index = 8
+	var target_name := _label(horizon_explanation_layer,
+		GameManager.dict_text(GameManager.get_object(active_id), "name"),
+		Vector2(ghost_group.position.x - 30, horizon_y - 103), Vector2(132, 24), 13, Color(0.72, 0.82, 1.0, 0.82), HORIZONTAL_ALIGNMENT_CENTER)
+	target_name.z_index = 8
+
+	horizon_skip_button = Button.new()
+	horizon_skip_button.name = "HorizonSkipButton"
+	horizon_skip_button.text = GameManager.text("Continue", "继续")
+	horizon_skip_button.position = Vector2(VIEW_RECT.size.x - 128, 218)
+	horizon_skip_button.size = Vector2(104, 34)
+	horizon_skip_button.z_index = 9
+	var skip_style := StyleBoxFlat.new()
+	skip_style.bg_color = Color(0.04, 0.08, 0.13, 0.96)
+	skip_style.border_color = GOLD
+	skip_style.set_border_width_all(1)
+	skip_style.set_corner_radius_all(3)
+	horizon_skip_button.add_theme_stylebox_override("normal", skip_style)
+	horizon_skip_button.add_theme_stylebox_override("disabled", skip_style)
+	horizon_skip_button.add_theme_color_override("font_disabled_color", Color(0.76, 0.70, 0.56))
+	horizon_skip_button.pressed.connect(_skip_horizon_explanation)
+	horizon_explanation_layer.add_child(horizon_skip_button)
+	var seen: Array = GameManager.progress.get("seen_teaching_steps", [])
+	var first_time := not seen.has("below_horizon_flow_v1")
+	if first_time:
+		seen.append("below_horizon_flow_v1")
+		GameManager.progress["seen_teaching_steps"] = seen
+		GameManager.save()
+		horizon_skip_button.disabled = true
+		get_tree().create_timer(0.75).timeout.connect(func() -> void:
+			if horizon_skip_button != null and is_instance_valid(horizon_skip_button):
+				horizon_skip_button.disabled = false
+		)
+
+	var duration := 0.9 if InteractionFeedback.is_reduced_motion() else (2.25 if first_time else 1.65)
+	horizon_explanation_tween = create_tween().bind_node(horizon_explanation_layer).set_parallel(true)
+	horizon_explanation_tween.tween_property(ghost_group, "position:y", horizon_y + 72.0, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	horizon_explanation_tween.tween_property(ghost_group, "modulate:a", 0.08, duration * 0.88).set_delay(duration * 0.12)
+	horizon_explanation_tween.tween_property(horizon_glow, "modulate:a", 0.40, duration * 0.75)
+	horizon_explanation_tween.set_parallel(false)
+	horizon_explanation_tween.tween_callback(_finish_below_horizon_explanation)
+
+
+func _skip_horizon_explanation() -> void:
+	if not horizon_explanation_active or (horizon_skip_button != null and horizon_skip_button.disabled):
+		return
+	if horizon_explanation_tween != null:
+		horizon_explanation_tween.kill()
+	_finish_below_horizon_explanation()
+
+
+func _finish_below_horizon_explanation() -> void:
+	if not horizon_explanation_active:
+		return
+	horizon_explanation_active = false
+	_open_world_map_from_sky()
+
+
+func _update_low_altitude_notice(enabled: bool) -> void:
+	low_altitude_notice_active = enabled
+	var button := get_node_or_null("ChangeSiteButton") as Button
+	if button == null:
+		return
+	button.text = GameManager.text("Low target - Change Site?", "目标高度较低 - 更换地点？") if enabled else GameManager.text("Location / Change Site", "地点 / 更换地点")
+	button.add_theme_color_override("font_color", WARNING if enabled else TEXT)
+	button.tooltip_text = GameManager.text(
+		"The target has just risen or is about to set. You may observe here or choose a more comfortable site.",
+		"目标刚刚升起或即将落下。你可以继续在此观测，或选择更舒适的地点。") if enabled else ""
+
+
+func _show_world_map_arrival_feedback() -> void:
+	var context: Dictionary = GameManager.world_map_arrival_context
+	if context.is_empty() or str(context.get("target_id", "")) != _active_observation_object_id():
+		return
+	GameManager.world_map_arrival_context.clear()
+	arrival_hint_until = Time.get_ticks_msec() + 4500
+	var notice := Panel.new()
+	notice.name = "WorldMapArrivalFeedback"
+	notice.position = Vector2(82, 344)
+	notice.size = Vector2(466, 82)
+	notice.z_index = 210
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.05, 0.09, 0.94)
+	style.border_color = GOLD
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(5)
+	notice.add_theme_stylebox_override("panel", style)
+	view_layer.add_child(notice)
+	var copy := _label(notice,
+		GameManager.text("The target is now above the horizon.\nUse Eye, Finder, or Telescope to locate it.", "目标现在已经升到地平线以上。\n使用肉眼、寻星镜或望远镜寻找目标。"),
+		Vector2(18, 10), Vector2(430, 62), 15, GREEN, HORIZONTAL_ALIGNMENT_CENTER)
+	copy.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var tween := create_tween().bind_node(notice)
+	tween.tween_property(notice, "modulate:a", 1.0, 0.22)
+	tween.tween_interval(3.0)
+	tween.tween_property(notice, "modulate:a", 0.0, 0.35)
+	tween.tween_callback(notice.queue_free)
 
 
 func _target_altitude_bias() -> String:
@@ -1434,7 +1660,7 @@ func _build_view_layer() -> void:
 		var star := ColorRect.new()
 		star.visible = false
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		star.z_index = Z_SKY
+		star.z_index = Z_STARS
 		view_layer.add_child(star)
 		star_pool.append(star)
 
@@ -1443,6 +1669,7 @@ func _build_view_layer() -> void:
 	ground_rect.visible = false
 	horizon_line = _rect(view_layer, Vector2.ZERO, Vector2.ZERO, HORIZON_COLOR)
 	horizon_line.visible = false
+	_build_horizon_layers()
 
 	# Cloud layer: above the star field, below the object icons/crosshair/UI.
 	cloud_layer = Control.new()
@@ -1492,6 +1719,8 @@ func _build_view_layer() -> void:
 		view_layer.add_child(button)
 		object_buttons[object_id] = button
 
+	_build_optical_lens_overlay()
+	_build_edge_target_indicator()
 	_build_scope_reticle_overlay()
 
 	# DMS readouts on the center lines (the crosshair + reticle ring are
@@ -1528,6 +1757,26 @@ func _build_view_layer() -> void:
 	controls_help.z_index = Z_GUIDANCE + 1
 	controls_help.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	controls_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+
+func _build_edge_target_indicator() -> void:
+	edge_target_indicator = Panel.new()
+	edge_target_indicator.name = "EdgeTargetIndicator"
+	edge_target_indicator.size = Vector2(196, 58)
+	edge_target_indicator.visible = false
+	edge_target_indicator.modulate.a = 0.0
+	edge_target_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	edge_target_indicator.z_index = Z_DYNAMIC_READOUT + 2
+	view_layer.add_child(edge_target_indicator)
+
+	edge_target_arrow = Polygon2D.new()
+	edge_target_arrow.polygon = PackedVector2Array([Vector2(-7, -8), Vector2(10, 0), Vector2(-7, 8), Vector2(-2, 0)])
+	edge_target_arrow.position = Vector2(18, 29)
+	edge_target_indicator.add_child(edge_target_arrow)
+	edge_target_name = _label(edge_target_indicator, "", Vector2(38, 7), Vector2(150, 20), 13, GOLD)
+	edge_target_name.clip_text = true
+	edge_target_delta = _label(edge_target_indicator, "", Vector2(38, 29), Vector2(150, 20), 10, TEXT)
+	edge_target_delta.clip_text = true
 
 
 func _build_mode_buttons() -> void:
@@ -1610,6 +1859,52 @@ func _build_scope_reticle_overlay() -> void:
 	_ensure_scope_reticle_visible()
 
 
+func _build_optical_lens_overlay() -> void:
+	# Post-process only the moving sky/environment. Target feedback, reticles,
+	# coordinates and guidance live at higher z-indices and remain undistorted.
+	optical_lens_overlay = ColorRect.new()
+	optical_lens_overlay.name = "OpticalLensOverlay"
+	optical_lens_overlay.position = Vector2.ZERO
+	optical_lens_overlay.size = VIEW_RECT.size
+	optical_lens_overlay.color = Color.WHITE
+	optical_lens_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	optical_lens_overlay.z_index = Z_OPTICAL_GLASS
+	optical_lens_material = ShaderMaterial.new()
+	optical_lens_material.shader = OPTICAL_LENS_SHADER
+	optical_lens_material.set_shader_parameter(
+		"region_uv_size",
+		Vector2(VIEW_RECT.size.x / W, VIEW_RECT.size.y / H)
+	)
+	optical_lens_material.set_shader_parameter("circular_lens", 0.0)
+	optical_lens_overlay.material = optical_lens_material
+	view_layer.add_child(optical_lens_overlay)
+	_update_optical_lens_mode()
+
+
+func _update_optical_lens_mode() -> void:
+	if optical_lens_material == null:
+		return
+	var curvature := 0.018
+	var vignette := 0.075
+	var chroma := 0.06
+	var highlight := 0.025
+	match view_mode:
+		"finder":
+			curvature = 0.032
+			vignette = 0.11
+			chroma = 0.12
+			highlight = 0.038
+		"telescope":
+			curvature = 0.050
+			vignette = 0.16
+			chroma = 0.22
+			highlight = 0.050
+	optical_lens_material.set_shader_parameter("curvature", curvature)
+	optical_lens_material.set_shader_parameter("vignette_strength", vignette)
+	optical_lens_material.set_shader_parameter("chroma_px", chroma)
+	optical_lens_material.set_shader_parameter("glass_highlight", highlight)
+
+
 func _update_reticle_asset() -> void:
 	if not scope_reticle_layer is TextureRect:
 		return
@@ -1665,14 +1960,21 @@ func _build_panel_text() -> void:
 	sky_condition_label = _label(self, "", Vector2(778, 207), Vector2(212, 16), 9, MUTED)
 	_update_sky_condition_text()
 
-	# SELECTED panel interior: (775..995, 292..470); baked divider at y 432.
-	selected_title = _label(self, "", Vector2(778, 292), Vector2(150, 18), 12, Color(0.84, 0.62, 1.0))
+	# SELECTED panel state is driven by the same active object as Observe.
+	selected_panel_border = Panel.new()
+	selected_panel_border.position = Vector2(768, 282)
+	selected_panel_border.size = Vector2(232, 194)
+	selected_panel_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	selected_panel_border.z_index = 1
+	add_child(selected_panel_border)
+	selected_badge = _label(self, "", Vector2(778, 289), Vector2(210, 16), 10, GOLD)
+	selected_title = _label(self, "", Vector2(778, 307), Vector2(210, 18), 12, Color(0.84, 0.62, 1.0))
 	selected_title.clip_text = true
-	selected_detail = _label(self, "", Vector2(778, 312), Vector2(214, 54), 9, TEXT)
+	selected_detail = _label(self, "", Vector2(778, 327), Vector2(214, 42), 9, TEXT)
 	selected_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	selected_detail.max_lines_visible = 4
 
-	aim_label = _label(self, "", Vector2(778, 372), Vector2(214, 50), 9, TEXT)
+	aim_label = _label(self, "", Vector2(778, 387), Vector2(214, 42), 9, TEXT)
 	aim_label.max_lines_visible = 4
 
 	guidance_label = _label(self, "", Vector2(778, 438), Vector2(214, 30), 9, WARNING, HORIZONTAL_ALIGNMENT_CENTER)
@@ -1744,16 +2046,34 @@ func _draw_action_hitboxes() -> void:
 	observe_button.pressed.connect(_observe)
 	add_child(observe_button)
 
-	var back := _transparent_button(BACK_RECT, GameManager.text("Back", "返回"))
+	var back := _transparent_button(BACK_RECT, GameManager.text("Back to Base", "返回基地"))
 	back.pressed.connect(func() -> void:
 		GameManager.set_observatory_spawn("telescope")
 		GameManager.go("observatory")
 	)
 	add_child(back)
 
+	# Location is deliberately kept inside Sky Observation. It uses the spare
+	# band between MISSION and SELECTED instead of adding another information UI.
+	var location_button := Button.new()
+	location_button.name = "ChangeSiteButton"
+	location_button.text = GameManager.text("Location / Change Site", "地点 / 更换地点")
+	location_button.position = Vector2(778, 233)
+	location_button.size = Vector2(210, 27)
+	location_button.add_theme_font_size_override("font_size", 11)
+	var location_style := StyleBoxFlat.new()
+	location_style.bg_color = Color(0.035, 0.075, 0.12, 0.96)
+	location_style.border_color = CYAN
+	location_style.set_border_width_all(1)
+	location_style.set_corner_radius_all(3)
+	location_button.add_theme_stylebox_override("normal", location_style)
+	location_button.pressed.connect(_open_world_map_from_sky)
+	add_child(location_button)
+
 	# Object details button: fixed in the SELECTED panel's title bar (right side)
 	# so it never covers the object name, coordinates, or aim text below.
 	var details_btn := Button.new()
+	details_btn.name = "DetailsButton"
 	details_btn.text = GameManager.text("ⓘ", "ⓘ")
 	details_btn.position = Vector2(936, 291)
 	details_btn.size = Vector2(56, 19)
@@ -1769,6 +2089,47 @@ func _draw_action_hitboxes() -> void:
 	details_btn.pressed.connect(_open_detail_panel)
 	add_child(details_btn)
 	_update_observe_state()
+
+
+func _open_world_map_from_sky() -> void:
+	if location_transition_active or not is_inside_tree():
+		return
+	location_transition_active = true
+	GameManager.last_sky_aim = {
+		"valid": true,
+		"azimuth": telescope_azimuth,
+		"altitude": telescope_altitude,
+		"view_mode": view_mode
+	}
+	GameManager.selected_object_id = _active_observation_object_id()
+	GameManager.selected_object_level = int(GameManager.progress.get("current_level", 1))
+	GameManager.world_map_target_id = _active_observation_object_id()
+	GameManager.world_map_observation_context = {
+		"target_id": _active_observation_object_id(),
+		"free_observation": _is_free_selection(),
+		"level": int(GameManager.progress.get("current_level", 1)),
+		"view_mode": view_mode,
+		"azimuth": telescope_azimuth,
+		"altitude": telescope_altitude
+	}
+	if InteractionFeedback.is_reduced_motion():
+		GameManager.open_world_map("sky")
+		return
+	var fade := ColorRect.new()
+	fade.name = "MapTransitionFade"
+	fade.color = Color(0.01, 0.02, 0.05, 0.0)
+	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade.mouse_filter = Control.MOUSE_FILTER_STOP
+	fade.z_index = 1000
+	add_child(fade)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(fade, "color:a", 0.82, 0.24)
+	if view_layer != null:
+		view_layer.pivot_offset = VIEW_RECT.get_center()
+		tween.tween_property(view_layer, "scale", Vector2(0.96, 0.96), 0.24).set_trans(Tween.TRANS_SINE)
+	tween.set_parallel(false)
+	tween.tween_callback(func() -> void: GameManager.open_world_map("sky"))
 
 
 # ------------------------------------------------------------ view refresh
@@ -1978,19 +2339,264 @@ func _rebuild_view(sync_camera := true) -> void:
 	_update_guidance()
 
 
-func _update_ground() -> void:
-	var horizon_y := _fov_to_local(0.0, -display_altitude).y
-	if horizon_y >= VIEW_RECT.size.y:
-		ground_rect.visible = false
-		horizon_line.visible = false
+const HORIZON_SETS_PATH := "res://data/horizon_sets.json"
+const HORIZON_DIR := "res://assets/horizon/processed/"
+const HORIZON_SHADER_PATH := "res://assets/shaders/horizon_night_cleanup.gdshader"
+# Art layers all stay below Z_STARS. `vertical` controls pitch response: distant
+# silhouettes move less vertically than the nearby platform.
+const HORIZON_LAYER_SPEC := [
+	{"key": "far", "role": "far_mountains", "parallax": 0.18, "vertical": 0.55, "z": 2, "height": 0.20, "rise": 1.28, "alpha": 0.74, "tint": Color.WHITE, "exposure": 1.00, "saturation": 1.00},
+	{"key": "mid", "role": "midground_observatory", "parallax": 0.48, "vertical": 0.76, "z": 5, "height": 0.25, "rise": 0.86, "alpha": 0.88, "tint": Color.WHITE, "exposure": 1.00, "saturation": 1.00},
+	{"key": "near", "role": "foreground_platform_equipment", "parallax": 1.00, "vertical": 1.00, "z": 8, "height": 0.31, "rise": 0.62, "alpha": 0.92, "tint": Color.WHITE, "exposure": 1.00, "saturation": 1.00}
+]
+const HORIZON_TILE_COPIES := 6
+const HORIZON_CLOUD_TILE_COPIES := 4
+
+var horizon_layers: Array = []      # [{sprites:[TextureRect,TextureRect], spec:Dictionary, width:float}]
+var horizon_cloud_sprites: Array = []
+var horizon_cloud_drift := 0.0
+var horizon_unwrapped_azimuth := 0.0
+var horizon_last_azimuth := 0.0
+var horizon_azimuth_initialized := false
+
+
+func _build_horizon_layers() -> void:
+	horizon_layers.clear()
+	horizon_cloud_sprites.clear()
+	var manifest: Dictionary = _load_horizon_manifest()
+	if manifest.is_empty():
 		return
-	var top := maxf(horizon_y, 0.0)
-	ground_rect.position = Vector2(0, top)
-	ground_rect.size = Vector2(VIEW_RECT.size.x, VIEW_RECT.size.y - top)
-	ground_rect.visible = true
-	horizon_line.position = Vector2(0, horizon_y - 1.0)
-	horizon_line.size = Vector2(VIEW_RECT.size.x, 2.0)
-	horizon_line.visible = horizon_y >= 0.0
+	var set_name := _horizon_set_name(manifest)
+	var sets: Dictionary = manifest.get("sets", {})
+	var layer_set: Dictionary = sets.get(set_name, {})
+	for spec_value in HORIZON_LAYER_SPEC:
+		var spec: Dictionary = spec_value
+		var asset := str(layer_set.get(str(spec["key"]), ""))
+		if asset == "":
+			continue
+		var path := HORIZON_DIR + asset + ".png"
+		if not ResourceLoader.exists(path):
+			continue
+		var texture: Texture2D = load(path)
+		# Small source strips can be narrower than the viewport after scaling.
+		# Six copies cover the widest supported view plus one spare tile on each
+		# side, so rotation cannot expose a black gap.
+		var sprites: Array = []
+		for i in range(HORIZON_TILE_COPIES):
+			var tr := TextureRect.new()
+			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			tr.texture = texture
+			tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			tr.z_index = Z_SKY + int(spec["z"])
+			tr.modulate = Color(1, 1, 1, float(spec["alpha"]))
+			tr.material = _horizon_material(spec)
+			view_layer.add_child(tr)
+			sprites.append(tr)
+		horizon_layers.append({"sprites": sprites, "spec": spec, "texture": texture})
+	# Horizon clouds: the user's transparent cloud bands, only near the horizon.
+	var clouds: Dictionary = manifest.get("clouds", {})
+	for cloud_key in ["band", "layer"]:
+		var cname := str(clouds.get(cloud_key, ""))
+		if cname == "":
+			continue
+		var cpath := HORIZON_DIR + cname + ".png"
+		if not ResourceLoader.exists(cpath):
+			continue
+		var ctex: Texture2D = load(cpath)
+		var pair: Array = []
+		for i in range(HORIZON_CLOUD_TILE_COPIES):
+			var ct := TextureRect.new()
+			ct.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ct.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			ct.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			ct.texture = ctex
+			ct.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			ct.z_index = Z_SKY + 11
+			ct.material = _horizon_material({
+				"tint": Color(0.38, 0.48, 0.64),
+				"exposure": 0.38,
+				"saturation": 0.36
+			})
+			view_layer.add_child(ct)
+			pair.append(ct)
+		horizon_cloud_sprites.append({
+			"sprites": pair,
+			"texture": ctex,
+			"drift_speed": 0.20 if cloud_key == "band" else 0.13,
+			"parallax": 0.14
+		})
+
+
+func _horizon_material(spec: Dictionary) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = load(HORIZON_SHADER_PATH)
+	material.set_shader_parameter("night_tint", spec.get("tint", Color(0.52, 0.62, 0.76)))
+	material.set_shader_parameter("exposure", float(spec.get("exposure", 0.66)))
+	material.set_shader_parameter("saturation", float(spec.get("saturation", 0.72)))
+	return material
+
+
+func _load_horizon_manifest() -> Dictionary:
+	if not FileAccess.file_exists(HORIZON_SETS_PATH):
+		return {}
+	var f := FileAccess.open(HORIZON_SETS_PATH, FileAccess.READ)
+	if f == null:
+		return {}
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	return parsed if parsed is Dictionary else {}
+
+
+func _horizon_set_name(manifest: Dictionary) -> String:
+	var site_id := str(GameManager.observing_location().get("id", ""))
+	var by_site: Dictionary = manifest.get("site_sets", {})
+	if by_site.has(site_id):
+		return str(by_site[site_id])
+	return str(manifest.get("default_set", "mountain"))
+
+
+func _update_horizon_layers(horizon_y: float) -> void:
+	# A full turn returns every layer to the same texture phase. A small,
+	# periodic depth offset makes nearby layers travel farther during a pan
+	# without accumulating drift after repeated 360-degree rotations.
+	var view_w := VIEW_RECT.size.x
+	var view_h := VIEW_RECT.size.y
+	_update_horizon_heading()
+	var heading := fposmod(display_azimuth, 360.0)
+	var heading_rad := deg_to_rad(heading)
+	var pitch_shift := horizon_y - view_h
+	for entry_value in horizon_layers:
+		var entry: Dictionary = entry_value
+		var spec: Dictionary = entry["spec"]
+		var sprites: Array = entry["sprites"]
+		var texture: Texture2D = entry["texture"]
+		# Keep environmental scale restrained in narrow optical modes. The scope
+		# magnifies the sky target, not a nearby building into the whole aperture.
+		var mode_scale := 1.0 if view_mode == "naked_eye" else (0.94 if view_mode == "finder" else 0.76)
+		var band_h: float = view_h * float(spec["height"]) * mode_scale
+		var scale_factor: float = band_h / maxf(float(texture.get_height()), 1.0)
+		var draw_w: float = float(texture.get_width()) * scale_factor
+		if draw_w <= 1.0:
+			continue
+		var parallax := float(spec["parallax"])
+		var base_phase := heading / 360.0 * draw_w
+		# The first term keeps every panorama tied to the same real heading.
+		# Periodic harmonics add depth-dependent screen travel without building
+		# cumulative drift or breaking the 0/360 seam. The derivative is larger
+		# for nearby art, so platform/equipment visibly outrun distant ridges.
+		var depth_phase := (
+			sin(heading_rad) * view_w * 0.14
+			+ sin(heading_rad * 2.0) * view_w * 0.035
+		) * parallax
+		var offset: float = -fposmod(base_phase + depth_phase, draw_w)
+		# The transparent artwork rises above the horizon instead of beginning at
+		# it as a rectangular strip. Nearby layers react more to pitch than the
+		# distant ridge, which keeps the scene grounded instead of floating.
+		var layer_horizon_y := view_h + pitch_shift * float(spec["vertical"])
+		var top: float = layer_horizon_y - band_h * float(spec["rise"])
+		var visible_layer: bool = top < view_h and top + band_h > 0.0
+		var mode_visibility := _horizon_layer_mode_visibility(spec)
+		for i in range(sprites.size()):
+			var tr: TextureRect = sprites[i]
+			tr.visible = visible_layer and mode_visibility > 0.01
+			tr.size = Vector2(draw_w, band_h)
+			tr.position = Vector2(offset + float(i) * draw_w, top)
+			tr.modulate.a = float(spec["alpha"]) * mode_visibility
+	_update_horizon_clouds(horizon_y)
+
+
+func _update_horizon_heading() -> void:
+	if not horizon_azimuth_initialized:
+		horizon_last_azimuth = display_azimuth
+		horizon_unwrapped_azimuth = display_azimuth
+		horizon_azimuth_initialized = true
+		return
+	var delta := shortest_angle_degrees(horizon_last_azimuth, display_azimuth)
+	horizon_unwrapped_azimuth += delta
+	horizon_last_azimuth = display_azimuth
+
+
+func _horizon_mode_visibility() -> float:
+	match view_mode:
+		"finder":
+			return 0.52
+		"telescope":
+			return 0.08
+		_:
+			return 1.0
+
+
+func _horizon_layer_mode_visibility(spec: Dictionary) -> float:
+	if view_mode == "telescope":
+		# A narrow optical field retains only a faint lower-edge reference.
+		# Nearby equipment is suppressed most strongly so it never balloons
+		# across the target at high magnification.
+		match str(spec.get("key", "")):
+			"far":
+				return 0.12
+			"mid":
+				return 0.055
+			_:
+				return 0.025
+	return _horizon_mode_visibility()
+
+
+func _update_horizon_clouds(horizon_y: float) -> void:
+	var cover := _cloud_cover_amount()
+	var view_h := VIEW_RECT.size.y
+	for entry_value in horizon_cloud_sprites:
+		var entry: Dictionary = entry_value
+		var sprites: Array = entry["sprites"]
+		var texture: Texture2D = entry["texture"]
+		var drift_speed := float(entry["drift_speed"])
+		var parallax := float(entry["parallax"])
+		if cover <= 0.0:
+			for s in sprites:
+				(s as TextureRect).visible = false
+			continue
+		var mode_scale := 1.0 if view_mode == "naked_eye" else (0.94 if view_mode == "finder" else 0.76)
+		var band_h: float = view_h * 0.12 * mode_scale
+		var scale_factor: float = band_h / maxf(float(texture.get_height()), 1.0)
+		var draw_w: float = float(texture.get_width()) * scale_factor
+		if draw_w <= 1.0:
+			continue
+		# Clouds share the same wrapped heading as the terrain and add a gentle
+		# independent drift. They never accumulate camera-heading drift.
+		var heading := fposmod(display_azimuth, 360.0)
+		var heading_rad := deg_to_rad(heading)
+		var depth_phase := (
+			sin(heading_rad) * VIEW_RECT.size.x * 0.14
+			+ sin(heading_rad * 2.0) * VIEW_RECT.size.x * 0.035
+		) * parallax
+		var offset: float = -fposmod(
+			heading / 360.0 * draw_w
+			+ depth_phase
+			+ horizon_cloud_drift * drift_speed * 22.0,
+			draw_w
+		)
+		var top: float = horizon_y - band_h * 0.85
+		# Thicker cover = denser cloud; the transparent PNG lets sky through.
+		var alpha: float = clampf(0.035 + cover * 0.20, 0.0, 0.24) * _horizon_mode_visibility()
+		for i in range(sprites.size()):
+			var tr: TextureRect = sprites[i]
+			tr.visible = horizon_y > -band_h and horizon_y < view_h + band_h
+			tr.size = Vector2(draw_w, band_h)
+			tr.position = Vector2(offset + float(i) * draw_w, top)
+			tr.modulate = Color(1, 1, 1, alpha)
+
+
+func _update_ground() -> void:
+	# Environment is a visual lower-edge reference, not a second coordinate
+	# system. At Alt=0 the natural horizon sits at the bottom of the view; as the
+	# observer raises the tube it slides down and leaves the frame. The actual
+	# celestial projection remains exclusively in _fov_to_local().
+	var horizon_y := VIEW_RECT.size.y + display_altitude / maxf(display_fov_y * 0.5, 0.001) * VIEW_RECT.size.y
+	_update_horizon_layers(horizon_y)
+	# Old solid ColorRects made a visible black/green horizon bar. All ground
+	# presence now comes from alpha-backed far/mid/near art above.
+	ground_rect.visible = false
+	horizon_line.visible = false
 
 
 func _scale_steps(fov: float) -> Vector3:
@@ -2030,11 +2636,13 @@ func _update_scale_asset_state() -> void:
 		var alt_boost := 0.0 if InteractionFeedback.is_reduced_motion() else _alt_knob_activity
 		alt_knob_icon.scale = Vector2.ONE * (1.0 + 0.16 * alt_boost)
 		alt_knob_icon.modulate = Color(1.0 + 0.35 * alt_boost, 1.0 + 0.28 * alt_boost, 1.0 + 0.10 * alt_boost)
-	# The pointers mark the MISSION TARGET's true direction in the SAME
-	# scrolling-window coordinates as the ticks (current aim = band center).
+	# The pointers mark the actively selected object in the SAME scrolling-window
+	# coordinates as the ticks (current aim = band center). This is crucial for
+	# free observation: the mission target must not keep steering the player away
+	# from the object they intentionally clicked.
 	# When the target is outside the window they pin to the band edge,
 	# dimmed - "keep turning this way". They never ride along with the aim.
-	var target_item := _sky_item(target_id)
+	var target_item := _sky_item(_active_observation_object_id())
 	if az_target_pointer != null:
 		if target_item.is_empty():
 			az_target_pointer.visible = false
@@ -2168,30 +2776,33 @@ func _update_marker_frames() -> void:
 	if selection_frame != null:
 		selection_frame.queue_free()
 		selection_frame = null
+	var tracked_id := _active_observation_object_id()
+	var free_selection := tracked_id != "" and tracked_id != target_id
 	var previous_state := target_lock_state
 	var next_state := "search"
-	if _is_constellation_target(target_id):
+	_update_edge_target_indicator(tracked_id)
+	if _is_constellation_target(tracked_id):
 		if target_state_ring != null and is_instance_valid(target_state_ring):
 			target_state_ring.queue_free()
 		target_state_ring = null
 		assist_frame = constellation_overlay
-		if in_view_targets.has(target_id):
-			next_state = "locked" if _is_target_centered(target_id) else "approach"
+		if in_view_targets.has(tracked_id):
+			next_state = "locked" if _is_target_centered(tracked_id) else "approach"
 		target_lock_state = next_state
 		return
 
 	# Asset-backed target feedback stays centered on the same projected rect
 	# used by hit testing, so the ring cannot drift away from the real object.
 	var current_level_data: Dictionary = GameManager.current_level()
-	var target_is_close := in_view_targets.has(target_id) and _center_offset(target_id) <= maxf(fov_x, fov_y) * 0.18
+	var target_is_close := in_view_targets.has(tracked_id) and _center_offset(tracked_id) <= maxf(fov_x, fov_y) * 0.18
 	# hide_target_hint suppresses long-range help during coordinate navigation.
 	# Once the player has acquired the target, approach and lock feedback return.
-	var show_target_feedback := in_view_targets.has(target_id) and (not bool(current_level_data.get("hide_target_hint", false)) or target_is_close)
+	var show_target_feedback := in_view_targets.has(tracked_id) and (free_selection or not bool(current_level_data.get("hide_target_hint", false)) or target_is_close)
 	if show_target_feedback:
-		var target_info: Dictionary = in_view_targets[target_id]
+		var target_info: Dictionary = in_view_targets[tracked_id]
 		var target_rect: Rect2 = target_info.get("rect", Rect2())
-		var offset := _center_offset(target_id)
-		var centered := _is_target_centered(target_id)
+		var offset := _center_offset(tracked_id)
+		var centered := _is_target_centered(tracked_id)
 		# Approach and lock use the same target-derived footprint. The feedback
 		# ring must always surround the rendered object instead of shrinking
 		# inside large Moon/planet/deep-sky textures.
@@ -2213,8 +2824,8 @@ func _update_marker_frames() -> void:
 		target_state_ring.size = Vector2.ONE * ring_size
 		target_state_ring.pivot_offset = target_state_ring.size * 0.5
 		var proximity := clampf(1.0 - offset / maxf(maxf(fov_x, fov_y) * 0.22, 0.001), 0.0, 1.0)
-		var approach_tint := CYAN.lerp(GOLD, proximity * 0.78)
-		target_state_ring.modulate = Color.WHITE if centered else Color(approach_tint.r, approach_tint.g, approach_tint.b, alpha)
+		var approach_tint := CYAN if free_selection else CYAN.lerp(GOLD, proximity * 0.78)
+		target_state_ring.modulate = (Color(CYAN.r, CYAN.g, CYAN.b, 1.0) if free_selection and centered else (Color.WHITE if centered else Color(approach_tint.r, approach_tint.g, approach_tint.b, alpha)))
 		if previous_state != next_state:
 			if next_state == "locked":
 				target_state_ring.scale = Vector2.ONE * (0.70 if not InteractionFeedback.is_reduced_motion() else 1.0)
@@ -2239,10 +2850,104 @@ func _update_marker_frames() -> void:
 			assist_frame = null
 	target_lock_state = next_state
 
-	if selected_object_id != "" and selected_object_id != target_id and in_view_targets.has(selected_object_id):
+	if free_selection and in_view_targets.has(selected_object_id):
 		var info: Dictionary = in_view_targets[selected_object_id]
 		var rect: Rect2 = info.get("rect", Rect2())
-		selection_frame = _make_frame(view_layer, rect.grow(7.0), GOLD, 3)
+		selection_frame = _make_frame(view_layer, rect.grow(7.0), CYAN, 2)
+
+
+func _update_edge_target_indicator(object_id: String) -> void:
+	if edge_target_indicator == null or object_id == "":
+		return
+	var item := _sky_item(object_id)
+	if item.is_empty() or float(item.get("altitude", -90.0)) < 0.0:
+		_hide_edge_target_indicator()
+		return
+	if in_view_targets.has(object_id):
+		_fade_edge_target_indicator_to_object(object_id)
+		return
+
+	var delta_az := shortest_angle_degrees(display_azimuth, float(item.get("azimuth", 0.0)))
+	var delta_alt := float(item.get("altitude", 0.0)) - display_altitude
+	var projected := _fov_to_local(delta_az, delta_alt)
+	var center := VIEW_RECT.size * 0.5
+	var direction := (projected - center).normalized()
+	if direction == Vector2.ZERO:
+		direction = Vector2.RIGHT
+	var half_bounds := Vector2(
+		center.x - edge_target_indicator.size.x * 0.5 - 12.0,
+		center.y - edge_target_indicator.size.y * 0.5 - 118.0)
+	var edge_distance := INF
+	if absf(direction.x) > 0.0001:
+		edge_distance = minf(edge_distance, half_bounds.x / absf(direction.x))
+	if absf(direction.y) > 0.0001:
+		edge_distance = minf(edge_distance, half_bounds.y / absf(direction.y))
+	var desired := center + direction * edge_distance - edge_target_indicator.size * 0.5
+	var was_visible := edge_target_indicator.visible
+	if edge_target_tween != null:
+		edge_target_tween.kill()
+		edge_target_tween = null
+	edge_target_indicator.visible = true
+	edge_target_indicator.set_meta("fading", false)
+	edge_target_indicator.position = desired if not was_visible else edge_target_indicator.position.lerp(desired, 0.34)
+	var is_mission := object_id == target_id
+	var accent := GOLD if is_mission else CYAN
+	_apply_edge_indicator_style(accent)
+	edge_target_arrow.rotation = direction.angle()
+	edge_target_arrow.color = accent
+	edge_target_name.text = GameManager.dict_text(GameManager.get_object(object_id), "name").replace("\n", " / ")
+	edge_target_name.add_theme_color_override("font_color", accent)
+	var az_arrow := "RIGHT" if delta_az > 0.0 else "LEFT"
+	var alt_arrow := "UP" if delta_alt > 0.0 else "DOWN"
+	edge_target_delta.text = "%s %s  %s %s" % [az_arrow, _format_dms(absf(delta_az)), alt_arrow, _format_dms(absf(delta_alt))]
+	if not was_visible:
+		edge_target_indicator.modulate.a = 0.0
+		edge_target_tween = create_tween().bind_node(edge_target_indicator)
+		edge_target_tween.tween_property(edge_target_indicator, "modulate:a", 1.0, 0.16)
+	else:
+		edge_target_indicator.modulate.a = 1.0
+
+
+func _apply_edge_indicator_style(accent: Color) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.015, 0.03, 0.055, 0.94)
+	style.border_color = Color(accent.r, accent.g, accent.b, 0.92)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(4)
+	edge_target_indicator.add_theme_stylebox_override("panel", style)
+
+
+func _hide_edge_target_indicator() -> void:
+	if edge_target_indicator == null:
+		return
+	if edge_target_tween != null:
+		edge_target_tween.kill()
+		edge_target_tween = null
+	edge_target_indicator.visible = false
+	edge_target_indicator.modulate.a = 0.0
+	edge_target_indicator.set_meta("fading", false)
+
+
+func _fade_edge_target_indicator_to_object(object_id: String) -> void:
+	if not edge_target_indicator.visible or bool(edge_target_indicator.get_meta("fading", false)):
+		return
+	edge_target_indicator.set_meta("fading", true)
+	var info: Dictionary = in_view_targets.get(object_id, {})
+	var target_rect: Rect2 = info.get("rect", Rect2())
+	var target_center: Vector2 = target_rect.get_center()
+	var destination := target_center - edge_target_indicator.size * 0.5
+	var duration := 0.05 if InteractionFeedback.is_reduced_motion() else 0.20
+	if edge_target_tween != null:
+		edge_target_tween.kill()
+	edge_target_tween = create_tween().bind_node(edge_target_indicator).set_parallel(true)
+	edge_target_tween.tween_property(edge_target_indicator, "position", destination, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	edge_target_tween.tween_property(edge_target_indicator, "modulate:a", 0.0, duration)
+	edge_target_tween.chain().tween_callback(func() -> void:
+		if edge_target_indicator != null:
+			edge_target_indicator.visible = false
+			edge_target_indicator.set_meta("fading", false)
+		edge_target_tween = null
+	)
 
 
 func _target_feedback_ring_size(target_diameter: float) -> float:
@@ -2281,10 +2986,9 @@ func _single(en: String, zh: String) -> String:
 
 func _source_text() -> String:
 	var item := _sky_item(target_id)
-	var source := str(item.get("source", "fallback"))
-	if source == "online" or source == "calculated":
-		return _single("Live sky data", "实时星空数据")
-	return _single("Offline fallback", "离线估算")
+	if float(item.get("altitude", 0.0)) < 0.0:
+		return _single("Below horizon", "地平线以下")
+	return GameManager.position_source_label(str(item.get("source", "fallback")))
 
 
 func _update_aim_text() -> void:
@@ -2298,6 +3002,16 @@ func _update_aim_text() -> void:
 		_format_dms(display_fov_y),
 		mode_name,
 		_source_text()
+	]
+	# The source is already shown in the mission/selection panels. Keep this
+	# compact readout to three lines so it never overlaps the guidance row.
+	aim_label.text = "Az: %s (%s)\nAlt: %s\nFOV: %s x %s  %s" % [
+		_format_dms(display_azimuth),
+		_direction_text_for_azimuth(display_azimuth),
+		_format_dms(display_altitude),
+		_format_dms(display_fov_x),
+		_format_dms(display_fov_y),
+		mode_name
 	]
 
 
@@ -2339,11 +3053,35 @@ func _update_sky_condition_text() -> void:
 func _select_object(object_id: String) -> void:
 	selected_object_id = object_id
 	GameManager.selected_object_id = object_id
+	GameManager.selected_object_level = int(GameManager.progress.get("current_level", 1))
 	_update_selected_text()
 	_update_marker_frames()
 	_update_guidance()
+	call_deferred("_redirect_to_world_map_if_needed")
 	if detail_panel != null and is_instance_valid(detail_panel):
 		_open_detail_panel()  # refresh open panel to the new selection
+
+
+func _select_object_at_screen_position(screen_position: Vector2) -> bool:
+	if not VIEW_RECT.has_point(screen_position):
+		return false
+	var local_position := screen_position - VIEW_RECT.position
+	var selected_id := ""
+	var nearest_distance := INF
+	for id_value in in_view_targets.keys():
+		var object_id := str(id_value)
+		var info: Dictionary = in_view_targets[object_id]
+		var hit_rect: Rect2 = info.get("detection_rect", info.get("rect", Rect2()))
+		if not hit_rect.has_point(local_position):
+			continue
+		var distance := hit_rect.get_center().distance_to(local_position)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			selected_id = object_id
+	if selected_id == "":
+		return false
+	_select_object(selected_id)
+	return true
 
 
 var detail_panel: Control
@@ -2361,20 +3099,15 @@ func _open_detail_panel() -> void:
 	var accent := GOLD if is_mission else CYAN
 
 	detail_panel = Control.new()
-	detail_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	detail_panel.z_index = 160
+	detail_panel.name = "ObjectDetailsPanel"
+	detail_panel.position = Vector2(754, 288)
+	detail_panel.size = Vector2(250, 190)
+	detail_panel.z_index = 100
+	detail_panel.set_meta("scrollable_details", true)
 	add_child(detail_panel)
-	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.55)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and (e as InputEventMouseButton).pressed:
-			_close_detail_panel())
-	detail_panel.add_child(dim)
 
 	var panel := Panel.new()
-	panel.position = Vector2(302, 96)
-	panel.size = Vector2(420, 576)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var ps := StyleBoxFlat.new()
 	ps.bg_color = Color(0.03, 0.05, 0.09, 0.99)
 	ps.border_color = accent
@@ -2384,22 +3117,32 @@ func _open_detail_panel() -> void:
 	detail_panel.add_child(panel)
 
 	# --- fixed header: name + type + mission/free badge ---
-	_dlabel(panel, GameManager.text(str(detail.get("name_en", "")) + " / ", "") + str(detail.get("name_zh", "")), Vector2(18, 14), Vector2(384, 26), 20, accent)
-	_dlabel(panel, str(detail.get("type_en", "")) + " · " + str(detail.get("type_zh", "")), Vector2(18, 42), Vector2(300, 20), 13, TEXT)
+	_dlabel(panel, GameManager.text(str(detail.get("name_en", "")), str(detail.get("name_zh", ""))), Vector2(12, 10), Vector2(190, 26), 17, accent)
+	_dlabel(panel, GameManager.text(str(detail.get("type_en", "")), str(detail.get("type_zh", ""))), Vector2(12, 38), Vector2(118, 20), 11, TEXT)
 	var badge := GameManager.text("MISSION TARGET", "任务目标") if is_mission else GameManager.text("FREE OBSERVATION", "自由观测")
 	if bool(detail.get("is_observed", false)):
 		badge = GameManager.text("✓ OBSERVED · ", "✓ 已观测 · ") + badge
-	var badge_label := _dlabel(panel, badge, Vector2(210, 42), Vector2(192, 20), 12, accent, HORIZONTAL_ALIGNMENT_RIGHT)
+	var badge_label := _dlabel(panel, badge, Vector2(126, 38), Vector2(104, 20), 10, accent, HORIZONTAL_ALIGNMENT_RIGHT)
+	badge_label.clip_text = true
+	badge_label.tooltip_text = badge
 	badge_label.add_theme_color_override("font_color", GREEN if bool(detail.get("is_observed", false)) else accent)
+	# Details stay in the right inspector, so only a compact close affordance is
+	# needed here. Observe and Back remain the fixed global actions below.
+	var compact_close := _detail_button("×", Vector2(28, 24), Color(0.16, 0.20, 0.30))
+	compact_close.position = Vector2(212, 8)
+	compact_close.pressed.connect(_close_detail_panel)
+	panel.add_child(compact_close)
 
 	# --- scrollable middle ---
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(14, 74)
-	scroll.size = Vector2(392, 438)
+	scroll.name = "DetailsScroll"
+	scroll.position = Vector2(8, 66)
+	scroll.size = Vector2(234, 116)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	panel.add_child(scroll)
 	var body := VBoxContainer.new()
-	body.custom_minimum_size = Vector2(374, 0)
+	body.custom_minimum_size = Vector2(220, 0)
+	body.set_meta("detail_width", 220.0)
 	body.add_theme_constant_override("separation", 4)
 	scroll.add_child(body)
 
@@ -2409,6 +3152,12 @@ func _open_detail_panel() -> void:
 	var rows: Array = []
 	if mag != null:
 		rows.append([GameManager.text("Apparent magnitude", "视星等"), "%.1f" % float(mag)])
+	var constellation := GameManager.text(str(detail.get("constellation_en", "")), str(detail.get("constellation_zh", "")))
+	if constellation != "":
+		rows.append([GameManager.text("Constellation", "所属星座"), constellation])
+	var distance := GameManager.text(str(detail.get("distance_en", "")), str(detail.get("distance_zh", "")))
+	if distance != "":
+		rows.append([GameManager.text("Distance", "距离"), distance])
 	if bool(detail.get("has_coords", false)):
 		rows.append([GameManager.text("Right ascension", "赤经 RA"), "%.2f h" % float(detail.get("ra_hours", 0.0))])
 		rows.append([GameManager.text("Declination", "赤纬 Dec"), "%.2f°" % float(detail.get("dec_degrees", 0.0))])
@@ -2422,6 +3171,29 @@ func _open_detail_panel() -> void:
 	for row in rows:
 		_drow(body, str(row[0]), str(row[1]))
 
+	# The same equipment and environment data used by observation quality.
+	_dsection(body, GameManager.text("Equipment & conditions", "设备与环境"))
+	var equipment_names: Array[String] = []
+	for part_type in GameManager.required_part_types_for_current_level():
+		var part_id := GameManager.equipped_part_id(part_type)
+		if part_id == "":
+			continue
+		var part := GameManager.get_part(part_id)
+		var part_name := GameManager.dict_text(part, "name")
+		if part_name != "" and not equipment_names.has(part_name):
+			equipment_names.append(part_name)
+	_drow(body, GameManager.text("Current equipment", "当前设备"), GameManager.text("Naked eye", "肉眼") if equipment_names.is_empty() else ", ".join(equipment_names))
+	var stats := GameManager.calculate_stats()
+	_drow(body, GameManager.text("Magnification", "当前倍率"), "%.1fx" % float(stats.get("magnification", 1.0)))
+	var env := GameManager.current_environment()
+	_drow(body, GameManager.text("Seeing", "视宁度"), str(env.get("seeing", GameManager.text("Good", "良好"))).capitalize() if GameManager.language_mode == "en" else str(env.get("seeing_zh", "良好")))
+	_drow(body, GameManager.text("Cloud cover", "云层覆盖"), "%d%%" % roundi(clampf(float(env.get("cloud_cover", 0.0)), 0.0, 1.0) * 100.0))
+	var drift_enabled := bool(GameManager.current_level().get("drift_enabled", false))
+	var drift_text := GameManager.text("Off", "关闭")
+	if drift_enabled:
+		drift_text = GameManager.text("Tracking %.2fx" % GameManager.tracking_rate(), "追踪 %.2f 倍速" % GameManager.tracking_rate()) if GameManager.has_tracking_mount_equipped() else GameManager.text("Earth-rotation drift active", "地球自转漂移开启")
+	_drow(body, GameManager.text("Drift / tracking", "漂移 / 追踪"), drift_text)
+
 	# Data provenance - so "Local calculation" never reads as an error.
 	_dsection(body, GameManager.text("Data source", "数据来源"))
 	_drow(body, GameManager.text("Position source", "位置来源"), GameManager.text(str(detail.get("position_source_en", "")), str(detail.get("position_source_zh", ""))))
@@ -2432,31 +3204,18 @@ func _open_detail_panel() -> void:
 	_dsection(body, GameManager.text("Observing advice", "观测建议"))
 	for tip in GameManager.observation_advice(object_id):
 		var t: Dictionary = tip
-		var tl := _dlabel(body, "· " + GameManager.text(str(t.get("en", "")), str(t.get("zh", ""))), Vector2.ZERO, Vector2(370, 0), 12, Color(0.82, 0.90, 0.72))
+		var tl := _dlabel(body, "· " + GameManager.text(str(t.get("en", "")), str(t.get("zh", ""))), Vector2.ZERO, Vector2(220, 0), 12, Color(0.82, 0.90, 0.72))
 		tl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		tl.custom_minimum_size = Vector2(370, 0)
+		tl.custom_minimum_size = Vector2(220, 0)
 
 	# science note
 	if str(detail.get("learning_en", "")) != "":
 		_dsection(body, GameManager.text("Did you know", "科学知识"))
-		var note := _dlabel(body, GameManager.text(str(detail.get("learning_en", "")), str(detail.get("learning_zh", ""))), Vector2.ZERO, Vector2(370, 0), 12, TEXT)
+		var note := _dlabel(body, GameManager.text(str(detail.get("learning_en", "")), str(detail.get("learning_zh", ""))), Vector2.ZERO, Vector2(220, 0), 12, TEXT)
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		note.custom_minimum_size = Vector2(370, 0)
+		note.custom_minimum_size = Vector2(220, 0)
 
-	# --- fixed footer: Observe / Back ---
-	var footer := HBoxContainer.new()
-	footer.position = Vector2(18, 524)
-	footer.size = Vector2(384, 40)
-	footer.add_theme_constant_override("separation", 8)
-	panel.add_child(footer)
-	var observe_btn := _detail_button(GameManager.text("Observe", "观测"), Vector2(180, 40), accent)
-	observe_btn.pressed.connect(func() -> void:
-		_close_detail_panel()
-		_observe())
-	footer.add_child(observe_btn)
-	var close_btn := _detail_button(GameManager.text("Back", "返回"), Vector2(120, 40), Color(0.16, 0.20, 0.30))
-	close_btn.pressed.connect(_close_detail_panel)
-	footer.add_child(close_btn)
+	# Observe and Back remain the original fixed actions below this inspector.
 
 
 func _close_detail_panel() -> void:
@@ -2478,24 +3237,25 @@ func _dsection(parent: Control, title: String) -> void:
 	label.text = title
 	label.add_theme_font_size_override("font_size", 14)
 	label.add_theme_color_override("font_color", GOLD)
-	label.custom_minimum_size = Vector2(370, 24)
+	label.custom_minimum_size = Vector2(float(parent.get_meta("detail_width", 370.0)), 24)
 	parent.add_child(label)
 
 
 func _drow(parent: Control, key: String, value: String) -> void:
 	var row := HBoxContainer.new()
-	row.custom_minimum_size = Vector2(370, 20)
+	var row_width := float(parent.get_meta("detail_width", 370.0))
+	row.custom_minimum_size = Vector2(row_width, 20)
 	var k := Label.new()
 	k.text = key
 	k.add_theme_font_size_override("font_size", 12)
 	k.add_theme_color_override("font_color", MUTED)
-	k.custom_minimum_size = Vector2(180, 20)
+	k.custom_minimum_size = Vector2(minf(180.0, row_width * 0.48), 20)
 	row.add_child(k)
 	var v := Label.new()
 	v.text = value
 	v.add_theme_font_size_override("font_size", 12)
 	v.add_theme_color_override("font_color", TEXT)
-	v.custom_minimum_size = Vector2(186, 20)
+	v.custom_minimum_size = Vector2(maxf(74.0, row_width - k.custom_minimum_size.x - 4.0), 20)
 	v.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	row.add_child(v)
 	parent.add_child(row)
@@ -2553,18 +3313,29 @@ func _nearest_center_object() -> String:
 	return nearest_id
 
 
+func _centered_observation_candidate() -> String:
+	var candidate := _nearest_center_object()
+	return candidate if candidate != "" and _is_target_centered(candidate) else ""
+
+
 func _observe() -> void:
 	if observe_transition_active:
 		return
 	call_deferred("_animate_observe_failure_if_needed")
-	if _is_constellation_target(target_id):
-		if selected_object_id == "" and _is_target_centered(target_id):
-			_select_object(target_id)
+	var active_id := _active_observation_object_id()
+	if active_id == "" or not _is_target_centered(active_id):
+		var centered_candidate := _centered_observation_candidate()
+		if centered_candidate != "" and centered_candidate != active_id:
+			_select_object(centered_candidate)
+			active_id = centered_candidate
+	if _is_constellation_target(active_id):
+		if selected_object_id == "" and _is_target_centered(active_id):
+			_select_object(active_id)
 		var constellation_availability := _observe_availability()
 		if not bool(constellation_availability.get("ok", false)):
 			guidance_label.text = str(constellation_availability.get("reason", ""))
 			return
-		GameManager.selected_object_id = target_id
+		GameManager.selected_object_id = active_id
 		await _go_to_telescope_with_lock_feedback()
 		return
 	# Naked-eye levels (L1/L2): the eyes ARE the instrument.
@@ -2670,21 +3441,38 @@ func _update_selected_text() -> void:
 		display_id = target_id
 	var obj: Dictionary = GameManager.get_object(display_id)
 	var item: Dictionary = _sky_item(display_id)
+	var is_mission := display_id == target_id
+	var accent := GOLD if is_mission else CYAN
+	if selected_badge != null:
+		selected_badge.text = GameManager.text("MISSION TARGET", "任务目标") if is_mission else GameManager.text("FREE OBSERVATION", "自由观测")
+		selected_badge.add_theme_color_override("font_color", accent)
+	if selected_panel_border != null:
+		var panel_style := StyleBoxFlat.new()
+		panel_style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+		panel_style.border_color = Color(accent.r, accent.g, accent.b, 0.82)
+		panel_style.set_border_width_all(2)
+		panel_style.set_corner_radius_all(4)
+		selected_panel_border.add_theme_stylebox_override("panel", panel_style)
+	selected_title.add_theme_color_override("font_color", accent)
 	var prefix := ""
 	if display_id == target_id:
 		prefix = "★ "
 	selected_title.text = prefix + GameManager.dict_text(obj, "name").replace("\n", " · ")
-	# Always show the target angles AND how far the current aim is from them.
+	# Always show the selected object's true angles AND how far the current aim
+	# is from it. Mission and free observation use the exact same coordinate math.
+	var label_prefix := GameManager.text("Target", "目标") if display_id == target_id else GameManager.text("Object", "天体")
 	var delta_az := shortest_angle_degrees(telescope_azimuth, float(item.get("azimuth", 0.0)))
 	var delta_alt := float(item.get("altitude", 0.0)) - telescope_altitude
-	selected_detail.text = "Target Az: %s (%s)\nTarget Alt: %s\nΔ Az: %s   Δ Alt: %s\n%s · %s" % [
+	selected_detail.text = "%s Az: %s (%s)\n%s Alt: %s\nΔ Az: %s   Δ Alt: %s\n%s · %s" % [
+		label_prefix,
 		_format_dms(float(item.get("azimuth", 0.0))),
 		str(item.get("direction_text", "Estimate")),
+		label_prefix,
 		_format_dms(float(item.get("altitude", 0.0))),
 		_format_dms(delta_az, true),
 		_format_dms(delta_alt, true),
-		str(obj.get("type_en", item.get("type", "Object"))),
-		str(item.get("source", "fallback"))
+		GameManager.text(str(obj.get("type_en", item.get("type", "Object"))), str(obj.get("type_zh", "天体"))),
+		GameManager.position_source_label(str(item.get("source", "fallback")))
 	]
 
 
@@ -2701,17 +3489,23 @@ func _update_guidance() -> void:
 
 
 func _observe_availability() -> Dictionary:
-	if not in_view_targets.has(target_id):
-		return {"ok": false, "reason": GameManager.text("Target is outside the current field.", "目标不在当前视野中。")}
-	var offset := _center_offset(target_id)
-	if _is_constellation_target(target_id):
+	var object_id := _active_observation_object_id()
+	if object_id == "" or not _is_target_centered(object_id):
+		var centered_candidate := _centered_observation_candidate()
+		if centered_candidate != "":
+			object_id = centered_candidate
+	var free_selection := object_id != target_id
+	if object_id == "" or not in_view_targets.has(object_id):
+		return {"ok": false, "reason": GameManager.text("Selected object is outside the current field. Adjust azimuth and altitude.", "目标位于当前视野外，请根据方位角和俯仰角调整镜头。") if free_selection else GameManager.text("Target is outside the current field.", "目标位于当前视野外，请根据方位角和俯仰角调整镜头。")}
+	var offset := _center_offset(object_id)
+	if _is_constellation_target(object_id):
 		if view_mode == "naked_eye":
 			return {"ok": false, "reason": GameManager.text("The pattern is acquired. Switch to Finder to study and center the star field.", "已找到星群。请切换到寻星镜观察并居中整片星域。")}
 		if offset > _center_tolerance():
 			return {"ok": false, "reason": GameManager.text("Center the whole constellation field before observing.", "请先把整片星群居中，再开始观测。")}
 		return {"ok": true, "reason": GameManager.text("Constellation field locked. Ready to observe.", "星座星域已锁定，可以观测。")}
 	if not GameManager.current_requires_telescope():
-		var eye_ok := view_mode == "naked_eye" and _is_target_centered(target_id)
+		var eye_ok := view_mode == "naked_eye" and _is_target_centered(object_id)
 		return {"ok": eye_ok, "reason": GameManager.text("Center the target for naked-eye observation.", "先把目标移到肉眼视野中央。")}
 	if view_mode == "naked_eye":
 		return {"ok": false, "reason": GameManager.text("Switch to Finder, then Scope, before observing.", "请先切换寻星镜，再进入主望远镜观测。")}
@@ -2734,10 +3528,25 @@ func _update_observe_state() -> void:
 
 
 func _guidance_for_target() -> String:
-	var item := _sky_item(target_id)
+	var active_id := _active_observation_object_id()
+	var item := _sky_item(active_id)
 	if item.is_empty():
 		return ""
 	var altitude: float = float(item.get("altitude", 0.0))
+	if arrival_hint_until > Time.get_ticks_msec():
+		return GameManager.text("The target is above the horizon at the new site. Use Eye, Finder, or Telescope to locate it.", "目标在新地点已经升起。请使用肉眼、寻星镜或望远镜寻找目标。")
+	if altitude >= 0.0 and altitude < COMFORTABLE_OBSERVING_ALTITUDE:
+		return GameManager.text("The target has just risen or is about to set. Observe here, or choose a more comfortable site.", "目标刚刚升起或即将落下。可以在此观测，或更换到更舒适的地点。")
+	if active_id != target_id:
+		if altitude <= 0.0:
+			return GameManager.text("This free-observation target is below the horizon at the current site.", "该自由观测目标位于当前地点的地平线以下。")
+		if not in_view_targets.has(active_id):
+			return GameManager.text("Selected free target is outside the current field. Adjust azimuth and altitude.", "目标位于当前视野外，请根据方位角和俯仰角调整镜头。")
+		if _is_target_centered(active_id):
+			return GameManager.text("Free target centered. Ready to observe without affecting the mission.", "自由观测目标已居中，可观测；不会影响当前任务。")
+		var free_delta_az := shortest_angle_degrees(telescope_azimuth, float(item.get("azimuth", 0.0)))
+		var free_delta_alt := altitude - telescope_altitude
+		return _movement_guidance(free_delta_az, free_delta_alt)
 	if altitude <= 0.0:
 		return GameManager.text("Below horizon. Cannot observe tonight.", "目标在地平线以下，今晚无法观测。")
 	var delta_az := shortest_angle_degrees(telescope_azimuth, float(item.get("azimuth", 0.0)))
@@ -3023,3 +3832,10 @@ func _clear_built_ui() -> void:
 	az_knob_icon = null
 	alt_knob_icon = null
 	target_state_ring = null
+	edge_target_indicator = null
+	edge_target_arrow = null
+	edge_target_name = null
+	edge_target_delta = null
+	edge_target_tween = null
+	selected_badge = null
+	selected_panel_border = null

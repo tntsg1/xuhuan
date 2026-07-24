@@ -22,8 +22,8 @@ func _initialize() -> void:
 	# (1)(16)(17) campaign size and final level.
 	_check(int(mm.get_max_level()) == 131, "1. campaign appends expansion after the original 91 levels")
 	_check(not mm.is_final_level(90), "16. L90 is NOT the final level")
-	_check(mm.is_final_level(91), "17. L91 (final report) closes the woven campaign")
-	_check(not mm.is_final_level(131) and mm.order_index(131) < mm.order_index(76), "17b. constellation finale plays before the FAST block, not after the ending")
+	_check(not mm.is_final_level(91), "17. L91 closes the original telescope block, not the expanded campaign")
+	_check(mm.is_final_level(131) and mm.order_index(131) > mm.order_index(91), "17b. L131 closes the appended constellation/observation expansion")
 
 	# (2) L1-24 contain no Newtonian content in data.
 	var forbidden := ["newtonian", "Newtonian", "牛顿", "reflector_tube", "primary_mirror", "secondary_mirror", "collimation_tool"]
@@ -173,7 +173,7 @@ func _initialize() -> void:
 	gm._migrate_progress_schema()
 	_check(int(gm.progress.get("current_level", 0)) == 41, "25. old save L40 migrates to L41")
 	_check(gm.progress.get("completed_levels", []) == [33, 35, 40], "25. completed levels shift with content")
-	_check(int(gm.progress.get("campaign_version", 0)) == 91, "25. campaign version stamped")
+	_check(int(gm.progress.get("campaign_version", 0)) == 93, "25. campaign version stamped")
 	gm.new_game()
 
 	# (26)(27) Story routing: plays once, never replays, returns to scene.

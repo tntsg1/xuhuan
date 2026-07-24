@@ -1,0 +1,70 @@
+{
+  "_note": "Horizon panorama layers per observing-site environment. All art comes from the user's tw/changj folder; RGB originals had their checkerboard keyed to real alpha (see docs). Layers render BELOW the horizon line inside the sky view, never over the UI.",
+  "sets": {
+    "plateau": {
+      "label_en": "High plateau observatory",
+      "label_zh": "高原观测站",
+      "far": "far_mountain",
+      "mid": "mid_observatory",
+      "near": "near_platform"
+    },
+    "polar": {
+      "label_en": "Polar station",
+      "label_zh": "极地观测站",
+      "far": "far_snow",
+      "mid": "mid_observatory",
+      "near": "near_platform_b"
+    },
+    "desert": {
+      "label_en": "Desert observatory",
+      "label_zh": "沙漠观测站",
+      "far": "far_desert",
+      "mid": "mid_desert",
+      "near": "near_platform"
+    },
+    "city": {
+      "label_en": "City rooftop",
+      "label_zh": "城市屋顶",
+      "far": "far_city",
+      "mid": "mid_city",
+      "near": "near_platform_b"
+    },
+    "forest": {
+      "label_en": "Forest observatory",
+      "label_zh": "森林观测站",
+      "far": "far_forest",
+      "mid": "mid_forest",
+      "near": "near_forest"
+    },
+    "mountain": {
+      "label_en": "Mountain observatory",
+      "label_zh": "山地观测站",
+      "far": "far_snow",
+      "mid": "mid_observatory",
+      "near": "near_platform"
+    }
+  },
+  "site_sets": {
+    "home_san_gabriel": "mountain",
+    "mauna_kea": "plateau",
+    "ali_tibet": "plateau",
+    "la_palma": "plateau",
+    "gamsberg": "desert",
+    "atacama_paranal": "desert",
+    "cerro_tololo": "desert",
+    "la_silla": "desert",
+    "kitt_peak": "desert",
+    "greenwich": "city",
+    "lake_tekapo": "forest",
+    "siding_spring": "forest",
+    "sutherland": "plateau",
+    "svalbard": "polar",
+    "ushuaia": "polar"
+  },
+  "default_set": "mountain",
+  "clouds": {
+    "band": "cloud_band",
+    "wisp": "cloud_wisp",
+    "layer": "cloud_layer"
+  }
+}

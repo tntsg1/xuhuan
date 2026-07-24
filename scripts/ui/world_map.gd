@@ -52,6 +52,8 @@ var minimum_altitude := 10.0
 var target_below := false
 var target_low := false
 var target_alt_now := 0.0
+var map_target_id := ""
+var comfortable_altitude := 18.0
 
 var site_visibility: Dictionary = {}
 var scan_order: Array = []          # site ids sorted by distance from current
@@ -91,9 +93,15 @@ var info_panel: Control
 var confirm_button: Button
 var skip_button: Button
 var back_button: Button
+var home_button: Button
 var status_label: Label
 var headline_label: Label
 var panel_rows: Array = []   # [{labels:[Label], order:int}] for staggered reveal
+var tutorial_overlay: Control
+var tutorial_highlight: Panel
+var tutorial_copy: Label
+var tutorial_step := 0
+var tutorial_steps: Array = []
 
 
 func _ready() -> void:
@@ -101,16 +109,22 @@ func _ready() -> void:
 	home_site = GameManager.home_location()
 	current_site = GameManager.observing_location()
 	sites = GameManager.location_sites()
-	radec = GameManager.current_target_radec()
+	map_target_id = GameManager.world_map_target_id
+	if map_target_id == "":
+		map_target_id = GameManager.selected_object_id
+	if map_target_id == "":
+		map_target_id = GameManager.current_target_object_id()
+	GameManager.world_map_target_id = map_target_id
+	radec = GameManager.object_radec(map_target_id)
 	var service := SkyPositionService.new()
 	minimum_altitude = float(service.config.get("minimum_visible_altitude_degrees", 10.0))
-	var vis_now: Dictionary = GameManager.target_visibility()
+	var vis_now: Dictionary = GameManager.object_visibility(map_target_id)
 	target_alt_now = float(vis_now.get("altitude", 0.0))
 	target_below = bool(vis_now.get("below_horizon", false))
-	target_low = (not target_below) and not bool(vis_now.get("visible", true))
+	target_low = (not target_below) and target_alt_now < comfortable_altitude
 	# ALL site maths happens here, before a single frame of animation.
 	_compute_all_visibility(service)
-	recommended = GameManager.recommend_observation_location()
+	recommended = _recommend_site()
 	selected_id = str(recommended.get("site", {}).get("id", "")) if not recommended.is_empty() else ""
 	_build_scan_order()
 	_build()
@@ -121,6 +135,7 @@ func _ready() -> void:
 		arc_progress = 1.0
 		reveal = 1.0
 	set_process(true)
+	call_deferred("_show_first_map_tutorial")
 
 
 func _reduced() -> bool:
@@ -138,15 +153,64 @@ func _compute_all_visibility(service: SkyPositionService) -> void:
 	for site_value in sites:
 		var site: Dictionary = site_value
 		var v := service.visibility_at(float(radec["ra_hours"]), float(radec["dec_degrees"]), float(site.get("lat", 0.0)), float(site.get("lon", 0.0)), utc)
+		var cloud_cover := _site_cloud_cover(site)
+		var seeing := _site_seeing(site)
 		site_visibility[str(site.get("id", ""))] = {
 			"site": site,
 			"altitude": float(v["altitude"]),
 			"azimuth": float(v["azimuth"]),
-			"visible": bool(v["visible"]),
+			"visible": float(v["altitude"]) >= 0.0,
+			"comfortable": float(v["altitude"]) >= comfortable_altitude,
 			"direction_text": str(v["direction_text"]),
 			"local_time": service.local_time_string(float(site.get("lon", 0.0)), utc),
-			"visible_hours": service.visible_duration_hours(float(radec["ra_hours"]), float(radec["dec_degrees"]), float(site.get("lat", 0.0)), float(site.get("lon", 0.0)), utc)
+			"visible_hours": service.visible_duration_hours(float(radec["ra_hours"]), float(radec["dec_degrees"]), float(site.get("lat", 0.0)), float(site.get("lon", 0.0)), utc),
+			"cloud_cover": cloud_cover,
+			"seeing": seeing
 		}
+
+
+func _recommend_site() -> Dictionary:
+	var best: Dictionary = {}
+	var fallback: Dictionary = {}
+	var best_score := -INF
+	var fallback_score := -INF
+	for id_value in site_visibility.keys():
+		var candidate: Dictionary = site_visibility[id_value]
+		var altitude := float(candidate.get("altitude", -90.0))
+		if altitude < 0.0:
+			continue
+		var site: Dictionary = candidate.get("site", {})
+		var seeing_score: float = float({"excellent": 3.0, "good": 2.0, "average": 1.0}.get(str(candidate.get("seeing", "average")), 1.0))
+		var score := altitude * 4.0 + (9.0 - float(site.get("bortle", 5))) * 6.0 + float(seeing_score) * 5.0 - float(candidate.get("cloud_cover", 0.25)) * 24.0
+		if score > fallback_score:
+			fallback_score = score
+			fallback = candidate.duplicate(true)
+		if altitude >= comfortable_altitude and score > best_score:
+			best_score = score
+			best = candidate.duplicate(true)
+	return best if not best.is_empty() else fallback
+
+
+func _site_cloud_cover(site: Dictionary) -> float:
+	if site.has("cloud_cover"):
+		return clampf(float(site.get("cloud_cover", 0.0)), 0.0, 1.0)
+	var condition := str(site.get("condition_en", "")).to_lower()
+	if "above the clouds" in condition or "driest" in condition or "dry summit" in condition:
+		return 0.08
+	if "clear" in condition or "crisp" in condition or "dry" in condition:
+		return 0.14
+	return 0.24
+
+
+func _site_seeing(site: Dictionary) -> String:
+	if site.has("seeing"):
+		return str(site.get("seeing", "average")).to_lower()
+	var condition := str(site.get("condition_en", "")).to_lower()
+	if "excellent" in condition or "stable" in condition or "calm" in condition or "superb" in condition:
+		return "excellent"
+	if "clear" in condition or "dry" in condition or "crisp" in condition:
+		return "good"
+	return "average"
 
 
 func _build_scan_order() -> void:
@@ -244,7 +308,9 @@ void fragment() {
 	overlay.draw.connect(_draw_overlay)
 
 	headline_label = _label("", Vector2(20, 12), Vector2(744, 30), 21, RED, HORIZONTAL_ALIGNMENT_CENTER)
-	status_label = _label("", Vector2(20, 44), Vector2(744, 22), 13, CYAN, HORIZONTAL_ALIGNMENT_CENTER)
+	status_label = _label("", Vector2(20, 44), Vector2(744, 42), 13, CYAN, HORIZONTAL_ALIGNMENT_CENTER)
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status_label.max_lines_visible = 2
 	_refresh_headline()
 
 	info_panel = Control.new()
@@ -256,17 +322,132 @@ void fragment() {
 	confirm_button = _button(GameManager.text("Confirm Site", "确认地点"), Vector2(784, 614), Vector2(228, 46), GOLD)
 	confirm_button.pressed.connect(_on_confirm)
 	add_child(confirm_button)
-	skip_button = _button(GameManager.text("Skip", "跳过"), Vector2(784, 668), Vector2(110, 34), Color(0.16, 0.20, 0.28))
+	skip_button = _button(GameManager.text("Skip", "跳过"), Vector2(784, 668), Vector2(70, 34), Color(0.16, 0.20, 0.28))
 	skip_button.add_theme_font_size_override("font_size", 12)
 	skip_button.pressed.connect(_skip_animation)
 	add_child(skip_button)
-	back_button = _button(GameManager.text("Back", "返回"), Vector2(902, 668), Vector2(110, 34), Color(0.16, 0.20, 0.28))
-	back_button.add_theme_font_size_override("font_size", 12)
+	back_button = _button(GameManager.text("Back to Observation", "返回观星"), Vector2(862, 668), Vector2(150, 34), Color(0.16, 0.20, 0.28))
+	back_button.add_theme_font_size_override("font_size", 11)
 	back_button.pressed.connect(_on_back)
 	add_child(back_button)
+	home_button = _button(GameManager.text("Return Home", "返回默认地点"), Vector2(784, 710), Vector2(228, 34), Color(0.10, 0.14, 0.20))
+	home_button.name = "ReturnHomeButton"
+	home_button.add_theme_font_size_override("font_size", 12)
+	home_button.visible = not GameManager.is_at_home_location()
+	home_button.pressed.connect(_on_return_home)
+	add_child(home_button)
 
 	_build_site_buttons()
 	_refresh_info()
+
+
+func _show_first_map_tutorial() -> void:
+	var seen: Array = GameManager.progress.get("seen_teaching_steps", [])
+	if seen.has("world_map_controls_v1") or not is_inside_tree():
+		return
+	# Maya explains the existing map controls in place. This temporary overlay
+	# disappears after the lesson and does not become another information panel.
+	tutorial_steps = [
+		{"rect": MAP_AREA, "en": "This map chooses where you observe. Earth's rotation and latitude decide whether a target has risen.", "zh": "世界地图用于选择观测地点。地球自转和纬度会决定目标是否已经升起。"},
+		{"kind": "current", "en": "The blue pulse marks your current observing site.", "zh": "蓝色脉冲标记表示当前观测地点。"},
+		{"kind": "recommended", "en": "The gold pulse marks a recommended site where the target is visible. The arc shows the travel direction.", "zh": "金色脉冲表示目标可见的推荐地点，弧线表示移动方向。"},
+		{"rect": MAP_AREA, "en": "Drag the map to pan. Use the mouse wheel or a two-finger pinch to zoom.", "zh": "拖动地图可以平移；使用鼠标滚轮或双指手势可以缩放。"},
+		{"kind": "info", "en": "The site panel shows latitude, longitude, target altitude, azimuth, local time, visibility window and conditions.", "zh": "右侧地点栏显示经纬度、目标高度角、方位角、当地时间、可见时段和观测条件。"},
+		{"kind": "confirm", "en": "Select a site, then confirm it. The sky will be recalculated and you will return to Observation.", "zh": "选择地点后点击确认。系统会重新计算天空位置并返回观星界面。"},
+		{"kind": "back", "en": "Back cancels without changing location. Return Home selects the default observing site.", "zh": "返回会取消选择且不改变地点；返回默认地点会切回基地观测点。"}
+	]
+	_build_map_tutorial_overlay()
+	_show_map_tutorial_step(0)
+
+
+func _build_map_tutorial_overlay() -> void:
+	tutorial_overlay = Control.new()
+	tutorial_overlay.name = "MayaMapTutorial"
+	tutorial_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tutorial_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	tutorial_overlay.z_index = 500
+	add_child(tutorial_overlay)
+	var dim := ColorRect.new()
+	dim.color = Color(0.0, 0.01, 0.03, 0.68)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	tutorial_overlay.add_child(dim)
+	tutorial_highlight = Panel.new()
+	var hs := StyleBoxFlat.new()
+	hs.bg_color = Color(0.0, 0.0, 0.0, 0.03)
+	hs.border_color = GOLD_BRIGHT
+	hs.set_border_width_all(3)
+	hs.set_corner_radius_all(5)
+	tutorial_highlight.add_theme_stylebox_override("panel", hs)
+	tutorial_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tutorial_overlay.add_child(tutorial_highlight)
+	var teaching := Panel.new()
+	teaching.position = Vector2(126, 558)
+	teaching.size = Vector2(624, 164)
+	var ts := StyleBoxFlat.new()
+	ts.bg_color = Color(0.025, 0.045, 0.08, 0.98)
+	ts.border_color = GOLD
+	ts.set_border_width_all(2)
+	ts.set_corner_radius_all(5)
+	teaching.add_theme_stylebox_override("panel", ts)
+	tutorial_overlay.add_child(teaching)
+	var maya := Label.new()
+	maya.text = "MAYA"
+	maya.position = Vector2(20, 12)
+	maya.size = Vector2(100, 26)
+	maya.add_theme_font_size_override("font_size", 20)
+	maya.add_theme_color_override("font_color", GOLD_BRIGHT)
+	teaching.add_child(maya)
+	tutorial_copy = Label.new()
+	tutorial_copy.position = Vector2(20, 42)
+	tutorial_copy.size = Vector2(584, 66)
+	tutorial_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tutorial_copy.add_theme_font_size_override("font_size", 15)
+	tutorial_copy.add_theme_color_override("font_color", TEXT)
+	teaching.add_child(tutorial_copy)
+	var next := _button(GameManager.text("Next", "下一步"), Vector2(448, 112), Vector2(156, 38), GOLD)
+	next.name = "TutorialNextButton"
+	next.pressed.connect(_advance_map_tutorial)
+	teaching.add_child(next)
+
+
+func _tutorial_rect(step: Dictionary) -> Rect2:
+	match str(step.get("kind", "")):
+		"current":
+			var p := _project(float(current_site.get("lat", 0.0)), float(current_site.get("lon", 0.0)))
+			return Rect2(p - Vector2(34, 34), Vector2(68, 68))
+		"recommended":
+			var site: Dictionary = recommended.get("site", current_site)
+			var p := _project(float(site.get("lat", 0.0)), float(site.get("lon", 0.0)))
+			return Rect2(p - Vector2(38, 38), Vector2(76, 76))
+		"info": return Rect2(info_panel.position, info_panel.size)
+		"confirm": return Rect2(confirm_button.position, confirm_button.size)
+		"back": return Rect2(back_button.position, back_button.size)
+	return step.get("rect", MAP_AREA)
+
+
+func _show_map_tutorial_step(index: int) -> void:
+	tutorial_step = clampi(index, 0, tutorial_steps.size() - 1)
+	var step: Dictionary = tutorial_steps[tutorial_step]
+	tutorial_copy.text = GameManager.text(str(step.get("en", "")), str(step.get("zh", "")))
+	var rect := _tutorial_rect(step).grow(6.0)
+	tutorial_highlight.position = rect.position
+	tutorial_highlight.size = rect.size
+
+
+func _advance_map_tutorial() -> void:
+	if tutorial_step + 1 < tutorial_steps.size():
+		_show_map_tutorial_step(tutorial_step + 1)
+		return
+	var seen: Array = GameManager.progress.get("seen_teaching_steps", [])
+	if not seen.has("world_map_controls_v1"):
+		seen.append("world_map_controls_v1")
+		GameManager.progress["seen_teaching_steps"] = seen
+		GameManager.record_horizon_lesson_if_first()
+		GameManager.save()
+	if tutorial_overlay != null:
+		tutorial_overlay.queue_free()
+	tutorial_overlay = null
 
 
 func _refresh_headline() -> void:
@@ -388,7 +569,15 @@ func _update_status_text() -> void:
 		Phase.ROUTE:
 			t = GameManager.text("Calculating a new observing location...", "正在计算新的观测地点……")
 		Phase.READY:
-			t = GameManager.text("Confirm the site to travel there.", "点击确认地点即可前往。")
+			var selected: Dictionary = site_visibility.get(selected_id, {})
+			var site: Dictionary = selected.get("site", {})
+			var target_object: Dictionary = GameManager.get_object(map_target_id)
+			t = GameManager.text(
+				"Recommended site: %s. %s will be %.1f° above the horizon.\nConfirm the site to travel there.",
+				"推荐观测点：%s。在这里，%s 高度角为 %.1f°。\n点击确认地点即可前往。") % [
+				GameManager.dict_text(site, "name"),
+				GameManager.dict_text(target_object, "name"),
+				float(selected.get("altitude", 0.0))]
 			c = GOLD
 		Phase.CONFIRM:
 			t = GameManager.text("The target is now above the horizon.", "目标现在已经升到地平线以上。")
@@ -798,6 +987,12 @@ func _refresh_info() -> void:
 		_prow(body, GameManager.text("Scanning...", "扫描中……"), "", DIM, 12, 1)
 		return
 	var is_rec := str(site.get("id", "")) == str(recommended.get("site", {}).get("id", ""))
+	var target_object: Dictionary = GameManager.get_object(map_target_id)
+	var free_observation := map_target_id != GameManager.current_target_object_id()
+	_prow(body, GameManager.text("FREE OBSERVATION", "自由观测") if free_observation else GameManager.text("MISSION TARGET", "任务目标"), "", CYAN if free_observation else GOLD, 12, 1)
+	_prow(body, GameManager.text("Observing target", "观测目标"), GameManager.dict_text(target_object, "name"), CYAN, 11, 1)
+	_prow(body, GameManager.text("Current site", "当前地点"), GameManager.dict_text(current_site, "name"), DIM, 11, 2)
+	_prow(body, GameManager.text("Current target Alt", "当前目标高度角"), "%.1f°" % target_alt_now, RED if target_below else TEXT, 11, 3)
 	_prow(body, GameManager.dict_text(site, "name"), "", GOLD_BRIGHT, 16, 1)
 	_prow(body, GameManager.dict_text(site, "country"), "", DIM, 11, 2)
 	var rows := [
@@ -809,13 +1004,24 @@ func _refresh_info() -> void:
 		[GameManager.text("Visible for", "可见时长"), "%.1f h" % float(v.get("visible_hours", 0.0))],
 		[GameManager.text("Sky quality", "天空条件"), "Bortle %d" % int(site.get("bortle", 5))],
 		[GameManager.text("Conditions", "观测条件"), GameManager.dict_text(site, "condition")],
+		[GameManager.text("Cloud cover", "云量"), "%d%% (%s)" % [int(round(float(v.get("cloud_cover", 0.0)) * 100.0)), GameManager.text("local site estimate", "本地站点估计")]],
+		[GameManager.text("Seeing", "视宁度"), str(v.get("seeing", "average")).capitalize()],
 	]
 	var step := 3
 	for row in rows:
 		_prow(body, str(row[0]), str(row[1]), TEXT, 11, step)
 		step += 1
 	var vis := bool(v.get("visible", false))
-	_prow(body, ("★ " if is_rec else "") + (GameManager.text("Above the horizon", "在地平线以上") if vis else GameManager.text("Not visible here", "此处不可见")), "", GREEN if vis else RED, 12, step + 1)
+	var comfort := bool(v.get("comfortable", false))
+	var visibility_text := GameManager.text("Comfortably above the horizon", "适合观测") if comfort else GameManager.text("Above the horizon, but low", "已升起，但高度较低")
+	if not vis:
+		visibility_text = GameManager.text("Below the horizon here", "在此地点位于地平线以下")
+	_prow(body, ("★ " if is_rec else "") + visibility_text, "", GREEN if comfort else (GOLD if vis else RED), 12, step + 1)
+	if is_rec:
+		_prow(body, GameManager.text("Recommended site", "推荐观测点"), GameManager.dict_text(site, "name"), GOLD_BRIGHT, 12, step + 2)
+		_prow(body,
+			GameManager.text("The target will be %.1f° above the horizon.", "目标在这里的高度角为 %.1f°。") % float(v.get("altitude", 0.0)),
+			"", TEXT, 11, step + 3)
 
 
 func _prow(parent: Control, key: String, value: String, color: Color, size_px: int, order: int) -> void:
@@ -860,16 +1066,36 @@ func _enter_sky() -> void:
 	var v: Dictionary = site_visibility.get(selected_id, {})
 	var site: Dictionary = v.get("site", {})
 	if site.is_empty():
-		GameManager.go("observatory")
+		GameManager.return_from_world_map()
 		return
 	GameManager.set_observing_location(site)
+	GameManager.world_map_arrival_context = {
+		"target_id": map_target_id,
+		"site_id": str(site.get("id", "")),
+		"site_name_en": str(site.get("name_en", "")),
+		"site_name_zh": str(site.get("name_zh", "")),
+		"altitude": float(v.get("altitude", 0.0)),
+		"azimuth": float(v.get("azimuth", 0.0)),
+		"free_observation": map_target_id != GameManager.current_target_object_id()
+	}
 	GameManager.record_horizon_lesson_if_first()
-	GameManager.go_to_observation("door")
+	GameManager.return_from_world_map()
 
 
 func _on_back() -> void:
-	# Never clears the target, the save, or the observing location.
-	GameManager.go("observatory")
+	# Never clears the target, the save, or the observing location. Cancelling a
+	# below-horizon prompt returns to the exact entry point that opened the map.
+	GameManager.return_from_world_map()
+
+
+func _on_return_home() -> void:
+	if GameManager.is_at_home_location():
+		return
+	GameManager.reset_observing_location()
+	# Returning home is an explicit player decision. Let Sky show Below Horizon
+	# guidance once instead of immediately bouncing back into this map.
+	GameManager.suppress_next_world_map_redirect = true
+	GameManager.return_from_world_map()
 
 
 # ----------------------------------------------------------------- helpers

@@ -57,10 +57,18 @@ var player_facing := "down"
 var player_anim_frame := 0
 var player_anim_time := 0.0
 var player_is_moving := false
+var room_transition_active := false
 
 
 func _ready() -> void:
 	GameManager.language_changed.connect(_on_language_changed)
+	# room_guidance_target is runtime-only state that used to be written ONLY by
+	# the Mission Complete "Continue" button. Any other way of reaching the lobby
+	# - quitting and relaunching, loading a save, backing out of a screen - left
+	# it empty, which hid the whole highlight and left the player with no next
+	# step. The lobby always recomputes it from the current level instead.
+	if GameManager.room_guidance_target == "":
+		GameManager.update_room_guidance_for_level()
 	if GameManager.last_guidance == "ready_to_observe":
 		active_guidance = GameManager.last_guidance
 		GameManager.last_guidance = ""
@@ -87,6 +95,9 @@ func _show_room_tutorial() -> void:
 
 
 func _process(delta: float) -> void:
+	if room_transition_active:
+		_update_hud()
+		return
 	if unlock_popup != null:
 		_update_hud()
 		return
@@ -97,6 +108,8 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if room_transition_active:
+		return
 	# The Mission Board is a modal task center. Do not let its hotkeys also
 	# activate furniture behind it while the player is reading the route.
 	if mission_board_popup != null:
@@ -170,6 +183,32 @@ func _draw_full_background() -> void:
 	bg.stretch_mode = TextureRect.STRETCH_SCALE
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+	if _space_console_active():
+		_draw_space_console_overlay()
+
+
+func _space_console_active() -> bool:
+	var level := GameManager.current_level()
+	return str(level.get("telescope_family", "")) == "space_segmented" \
+		or str(level.get("observation_mode", "")) == "space_infrared"
+
+
+func _draw_space_console_overlay() -> void:
+	# The existing bottom-right furniture becomes the mission console in the
+	# space chapter. This is a compact phosphor insert, not a second room HUD.
+	var screen := Panel.new()
+	screen.name = "SpaceConsoleScreen"
+	screen.position = Vector2(738, 492)
+	screen.size = Vector2(138, 112)
+	screen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	screen.add_theme_stylebox_override("panel", _style(Color(0.01, 0.01, 0.01, 0.94), Color(0.90, 0.90, 0.90, 0.92), 1, 0))
+	add_child(screen)
+	_board_label(screen, "SPACE LINK", Vector2(8, 8), Vector2(122, 18), 11, Color(0.96, 0.96, 0.96), HORIZONTAL_ALIGNMENT_CENTER)
+	for row in range(4):
+		var width := 108.0 - float(row % 3) * 18.0
+		_rect_to(screen, Vector2(14, 34 + row * 13), Vector2(width, 2), Color(0.54, 0.54, 0.54, 0.78))
+	_rect_to(screen, Vector2(14, 90), Vector2(78, 1), Color(0.28, 0.28, 0.28, 0.9))
+	_board_label(screen, "L2 BUS READY", Vector2(14, 92), Vector2(110, 14), 8, Color(0.72, 0.72, 0.72))
 
 
 func _register_hitboxes() -> void:
@@ -184,7 +223,10 @@ func _register_hitboxes() -> void:
 	else:
 		_register_interactable("telescope", GameManager.text("Telescope Observation Pad", "望远镜观测台"), GameManager.text("Open-air quick setup: carry your telescope out and observe right away. Same sky as the dome.", "露天快速架设：把你组装的望远镜搬出来立刻观测。与圆顶观星站看同一片天空。"), Rect2(455, 398, 120, 124))
 	_register_interactable("journal", GameManager.text("Learning Journal", "学习日志"), GameManager.text("Review completed observations and learning cards.", "查看已完成的观测和学习卡。"), Rect2(96, 476, 214, 132))
-	_register_interactable("computer", GameManager.text("Stats Terminal", "统计终端"), GameManager.text("Check telescope performance and readiness.", "查看望远镜性能和就绪状态。"), Rect2(730, 492, 146, 116))
+	if _space_console_active():
+		_register_interactable("computer", GameManager.text("Space Telescope Console", "空间望远镜控制台"), GameManager.text("Open the segmented infrared observatory command link.", "打开分段式红外空间望远镜指挥链路。"), Rect2(730, 492, 146, 116))
+	else:
+		_register_interactable("computer", GameManager.text("Stats Terminal", "统计终端"), GameManager.text("Check telescope performance and readiness.", "查看望远镜性能和就绪状态。"), Rect2(730, 492, 146, 116))
 
 	# Foot blockers only: keep furniture edges walkable while preventing the player from standing inside bases.
 	obstacles.append_array([
@@ -228,17 +270,19 @@ func _draw_player() -> void:
 
 func _draw_hud() -> void:
 	var top := Panel.new()
+	top.name = "BaseTopHUD"
 	top.position = Vector2(58, 10)
 	top.size = Vector2(834, 50)
 	top.add_theme_stylebox_override("panel", _style(NAVY, BRASS, 2, 4))
 	add_child(top)
 	_corner_pins(top)
 
-	level_value_label = _label_to(top, "", Vector2(38, 10), Vector2(150, 26), 18, HORIZONTAL_ALIGNMENT_LEFT)
-	credits_value_label = _label_to(top, "", Vector2(330, 10), Vector2(220, 26), 18, HORIZONTAL_ALIGNMENT_LEFT)
-	telescope_status_label = _label_to(top, "", Vector2(590, 11), Vector2(224, 24), 16, HORIZONTAL_ALIGNMENT_LEFT)
+	level_value_label = _label_to(top, "", Vector2(28, 10), Vector2(190, 26), 18, HORIZONTAL_ALIGNMENT_LEFT)
+	credits_value_label = _label_to(top, "", Vector2(280, 10), Vector2(230, 26), 18, HORIZONTAL_ALIGNMENT_LEFT)
+	telescope_status_label = _label_to(top, "", Vector2(548, 11), Vector2(258, 24), 16, HORIZONTAL_ALIGNMENT_LEFT)
 
 	var menu := Button.new()
+	menu.name = "MenuButton"
 	menu.text = GameManager.text("Menu", "菜单")
 	menu.position = Vector2(900, 18)
 	menu.size = Vector2(76, 32)
@@ -250,120 +294,9 @@ func _draw_hud() -> void:
 	menu.pressed.connect(func() -> void: GameManager.go("menu"))
 	add_child(menu)
 
-	var touch_settings := Button.new()
-	touch_settings.text = GameManager.text("Touch", "触控")
-	touch_settings.position = Vector2(818, 18)
-	touch_settings.size = Vector2(76, 32)
-	touch_settings.add_theme_font_size_override("font_size", 10)
-	touch_settings.add_theme_stylebox_override("normal", _style(Color(0.055, 0.075, 0.120, 0.94), BRASS, 1, 3))
-	touch_settings.add_theme_stylebox_override("hover", _style(Color(0.10, 0.15, 0.22, 0.98), Color(1.0, 0.82, 0.42), 1, 3))
-	touch_settings.add_theme_color_override("font_color", WARM_TEXT)
-	touch_settings.pressed.connect(_toggle_mobile_settings)
-	add_child(touch_settings)
-
-	var types_button := Button.new()
-	types_button.text = GameManager.text("Scopes", "望远镜图鉴")
-	types_button.position = Vector2(718, 18)
-	types_button.size = Vector2(92, 32)
-	types_button.add_theme_font_size_override("font_size", 10)
-	types_button.add_theme_stylebox_override("normal", _style(Color(0.055, 0.075, 0.120, 0.94), BRASS, 1, 3))
-	types_button.add_theme_stylebox_override("hover", _style(Color(0.10, 0.15, 0.22, 0.98), Color(1.0, 0.82, 0.42), 1, 3))
-	types_button.add_theme_color_override("font_color", WARM_TEXT)
-	types_button.pressed.connect(func() -> void:
-		GameManager.set_meta("telescope_types_browse", true)
-		GameManager.go("telescope_types"))
-	add_child(types_button)
-
-	# Travel is always available, not only when the target is below the horizon.
-	var site_button := Button.new()
-	site_button.text = GameManager.text("Site", "观测地点")
-	site_button.position = Vector2(618, 18)
-	site_button.size = Vector2(92, 32)
-	site_button.add_theme_font_size_override("font_size", 10)
-	site_button.add_theme_stylebox_override("normal", _style(Color(0.055, 0.075, 0.120, 0.94), BRASS, 1, 3))
-	site_button.add_theme_stylebox_override("hover", _style(Color(0.10, 0.15, 0.22, 0.98), Color(1.0, 0.82, 0.42), 1, 3))
-	site_button.add_theme_color_override("font_color", WARM_TEXT)
-	site_button.pressed.connect(func() -> void: GameManager.go("world_map"))
-	add_child(site_button)
+	# Base HUD ends here. Site travel belongs to Sky Observation, telescope
+	# families belong to Assembly, and touch setup belongs to Settings/mobile UI.
 	_draw_hud_lower()
-
-
-var mobile_settings_popup: Control
-
-
-func _toggle_mobile_settings() -> void:
-	if mobile_settings_popup != null:
-		mobile_settings_popup.queue_free()
-		mobile_settings_popup = null
-		return
-	mobile_settings_popup = Control.new()
-	mobile_settings_popup.set_anchors_preset(Control.PRESET_FULL_RECT)
-	mobile_settings_popup.z_index = 180
-	add_child(mobile_settings_popup)
-	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.6)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	mobile_settings_popup.add_child(dim)
-	var panel := Panel.new()
-	panel.position = Vector2(292, 154)
-	panel.size = Vector2(440, 460)
-	panel.add_theme_stylebox_override("panel", _style(Color(0.035, 0.055, 0.10, 0.98), BRASS, 3, 6))
-	mobile_settings_popup.add_child(panel)
-	var title := _label(GameManager.text("Mobile Controls", "移动端控制设置"), Vector2(312, 170), Vector2(400, 28), 20, HORIZONTAL_ALIGNMENT_CENTER)
-	title.reparent(panel)
-	title.position = Vector2(20, 16)
-	var y := 60.0
-	var rows := [
-		["mobile_mode", GameManager.text("Mobile mode (touch controls)", "移动模式（触摸控制）"), TouchInput.is_mobile()],
-		["joystick_visible", GameManager.text("Show virtual joystick", "显示虚拟摇杆"), TouchInput.joystick_visible],
-		["invert_pitch", GameManager.text("Invert pitch axis", "反转俯仰轴"), TouchInput.invert_pitch],
-		["show_touch_hints", GameManager.text("Show touch hints", "显示触摸提示"), TouchInput.show_touch_hints],
-	]
-	for row_value in rows:
-		var row: Array = row_value
-		var check := CheckButton.new()
-		check.text = str(row[1])
-		check.button_pressed = bool(row[2])
-		check.position = Vector2(24, y)
-		check.size = Vector2(392, 44)
-		check.add_theme_font_size_override("font_size", 14)
-		var setting_key := str(row[0])
-		check.toggled.connect(func(pressed: bool) -> void:
-			if setting_key == "mobile_mode":
-				TouchInput.set_mobile_mode(pressed)
-			else:
-				TouchInput.apply_setting(setting_key, pressed)
-		)
-		panel.add_child(check)
-		y += 54.0
-	for slider_spec in [
-		["joystick_scale", GameManager.text("Joystick size", "摇杆大小"), 0.7, 1.6, TouchInput.joystick_scale],
-		["touch_sensitivity", GameManager.text("Touch sensitivity", "触摸灵敏度"), 0.4, 2.5, TouchInput.touch_sensitivity],
-	]:
-		var spec: Array = slider_spec
-		var slider_label := Label.new()
-		slider_label.text = str(spec[1])
-		slider_label.position = Vector2(24, y)
-		slider_label.size = Vector2(200, 22)
-		slider_label.add_theme_font_size_override("font_size", 14)
-		panel.add_child(slider_label)
-		var slider := HSlider.new()
-		slider.min_value = float(spec[2])
-		slider.max_value = float(spec[3])
-		slider.step = 0.05
-		slider.value = float(spec[4])
-		slider.position = Vector2(24, y + 26)
-		slider.size = Vector2(392, 32)
-		var slider_key := str(spec[0])
-		slider.value_changed.connect(func(value: float) -> void: TouchInput.apply_setting(slider_key, value))
-		panel.add_child(slider)
-		y += 70.0
-	var close := Button.new()
-	close.text = GameManager.text("Close", "关闭")
-	close.position = Vector2(150, y + 8)
-	close.size = Vector2(140, 44)
-	close.pressed.connect(_toggle_mobile_settings)
-	panel.add_child(close)
 
 
 func _draw_hud_lower() -> void:
@@ -424,33 +357,6 @@ func _draw_hud_lower() -> void:
 		mobile_overlay.add_action_button("missions", GameManager.text("Missions", "任务"), _toggle_mission_board, 1)
 		mobile_overlay.set_action_enabled("interact", false)
 	feedback_label = _label(GameManager.text("Start at the Mission Board, then use the Assembly Table.", "先从任务公告板开始，然后去组装台。"), Vector2(112, 680), Vector2(800, 20), 13, HORIZONTAL_ALIGNMENT_CENTER)
-	_build_location_indicator()
-
-
-func _build_location_indicator() -> void:
-	# When the player has travelled to another observing site, the lobby says so
-	# and offers a one-click return to the home base.
-	if GameManager.is_at_home_location():
-		return
-	var loc := GameManager.observing_location()
-	var chip := Panel.new()
-	chip.position = Vector2(300, 62)
-	chip.size = Vector2(424, 34)
-	chip.add_theme_stylebox_override("panel", _style(Color(0.10, 0.08, 0.03, 0.95), Color(1.0, 0.82, 0.42), 2, 5))
-	add_child(chip)
-	var label := _label_to(chip, GameManager.text("Observing from: ", "当前观测点：") + GameManager.dict_text(loc, "name"), Vector2(12, 7), Vector2(280, 20), 12, HORIZONTAL_ALIGNMENT_LEFT)
-	label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.5))
-	var home_btn := Button.new()
-	home_btn.text = GameManager.text("Return Home", "返回主基地")
-	home_btn.position = Vector2(300, 8)
-	home_btn.size = Vector2(112, 20)
-	home_btn.add_theme_font_size_override("font_size", 10)
-	home_btn.add_theme_stylebox_override("normal", _style(Color(0.06, 0.09, 0.14, 0.96), BRASS, 1, 3))
-	home_btn.add_theme_color_override("font_color", WARM_TEXT)
-	home_btn.pressed.connect(func() -> void:
-		GameManager.reset_observing_location()
-		_build())
-	chip.add_child(home_btn)
 
 
 func _move_player(delta: float) -> void:
@@ -663,12 +569,9 @@ func _handle_interaction(id: String) -> void:
 		GameManager.go("parts")
 	elif id == "assembly":
 		GameManager.set_observatory_spawn("assembly")
-		# Advanced (reflector-family) levels present the telescope-type
-		# selection screen first; the story/teaching briefs return there, and
-		# its Build button routes on to the correct bench.
-		var assembly_dest := "telescope_types" if GameManager.uses_family_selection() else "assembly"
-		if assembly_dest == "telescope_types":
-			GameManager.set_meta("telescope_types_browse", false)
+		# Re-enter the last bench directly. Telescope families are switched from
+		# the Type button inside the blueprint, not through a repeated gate here.
+		var assembly_dest := "assembly"
 		if GameManager.try_story_for_trigger("before_assembly", assembly_dest):
 			return
 		if GameManager.try_teaching_intercept("before_assembly", assembly_dest):
@@ -710,7 +613,62 @@ func _handle_interaction(id: String) -> void:
 		GameManager.go("journal")
 	elif id == "computer":
 		GameManager.set_observatory_spawn("computer")
-		_toggle_stats_terminal()
+		if _space_console_active():
+			_enter_space_console()
+		else:
+			_toggle_stats_terminal()
+
+
+func _enter_space_console() -> void:
+	if room_transition_active:
+		return
+	var gate: Dictionary = GameManager.can_enter_observation()
+	if not bool(gate.get("ok", false)):
+		_show_feedback(GameManager.text(
+			str(gate.get("reason_en", "Finish assembling the space observatory before opening the command link.")),
+			str(gate.get("reason_zh", "请先完成空间望远镜组装，再打开指挥链路。"))), 3600)
+		return
+	room_transition_active = true
+	var overlay := Control.new()
+	overlay.name = "SpaceConsoleTransition"
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 500
+	add_child(overlay)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(dim)
+	var terminal := Panel.new()
+	terminal.position = Vector2(738, 492)
+	terminal.size = Vector2(138, 112)
+	terminal.pivot_offset = terminal.size * 0.5
+	terminal.add_theme_stylebox_override("panel", _style(Color(0.005, 0.005, 0.005, 0.98), Color.WHITE, 2, 0))
+	overlay.add_child(terminal)
+	_board_label(terminal, "UPLINK / L2", Vector2(8, 8), Vector2(122, 18), 10, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	for row in range(5):
+		_rect_to(terminal, Vector2(12, 34 + row * 12), Vector2(110 - row * 9, 2), Color(0.72, 0.72, 0.72, 0.82))
+	var scan := ColorRect.new()
+	scan.color = Color(1, 1, 1, 0.92)
+	scan.position = Vector2(0, 18)
+	scan.size = Vector2(138, 2)
+	terminal.add_child(scan)
+	var status := _board_label(overlay,
+		GameManager.text("ESTABLISHING DEEP-SPACE COMMAND LINK", "正在建立深空指挥链路"),
+		Vector2(240, 650), Vector2(544, 24), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	status.modulate.a = 0.0
+	var tween := create_tween().bind_node(overlay).set_parallel(true)
+	tween.tween_property(dim, "color:a", 0.88, 0.38)
+	tween.tween_property(terminal, "position", Vector2(443, 248), 0.48).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(terminal, "scale", Vector2(1.85, 1.85), 0.48).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(scan, "position:y", 102.0, 0.42).set_trans(Tween.TRANS_LINEAR)
+	tween.tween_property(status, "modulate:a", 1.0, 0.18).set_delay(0.18)
+	tween.chain().tween_callback(_finish_space_console_transition)
+
+
+func _finish_space_console_transition() -> void:
+	GameManager.clear_room_guidance()
+	GameManager.go("space_observation")
 
 
 func _enter_sky_or_relocate(spawn: String) -> void:
@@ -743,6 +701,7 @@ func _open_mission_board() -> void:
 	mission_board_popup.add_child(dim)
 
 	var panel := Panel.new()
+	panel.name = "MissionBoardPanel"
 	panel.position = Vector2(36, 60)
 	panel.size = Vector2(952, 650)
 	panel.add_theme_stylebox_override("panel", _style(Color(0.035, 0.050, 0.090, 0.98), BRASS, 3, 5))
@@ -772,6 +731,7 @@ func _open_mission_board() -> void:
 	route_label.clip_text = true
 
 	var go_button := _board_button(panel, GameManager.text("Show Route", "显示路线"), Vector2(168, 582), Vector2(250, 42), Color(0.08, 0.28, 0.22), Color(0.56, 0.90, 0.54))
+	go_button.name = "ShowRouteButton"
 	go_button.pressed.connect(func() -> void: _close_mission_board(true))
 	var log_button := _board_button(panel, GameManager.text("Open Logbook", "打开日志"), Vector2(434, 582), Vector2(250, 42), Color(0.06, 0.18, 0.34), Color(0.42, 0.74, 1.0))
 	log_button.pressed.connect(_open_logbook_from_mission_board)
@@ -805,42 +765,6 @@ func _open_logbook_from_mission_board() -> void:
 
 func _mission_board_route() -> Dictionary:
 	return GameManager.current_room_route()
-
-	# Legacy local route branches remain below for save-compatible reference;
-	# all callers now use the GameManager route source above.
-	var target_name := GameManager.dict_text(GameManager.current_target(), "name")
-	if not GameManager.current_requires_telescope():
-		return {
-			"target": "telescope",
-			"title": GameManager.text("Maya: Observation Pad", "Maya：观测台"),
-			"hint": GameManager.text("Use naked-eye observation to find " + target_name + ".", "用肉眼观测寻找" + target_name + "。"),
-			"action": GameManager.text("Go to the Observation Pad", "前往观测台"),
-			"ready": true
-		}
-	var exact_missing := GameManager.missing_required_parts()
-	if not exact_missing.is_empty():
-		return {
-			"target": "cabinet",
-			"title": GameManager.text("Maya: Parts Cabinet", "Maya：零件柜"),
-			"hint": GameManager.text("Equip the required part, then return to the Assembly Table.", "先装备所需零件，再回到组装台。"),
-			"action": GameManager.text("Go to the Parts Cabinet", "前往零件柜"),
-			"ready": false
-		}
-	if not GameManager.missing_parts().is_empty() or not GameManager.telescope_is_ready():
-		return {
-			"target": "assembly",
-			"title": GameManager.text("Maya: Assembly Table", "Maya：组装台"),
-			"hint": GameManager.text("Install the required parts and finish the telescope assembly.", "安装所需零件并完成望远镜组装。"),
-			"action": GameManager.text("Go to the Assembly Table", "前往组装台"),
-			"ready": false
-		}
-	return {
-		"target": "telescope",
-		"title": GameManager.text("Maya: Observation Pad", "Maya：观测台"),
-		"hint": GameManager.text("The telescope is ready. Find and observe " + target_name + ".", "望远镜已准备好。寻找并观测" + target_name + "。"),
-		"action": GameManager.text("Go to the Observation Pad", "前往观测台"),
-		"ready": true
-	}
 
 
 func _mission_observation_mode_text() -> String:
@@ -1594,6 +1518,8 @@ func _route_target_prompt(target_id: String) -> String:
 		"mission":
 			return GameManager.text("Go to the Mission Board", "前往任务板")
 		"computer":
+			if _space_console_active():
+				return GameManager.text("Go to the Space Telescope Console", "前往空间望远镜控制台")
 			return GameManager.text("Go to the Stats Terminal", "前往统计终端")
 		"door":
 			return GameManager.text("Go to the Observatory Door", "前往天文台门")

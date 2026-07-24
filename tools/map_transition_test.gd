@@ -9,7 +9,10 @@ func _initialize() -> void:
 	await process_frame
 	var gm: Node = root.get_node("/root/GameManager")
 	gm.new_game()
-	gm.debug_jump_to_level(5, true)   # jupiter below horizon
+	gm.debug_jump_to_level(5, true)   # jupiter
+	# Real time moves: park the player at a site where the target is genuinely
+	# below the horizon RIGHT NOW, so the precondition holds on any clock.
+	_force_below_horizon(gm)
 	_check(gm.target_requires_relocation(), "0. jupiter below horizon -> relocation required")
 
 	var wm: Node = load("res://scenes/world_map.tscn").instantiate()
@@ -52,6 +55,7 @@ func _initialize() -> void:
 	# --- 4. Skip jumps presentation to READY but keeps the calculation ---
 	gm.new_game()
 	gm.debug_jump_to_level(5, true)
+	_force_below_horizon(gm)
 	var wm2: Node = load("res://scenes/world_map.tscn").instantiate()
 	root.add_child(wm2)
 	await process_frame
@@ -68,6 +72,7 @@ func _initialize() -> void:
 	var story: Node = root.get_node("/root/StoryManager")
 	gm.new_game()
 	gm.debug_jump_to_level(5, true)
+	_force_below_horizon(gm)
 	var first: bool = story.begin_event("first_below_horizon", "world_map")
 	story.finish_active_event()
 	var second: bool = story.begin_event("first_below_horizon", "world_map")
@@ -79,16 +84,20 @@ func _initialize() -> void:
 	# --- 6. Target already up -> short path, no full search ---
 	gm.new_game()
 	gm.debug_jump_to_level(3, false)   # moon, up
-	if not gm.target_requires_relocation():
+	var visible_now: Dictionary = gm.target_visibility()
+	if bool(visible_now.get("visible", false)):
 		var wm3: Node = load("res://scenes/world_map.tscn").instantiate()
 		root.add_child(wm3)
 		await process_frame
-		_check(int(wm3.get("phase")) == 4, "6. target already visible -> opens straight in READY")
+		if float(visible_now.get("altitude", 0.0)) >= 18.0:
+			_check(int(wm3.get("phase")) == 4, "6. comfortably visible target opens straight in READY")
+		else:
+			_check(bool(wm3.get("target_low")) and int(wm3.get("phase")) == 0, "6. risen but low target keeps the optional relocation transition")
 		_check(not bool(wm3.get("target_below")), "6. headline is not the below-horizon one")
 		wm3.queue_free()
 		await process_frame
 	else:
-		_check(true, "6. (moon not up this run - short-path check skipped)")
+		_check(true, "6. (moon below or too low this run - short-path check skipped)")
 
 	if failures == 0:
 		print("MAP TRANSITION TEST PASS")
@@ -96,6 +105,20 @@ func _initialize() -> void:
 	else:
 		print("MAP TRANSITION TEST FAIL (%d)" % failures)
 		quit(1)
+
+
+func _force_below_horizon(gm: Node) -> void:
+	# Pick whichever catalogued site currently has the target under the horizon.
+	var radec: Dictionary = gm.current_target_radec()
+	if radec.is_empty():
+		return
+	var svc := SkyPositionService.new()
+	for site_value in gm.location_sites():
+		var site: Dictionary = site_value
+		var v := svc.visibility_at(float(radec["ra_hours"]), float(radec["dec_degrees"]), float(site.get("lat", 0.0)), float(site.get("lon", 0.0)))
+		if bool(v["below_horizon"]):
+			gm.set_observing_location(site)
+			return
 
 
 func _check(condition: bool, label: String) -> void:

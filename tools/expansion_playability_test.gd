@@ -45,7 +45,7 @@ func _initialize() -> void:
 	_check(bool(r_ref.get("observation_open", false)), "2g. L92 observation entry open")
 	gm.debug_jump_to_level(114, true)  # constellation
 	var r_con: Dictionary = gm.prepared_readiness_report()
-	_check(not bool(r_con.get("needs_telescope", true)), "2h. constellation night needs no rig")
+	_check(bool(r_con.get("needs_telescope", false)), "2h. constellation search uses the shared telescope rig")
 	_check(bool(r_con.get("observation_open", false)), "2i. constellation entry open")
 
 	# --- 3. Four-phase constellation flow ----------------------------------

@@ -92,6 +92,11 @@ func _check_ready_pad() -> void:
 	gm.progress["seen_concept_briefs"] = ["eye_imaging"]
 	gm.progress["current_level"] = 3
 	gm.progress["seen_story_events"].append("level_3_before_assembly")
+	# Mark the pre-observation story AND Maya's one-time below-horizon lesson as
+	# seen, so this case exercises the pad -> observation routing itself rather
+	# than stopping on a story panel.
+	gm.progress["seen_story_events"].append("level_3_before")
+	gm.progress["seen_story_events"].append("first_below_horizon")
 	gm.progress["seen_teaching_steps"].append("refractor_intro")
 	gm.progress["seen_concept_briefs"].append("refractor_light_path")
 	for part_type in ["tripod", "mount", "tube", "objective", "eyepiece"]:
@@ -101,7 +106,8 @@ func _check_ready_pad() -> void:
 	_set_player_at("telescope")
 	view.call("_interact_with_nearby")
 	await process_frame
-	_check(_scene_is("sky_observation"), "ready pad enters sky observation")
+	# The base always enters Sky Observation. Only Sky may offer/open the map.
+	_check(_scene_is("sky_observation"), "ready pad enters Sky Observation, never the map directly")
 
 
 func _check_return_spawns() -> void:

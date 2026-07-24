@@ -40,6 +40,20 @@ const DOBSONIAN_TUBE_SOURCE_SLOTS := {
 	"eyepiece": Rect2(437.0, 152.0, 62.0, 66.0),
 	"collimation_tool": Rect2(362.0, 584.0, 67.0, 72.0)
 }
+# Cassegrain tube: user's full-UI tube blueprint cropped to the board; 8 slots
+# measured on the crop + overlay-verified against the printed dashed boxes.
+const CASSEGRAIN_TUBE_BLUEPRINT := "res://assets/assembly/cassegrain_tube_blueprint_cropped.png"
+const CASSEGRAIN_TUBE_SOURCE_SIZE := Vector2(854.0, 658.0)
+const CASSEGRAIN_TUBE_SOURCE_SLOTS := {
+	"reflector_tube": Rect2(219.0, 72.0, 78.0, 76.0),
+	"mirror_cell": Rect2(713.0, 120.0, 80.0, 82.0),
+	"primary_mirror": Rect2(545.0, 72.0, 80.0, 80.0),
+	"secondary_mirror": Rect2(67.0, 140.0, 78.0, 80.0),
+	"central_baffle": Rect2(387.0, 130.0, 78.0, 80.0),
+	"focuser": Rect2(661.0, 240.0, 76.0, 78.0),
+	"eyepiece": Rect2(773.0, 296.0, 80.0, 100.0),
+	"collimation_tool": Rect2(607.0, 560.0, 80.0, 82.0)
+}
 
 var config: Dictionary = {}
 var installed: Dictionary = {}
@@ -81,7 +95,7 @@ func _build() -> void:
 	part_card_controls.clear()
 	slot_controls.clear()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	if str(config.get("family", "")) in ["newtonian", "dobsonian"]:
+	if str(config.get("family", "")) in ["newtonian", "dobsonian", "cassegrain"]:
 		_build_newtonian_template()
 		return
 	_rect(Vector2.ZERO, Vector2(1024, 768), BG)
@@ -158,8 +172,8 @@ func _build_newtonian_template() -> void:
 	template_parts_list.size = template_parts_list.custom_minimum_size
 
 	blueprint = Control.new()
-	blueprint.position = Vector2(344, 122)
-	blueprint.size = Vector2(412, 448)
+	blueprint.position = Vector2(334, 116)
+	blueprint.size = Vector2(424, 452)
 	add_child(blueprint)
 	var tube_config := _tube_blueprint_config()
 	var layout := _calculate_blueprint_layout(tube_config["size"], Rect2(Vector2.ZERO, tube_config["size"]), Rect2(Vector2.ZERO, blueprint.size))
@@ -180,7 +194,13 @@ func _build_newtonian_template() -> void:
 
 	var helper := _label(GameManager.text("Select a card, then click the matching slot.", "选择零件卡，再点击对应安装位。"), Vector2(346, 580), Vector2(408, 28), 12, Color(0.72, 0.82, 0.90), HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(helper)
-	var order_text := _label(GameManager.text("Tube -> Cell -> Primary -> Spider\nSecondary -> Focus -> Eye -> Collimation", "镜筒 -> 镜座 -> 主镜 -> 蜘蛛架\n副镜 -> 调焦 -> 目镜 -> 准直"), Vector2(340, 606), Vector2(420, 38), 9, Color(0.56, 0.68, 0.78), HORIZONTAL_ALIGNMENT_CENTER)
+	# Cassegrain's folded path has no diagonal spider; use its own order line.
+	var order_hint_en := "Tube -> Cell -> Primary -> Spider\nSecondary -> Focus -> Eye -> Collimation"
+	var order_hint_zh := "镜筒 -> 镜座 -> 主镜 -> 蜘蛛架\n副镜 -> 调焦 -> 目镜 -> 准直"
+	if str(config.get("family", "")) == "cassegrain":
+		order_hint_en = "Tube -> Cell -> Primary -> Secondary\nBaffle -> Rear Focuser -> Eye -> Collimation"
+		order_hint_zh = "镜筒 -> 镜座 -> 主镜 -> 副镜\n挡板 -> 后端调焦 -> 目镜 -> 准直"
+	var order_text := _label(GameManager.text(order_hint_en, order_hint_zh), Vector2(340, 606), Vector2(420, 38), 9, Color(0.56, 0.68, 0.78), HORIZONTAL_ALIGNMENT_CENTER)
 	order_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(order_text)
 
@@ -230,8 +250,15 @@ func _newtonian_tube_part_role(subpart: String) -> String:
 		"mirror_cell": return GameManager.text("Supports the primary mirror", "支撑主反射镜")
 		"primary_mirror": return GameManager.text("Collects and reflects light", "收集并反射光线")
 		"secondary_spider": return GameManager.text("Holds the diagonal mirror", "固定斜置副镜")
-		"secondary_mirror": return GameManager.text("Turns light to the side", "把光线转向侧面")
-		"focuser": return GameManager.text("Moves the eyepiece for focus", "移动目镜进行调焦")
+		"secondary_mirror":
+			if str(config.get("family", "")) == "cassegrain":
+				return GameManager.text("Convex mirror folds light back", "凸面副镜把光折返")
+			return GameManager.text("Turns light to the side", "把光线转向侧面")
+		"central_baffle": return GameManager.text("Blocks stray light down the axis", "沿光轴遮挡杂散光")
+		"focuser":
+			if str(config.get("family", "")) == "cassegrain":
+				return GameManager.text("Rear-cell focus at the tube back", "位于镜筒后端的调焦座")
+			return GameManager.text("Moves the eyepiece for focus", "移动目镜进行调焦")
 		"eyepiece": return GameManager.text("Magnifies the formed image", "放大形成的图像")
 		"collimation_tool": return GameManager.text("Aligns the optical axis", "校准光学轴线")
 	return ""
@@ -381,43 +408,31 @@ func _draw_slot(subpart: String, rect: Rect2) -> void:
 	var installed_now := bool(installed.get(subpart, false))
 	var next := _next_required_subpart() == subpart and GameManager.assembly_hints_enabled()
 	var selected := selected_subpart == subpart
-	var is_newtonian := str(config.get("family", "")) in ["newtonian", "dobsonian"]
-	if is_newtonian:
+	# Cassegrain shares the printed-blueprint style: the art already carries every
+	# dashed box and label, so it uses the clean state-only slot (no duplicate
+	# frame or label overlapping the baked text) exactly like Newtonian/Dobsonian.
+	var uses_printed_blueprint := str(config.get("family", "")) in ["newtonian", "dobsonian", "cassegrain"]
+	if uses_printed_blueprint:
 		_draw_newtonian_slot(subpart, rect, installed_now, next, selected)
 		return
+	# Reached only by families whose blueprint does NOT bake dashed boxes/labels
+	# (gregorian and the mount-based devices); those draw their own slot chrome.
 	var slot := Panel.new()
 	slot.position = rect.position
 	slot.size = rect.size
 	slot.clip_contents = true
-	if is_newtonian:
-		# The printed blueprint already draws every dashed box, so idle slots
-		# get NO chrome; state only: gold = selected, cyan = next in order,
-		# green + part art = installed. Never a permanent debug-looking frame.
-		if installed_now:
-			slot.add_theme_stylebox_override("panel", _style(Color(0.04, 0.10, 0.06, 0.30), GREEN, 2))
-		elif selected:
-			slot.add_theme_stylebox_override("panel", _style(Color(0, 0, 0, 0), GOLD, 2))
-		elif next and selected_subpart == "":
-			slot.add_theme_stylebox_override("panel", _style(Color(0, 0, 0, 0), Color(0.55, 0.82, 0.98, 0.85), 2))
-		else:
-			slot.add_theme_stylebox_override("panel", _style(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
-	else:
-		var color := GREEN if installed_now else (GOLD if selected or next else Color(0.35, 0.66, 0.90, 0.75))
-		slot.add_theme_stylebox_override("panel", _style(Color(0.06, 0.09, 0.13, 0.05), color, 2))
+	var color := GREEN if installed_now else (GOLD if selected or next else Color(0.35, 0.66, 0.90, 0.75))
+	slot.add_theme_stylebox_override("panel", _style(Color(0.06, 0.09, 0.13, 0.05), color, 2))
 	blueprint.add_child(slot)
 	slot_controls[subpart] = slot
 	if installed_now:
 		var installed_icon := _part_texture_control(_part_for_subpart(subpart), Rect2(4, 3, rect.size.x - 8, rect.size.y - 6))
 		if installed_icon != null:
 			slot.add_child(installed_icon)
-	# The formal tube blueprint already names every dashed position. Keeping
-	# labels out of the tiny live overlays prevents duplicate text from
-	# obscuring the optical line art; the tray and Inspector carry dynamic text.
-	if not is_newtonian:
-		var label := _label(GameManager.dict_text(_part_for_subpart(subpart), "name") if installed_now else _short_name(subpart), Vector2(3, 2), rect.size - Vector2(6, 4), 9, GREEN if installed_now else Color(0.35, 0.66, 0.90, 0.75), HORIZONTAL_ALIGNMENT_CENTER)
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		slot.add_child(label)
+	var label := _label(GameManager.dict_text(_part_for_subpart(subpart), "name") if installed_now else _short_name(subpart), Vector2(3, 2), rect.size - Vector2(6, 4), 9, GREEN if installed_now else Color(0.35, 0.66, 0.90, 0.75), HORIZONTAL_ALIGNMENT_CENTER)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	slot.add_child(label)
 	AssemblyUITemplate.add_slot_hit_target(slot, Rect2(Vector2.ZERO, rect.size), _install_subpart.bind(subpart))
 
 
@@ -712,14 +727,17 @@ func debug_newtonian_tube_slot_geometry() -> Dictionary:
 	var result := {}
 	if blueprint == null:
 		return result
+	var tube_config := _tube_blueprint_config()
+	var source_size: Vector2 = tube_config.get("size", NEWTONIAN_TUBE_SOURCE_SIZE)
+	var slots: Dictionary = tube_config.get("slots", NEWTONIAN_TUBE_SOURCE_SLOTS)
 	var layout := _calculate_blueprint_layout(
-		NEWTONIAN_TUBE_SOURCE_SIZE,
-		NEWTONIAN_TUBE_SOURCE_CROP,
+		source_size,
+		Rect2(Vector2.ZERO, source_size),
 		Rect2(Vector2.ZERO, blueprint.size)
 	)
-	for part_type_value in NEWTONIAN_TUBE_SOURCE_SLOTS.keys():
+	for part_type_value in slots.keys():
 		var part_type := str(part_type_value)
-		var source_rect: Rect2 = NEWTONIAN_TUBE_SOURCE_SLOTS[part_type]
+		var source_rect: Rect2 = slots[part_type]
 		var local_rect := _source_rect_to_blueprint(source_rect, layout)
 		var texture := blueprint.find_child("TubeTexture_%s" % part_type, true, false) as TextureRect
 		result[part_type] = {
@@ -734,6 +752,8 @@ func debug_newtonian_tube_slot_geometry() -> Dictionary:
 func _tube_blueprint_config() -> Dictionary:
 	if str(config.get("family", "")) == "dobsonian":
 		return {"path": DOBSONIAN_TUBE_BLUEPRINT, "size": DOBSONIAN_TUBE_SOURCE_SIZE, "slots": DOBSONIAN_TUBE_SOURCE_SLOTS}
+	if str(config.get("family", "")) == "cassegrain":
+		return {"path": CASSEGRAIN_TUBE_BLUEPRINT, "size": CASSEGRAIN_TUBE_SOURCE_SIZE, "slots": CASSEGRAIN_TUBE_SOURCE_SLOTS}
 	return {"path": NEWTONIAN_TUBE_BLUEPRINT, "size": NEWTONIAN_TUBE_SOURCE_SIZE, "slots": NEWTONIAN_TUBE_SOURCE_SLOTS}
 
 

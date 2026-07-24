@@ -122,14 +122,14 @@ func fallback_positions(screen_rect: Rect2 = Rect2()) -> Dictionary:
 	return result
 
 
-func request_online_planet_data(parent: Node, screen_rect: Rect2, callback: Callable) -> bool:
+func request_online_planet_data(parent: Node, screen_rect: Rect2, callback: Callable, latitude := NAN, longitude := NAN) -> bool:
 	if bool(config.get("offline_mode", false)) or not bool(config.get("use_online_planet_data", true)):
 		return false
 	var credentials: Dictionary = _astronomy_api_credentials()
 	if credentials.is_empty():
 		return false
 	var local_datetime: Dictionary = Time.get_datetime_dict_from_system(false)
-	var query := _astronomy_api_query(local_datetime)
+	var query := _astronomy_api_query(local_datetime, latitude, longitude)
 	var request := HTTPRequest.new()
 	request.timeout = 5.0
 	parent.add_child(request)
@@ -395,9 +395,9 @@ func direction_text(azimuth: float) -> String:
 	return directions[index]
 
 
-func _astronomy_api_query(utc_datetime: Dictionary) -> String:
-	var latitude: String = str(config.get("default_latitude", 34.0522))
-	var longitude: String = str(config.get("default_longitude", -118.2437))
+func _astronomy_api_query(utc_datetime: Dictionary, latitude_override := NAN, longitude_override := NAN) -> String:
+	var latitude: String = str(latitude_override if not is_nan(latitude_override) else float(config.get("default_latitude", 34.0522)))
+	var longitude: String = str(longitude_override if not is_nan(longitude_override) else float(config.get("default_longitude", -118.2437)))
 	var year: int = int(utc_datetime.get("year", 2026))
 	var month: int = int(utc_datetime.get("month", 1))
 	var day: int = int(utc_datetime.get("day", 1))
@@ -460,10 +460,11 @@ func _parse_astronomy_api_positions(payload: Dictionary, screen_rect: Rect2) -> 
 		var cell: Dictionary = cells[0]
 		var position: Dictionary = cell.get("position", {})
 		var horizontal: Dictionary = position.get("horizontal", {})
-		var altitude_data: Dictionary = horizontal.get("altitude", {})
-		var azimuth_data: Dictionary = horizontal.get("azimuth", {})
-		var altitude: float = float(altitude_data.get("degrees", 0.0))
-		var azimuth: float = float(azimuth_data.get("degrees", 0.0))
+		var horizontal_values := _validated_online_horizontal(horizontal)
+		if horizontal_values.is_empty():
+			continue
+		var altitude: float = float(horizontal_values["altitude"])
+		var azimuth: float = float(horizontal_values["azimuth"])
 		var item: Dictionary = _catalog_item_for_id(object_id)
 		if item.is_empty():
 			continue
@@ -477,6 +478,7 @@ func _parse_astronomy_api_positions(payload: Dictionary, screen_rect: Rect2) -> 
 			"azimuth": azimuth,
 			"screen_pos": map_alt_az_to_screen(altitude, azimuth, screen_rect),
 			"visible": altitude >= minimum_altitude,
+			"below_horizon": altitude < 0.0,
 			"visibility_text": _visibility_text(altitude, minimum_altitude),
 			"direction_text": direction_text(azimuth),
 			"source": "online"
@@ -497,10 +499,11 @@ func _parse_astronomy_api_row(row: Dictionary, screen_rect: Rect2) -> Dictionary
 	var horizontal: Dictionary = position.get("horizontal", {})
 	if horizontal.is_empty():
 		horizontal = position.get("horizonal", {})
-	var altitude_data: Dictionary = horizontal.get("altitude", {})
-	var azimuth_data: Dictionary = horizontal.get("azimuth", {})
-	var altitude: float = float(altitude_data.get("degrees", 0.0))
-	var azimuth: float = float(azimuth_data.get("degrees", 0.0))
+	var horizontal_values := _validated_online_horizontal(horizontal)
+	if horizontal_values.is_empty():
+		return {}
+	var altitude: float = float(horizontal_values["altitude"])
+	var azimuth: float = float(horizontal_values["azimuth"])
 	var item: Dictionary = _catalog_item_for_id(object_id)
 	if item.is_empty():
 		return {}
@@ -514,10 +517,50 @@ func _parse_astronomy_api_row(row: Dictionary, screen_rect: Rect2) -> Dictionary
 		"azimuth": azimuth,
 		"screen_pos": map_alt_az_to_screen(altitude, azimuth, screen_rect),
 		"visible": altitude >= minimum_altitude,
+		"below_horizon": altitude < 0.0,
 		"visibility_text": _visibility_text(altitude, minimum_altitude),
 		"direction_text": direction_text(azimuth),
 		"source": "online"
 	}
+
+
+func _validated_online_horizontal(horizontal: Dictionary) -> Dictionary:
+	# Missing API fields must not silently become 0 degrees. A bad response is
+	# ignored so the caller keeps the locally calculated ephemeris position.
+	if horizontal.is_empty():
+		return {}
+	var altitude_data: Variant = horizontal.get("altitude", null)
+	var azimuth_data: Variant = horizontal.get("azimuth", null)
+	if not altitude_data is Dictionary or not azimuth_data is Dictionary:
+		return {}
+	if not altitude_data.has("degrees") or not azimuth_data.has("degrees"):
+		return {}
+	var altitude_value: Variant = altitude_data.get("degrees")
+	var azimuth_value: Variant = azimuth_data.get("degrees")
+	if not _is_valid_number(altitude_value) or not _is_valid_number(azimuth_value):
+		return {}
+	var altitude := float(altitude_value)
+	var azimuth := float(azimuth_value)
+	if altitude < -90.0 or altitude > 90.0 or azimuth < 0.0 or azimuth > 360.0:
+		return {}
+	return {"altitude": altitude, "azimuth": wrapf(azimuth, 0.0, 360.0)}
+
+
+func is_valid_position_item(item: Variant) -> bool:
+	if not item is Dictionary or not item.has("altitude") or not item.has("azimuth"):
+		return false
+	if not _is_valid_number(item.get("altitude")) or not _is_valid_number(item.get("azimuth")):
+		return false
+	var altitude := float(item.get("altitude"))
+	var azimuth := float(item.get("azimuth"))
+	return altitude >= -90.0 and altitude <= 90.0 and azimuth >= 0.0 and azimuth < 360.0
+
+
+func _is_valid_number(value: Variant) -> bool:
+	if not (value is int or value is float):
+		return false
+	var number := float(value)
+	return not is_nan(number) and not is_inf(number)
 
 
 func _catalog_item_for_id(object_id: String) -> Dictionary:
@@ -559,7 +602,7 @@ func _fallback_item(entry: Dictionary, minimum_altitude: float) -> Dictionary:
 		"azimuth": azimuth,
 		"screen_pos": pos,
 		"visible": has_fallback_altaz and altitude >= minimum_altitude,
-		"visibility_text": "Offline estimate",
+		"visibility_text": "Teaching simulation" if has_fallback_altaz else "Offline fallback",
 		"direction_text": direction_text(azimuth) if has_fallback_altaz else "Estimate",
 		"source": "fallback"
 	}

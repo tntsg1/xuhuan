@@ -2181,13 +2181,10 @@
     "success_text_zh": "在真实条件下驾驭折叠光路。然后 Maya 拿出一种更奇特的折叠——它还要古老几个世纪。",
     "reward_credits": 220,
     "unlock_parts": [
-      "gregorian_equatorial_mount",
-      "gregorian_optical_tube",
-      "gregorian_primary_mirror",
-      "gregorian_concave_secondary",
-      "gregorian_focuser",
-      "gregorian_18mm_eyepiece",
-      "gregorian_optical_support"
+      "segmented_primary_array",
+      "space_secondary_mirror",
+      "infrared_instrument_package",
+      "space_sunshield"
     ],
     "unlock_equipment_stage": "cassegrain",
     "badge": "Cassegrain Graduate",
@@ -2275,7 +2272,8 @@
       "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
-    "requires_focus": true
+    "requires_focus": true,
+    "deprecated": true
   },
   {
     "id": "level_57",
@@ -2339,7 +2337,8 @@
       "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
-    "requires_focus": true
+    "requires_focus": true,
+    "deprecated": true
   },
   {
     "id": "level_58",
@@ -2403,7 +2402,8 @@
       "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
-    "requires_focus": true
+    "requires_focus": true,
+    "deprecated": true
   },
   {
     "id": "level_59",
@@ -2467,7 +2467,8 @@
       "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
-    "requires_focus": true
+    "requires_focus": true,
+    "deprecated": true
   },
   {
     "id": "level_60",
@@ -2531,7 +2532,8 @@
       "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
-    "requires_focus": true
+    "requires_focus": true,
+    "deprecated": true
   },
   {
     "id": "level_61",
@@ -2595,7 +2597,8 @@
       "cloud_cover": 0,
       "sky_brightness": "dark"
     },
-    "requires_focus": true
+    "requires_focus": true,
+    "deprecated": true
   },
   {
     "id": "level_62",
@@ -2659,7 +2662,8 @@
       "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
-    "requires_focus": true
+    "requires_focus": true,
+    "deprecated": true
   },
   {
     "id": "level_63",
@@ -2723,7 +2727,8 @@
       "cloud_cover": 0.35,
       "sky_brightness": "suburban"
     },
-    "requires_focus": true
+    "requires_focus": true,
+    "deprecated": true
   },
   {
     "id": "level_64",
@@ -2787,7 +2792,8 @@
       "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
-    "requires_focus": true
+    "requires_focus": true,
+    "deprecated": true
   },
   {
     "id": "level_65",
@@ -2856,7 +2862,8 @@
       "cloud_cover": 0,
       "sky_brightness": "suburban"
     },
-    "requires_focus": true
+    "requires_focus": true,
+    "deprecated": true
   },
   {
     "id": "level_66",
@@ -2870,7 +2877,6 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "andromeda",
     "required_parts": [
@@ -2893,7 +2899,7 @@
     ],
     "required_assembly_score": 88,
     "minimum_success_quality": "Fair",
-    "required_concept_card": "infrared_space_observing",
+    "required_concept_card": "jwst_infrared_light",
     "hint_text_en": "Segments must act as one surface before the infrared instrument can form a useful image.",
     "hint_text_zh": "分段镜片必须像一个整体工作，红外仪器才能形成有效图像。",
     "success_text_en": "Assemble the segmented space telescope: 18 mirror segments, an infrared instrument package, and a tennis-court sunshield.",
@@ -2917,7 +2923,22 @@
       }
     ],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "space_profile": {
+      "target_id": "andromeda",
+      "kind": "galaxy",
+      "best_instrument": "nircam",
+      "best_filter": "near_infrared",
+      "science": "dust_rich",
+      "start_instrument": "nirspec",
+      "start_filter": "mid_infrared",
+      "start_exposure": 120.0,
+      "start_integrations": 2,
+      "start_attitude": 40.0,
+      "brightness": 0.6
+    },
+    "new_mechanic_en": "First light: full deploy + basic NIRCam imaging.",
+    "new_mechanic_zh": "首光：完整部署 + 基础 NIRCam 成像。"
   },
   {
     "id": "level_67",
@@ -2931,7 +2952,6 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "orion_nebula",
     "required_parts": [
@@ -2954,7 +2974,7 @@
     ],
     "required_assembly_score": 88,
     "minimum_success_quality": "Fair",
-    "required_concept_card": "infrared_space_observing",
+    "required_concept_card": "jwst_segmented_mirror",
     "hint_text_en": "Segments must act as one surface before the infrared instrument can form a useful image.",
     "hint_text_zh": "分段镜片必须像一个整体工作，红外仪器才能形成有效图像。",
     "success_text_en": "Infrared is not visible light. Point at Orion and ask a different question: not \"what shines\" but \"what is warm\".",
@@ -2970,7 +2990,22 @@
     "waveband": "infrared",
     "teaching_steps": [],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "space_profile": {
+      "target_id": "orion_nebula",
+      "kind": "star_forming",
+      "best_instrument": "nircam",
+      "best_filter": "star_forming",
+      "science": "star_forming",
+      "start_instrument": "nircam",
+      "start_filter": "near_infrared",
+      "start_exposure": 180.0,
+      "start_integrations": 3,
+      "start_attitude": 100.0,
+      "brightness": 0.68
+    },
+    "new_mechanic_en": "New filter: the star-forming filter reveals young stellar knots.",
+    "new_mechanic_zh": "新滤镜：恒星形成滤镜显现年轻恒星结点。"
   },
   {
     "id": "level_68",
@@ -2984,7 +3019,6 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "orion_nebula",
     "required_parts": [
@@ -3007,7 +3041,7 @@
     ],
     "required_assembly_score": 88,
     "minimum_success_quality": "Good",
-    "required_concept_card": "infrared_space_observing",
+    "required_concept_card": "jwst_sunshield_l2",
     "hint_text_en": "Segments must act as one surface before the infrared instrument can form a useful image.",
     "hint_text_zh": "分段镜片必须像一个整体工作，红外仪器才能形成有效图像。",
     "success_text_en": "Dust blocks visible light but not infrared. Find the newborn stars hiding inside the nebula.",
@@ -3023,7 +3057,22 @@
     "waveband": "infrared",
     "teaching_steps": [],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "space_profile": {
+      "target_id": "orion_nebula",
+      "kind": "nebula",
+      "best_instrument": "miri",
+      "best_filter": "dust",
+      "science": "dust_rich",
+      "start_instrument": "nircam",
+      "start_filter": "near_infrared",
+      "start_exposure": 220.0,
+      "start_integrations": 3,
+      "start_attitude": 95.0,
+      "brightness": 0.7
+    },
+    "new_mechanic_en": "New instrument MIRI: needs the coldest thermal state to see cold dust.",
+    "new_mechanic_zh": "新仪器 MIRI：需要最低温热环境才能看到冷尘埃。"
   },
   {
     "id": "level_69",
@@ -3037,7 +3086,6 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "andromeda",
     "required_parts": [
@@ -3060,7 +3108,7 @@
     ],
     "required_assembly_score": 88,
     "minimum_success_quality": "Fair",
-    "required_concept_card": "infrared_space_observing",
+    "required_concept_card": "jwst_instruments",
     "hint_text_en": "Segments must act as one surface before the infrared instrument can form a useful image.",
     "hint_text_zh": "分段镜片必须像一个整体工作，红外仪器才能形成有效图像。",
     "success_text_en": "A warm infrared telescope observes only itself. Manage the sunshield so the instruments stay cold.",
@@ -3076,7 +3124,23 @@
     "waveband": "infrared",
     "teaching_steps": [],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "space_profile": {
+      "target_id": "andromeda",
+      "kind": "distant_galaxy",
+      "best_instrument": "nirspec",
+      "best_filter": "mid_infrared",
+      "science": "distant_galaxy",
+      "start_instrument": "nircam",
+      "start_filter": "near_infrared",
+      "start_exposure": 260.0,
+      "start_integrations": 4,
+      "start_attitude": 110.0,
+      "redshifted": true,
+      "brightness": 0.45
+    },
+    "new_mechanic_en": "Spectroscopy: NIRSpec + mid-IR reads redshifted light.",
+    "new_mechanic_zh": "光谱：NIRSpec + 中红外读取红移光。"
   },
   {
     "id": "level_70",
@@ -3090,7 +3154,6 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "andromeda",
     "required_parts": [
@@ -3113,7 +3176,7 @@
     ],
     "required_assembly_score": 88,
     "minimum_success_quality": "Fair",
-    "required_concept_card": "infrared_space_observing",
+    "required_concept_card": "jwst_false_colour",
     "hint_text_en": "Segments must act as one surface before the infrared instrument can form a useful image.",
     "hint_text_zh": "分段镜片必须像一个整体工作，红外仪器才能形成有效图像。",
     "success_text_en": "Point the telescope AND keep Sun, Earth and Moon behind the shield - both at once.",
@@ -3129,7 +3192,22 @@
     "waveband": "infrared",
     "teaching_steps": [],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "space_profile": {
+      "target_id": "andromeda",
+      "kind": "galaxy",
+      "best_instrument": "nircam",
+      "best_filter": "near_infrared",
+      "science": "old_stellar",
+      "start_instrument": "miri",
+      "start_filter": "dust",
+      "start_exposure": 200.0,
+      "start_integrations": 3,
+      "start_attitude": 150.0,
+      "brightness": 0.6
+    },
+    "new_mechanic_en": "Attitude limit: the target is near a forbidden sun angle - re-point carefully.",
+    "new_mechanic_zh": "姿态限制：目标靠近禁止的太阳角——需谨慎重新指向。"
   },
   {
     "id": "level_71",
@@ -3138,12 +3216,11 @@
     "title_zh": "热辐射中的星系",
     "description_en": "Andromeda in infrared shows warm dust lanes invisible from the ground. Map them.",
     "description_zh": "红外下的仙女座露出地面看不见的温暖尘埃带。把它们描绘出来。",
-    "observation_mode": "telescope",
+    "observation_mode": "multi_device",
     "equipment_stage": "space_segmented",
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "andromeda",
     "required_parts": [
@@ -3196,7 +3273,6 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "orion_nebula",
     "required_parts": [
@@ -3219,7 +3295,7 @@
     ],
     "required_assembly_score": 88,
     "minimum_success_quality": "Fair",
-    "required_concept_card": "infrared_space_observing",
+    "required_concept_card": "jwst_instruments",
     "hint_text_en": "Segments must act as one surface before the infrared instrument can form a useful image.",
     "hint_text_zh": "分段镜片必须像一个整体工作，红外仪器才能形成有效图像。",
     "success_text_en": "Compare tonight's Orion with your Newtonian records: what did the atmosphere steal from you?",
@@ -3235,7 +3311,22 @@
     "waveband": "infrared",
     "teaching_steps": [],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "space_profile": {
+      "target_id": "orion_nebula",
+      "kind": "star_forming",
+      "best_instrument": "nircam",
+      "best_filter": "star_forming",
+      "science": "star_forming",
+      "start_instrument": "nircam",
+      "start_filter": "near_infrared",
+      "start_exposure": 420.0,
+      "start_integrations": 5,
+      "start_attitude": 100.0,
+      "brightness": 0.68
+    },
+    "new_mechanic_en": "Deep exposure strategy: long integration to lift faint nebular structure.",
+    "new_mechanic_zh": "深曝光策略：长积分提升暗弱星云结构。"
   },
   {
     "id": "level_73",
@@ -3249,7 +3340,6 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "betelgeuse",
     "required_parts": [
@@ -3272,7 +3362,7 @@
     ],
     "required_assembly_score": 88,
     "minimum_success_quality": "Fair",
-    "required_concept_card": "infrared_space_observing",
+    "required_concept_card": "jwst_sunshield_l2",
     "hint_text_en": "Segments must act as one surface before the infrared instrument can form a useful image.",
     "hint_text_zh": "分段镜片必须像一个整体工作，红外仪器才能形成有效图像。",
     "success_text_en": "Betelgeuse is cool and red - a natural infrared beacon. Measure the giant.",
@@ -3288,7 +3378,22 @@
     "waveband": "infrared",
     "teaching_steps": [],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "space_profile": {
+      "target_id": "betelgeuse",
+      "kind": "star",
+      "best_instrument": "miri",
+      "best_filter": "dust",
+      "science": "old_stellar",
+      "start_instrument": "nircam",
+      "start_filter": "near_infrared",
+      "start_exposure": 240.0,
+      "start_integrations": 3,
+      "start_attitude": 90.0,
+      "brightness": 0.85
+    },
+    "new_mechanic_en": "Cool giant with MIRI: tight cold requirement + saturation risk on a bright star.",
+    "new_mechanic_zh": "用 MIRI 观测冷巨星：严格低温要求 + 亮星过曝风险。"
   },
   {
     "id": "level_74",
@@ -3302,7 +3407,6 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "orion_nebula",
     "required_parts": [
@@ -3325,7 +3429,7 @@
     ],
     "required_assembly_score": 88,
     "minimum_success_quality": "Good",
-    "required_concept_card": "infrared_space_observing",
+    "required_concept_card": "jwst_false_colour",
     "hint_text_en": "Segments must act as one surface before the infrared instrument can form a useful image.",
     "hint_text_zh": "分段镜片必须像一个整体工作，红外仪器才能形成有效图像。",
     "success_text_en": "Deploy, cool, point, observe: run a complete infrared session by yourself.",
@@ -3341,7 +3445,22 @@
     "waveband": "infrared",
     "teaching_steps": [],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "space_profile": {
+      "target_id": "orion_nebula",
+      "kind": "nebula",
+      "best_instrument": "nircam",
+      "best_filter": "emission_line",
+      "science": "hot_gas",
+      "start_instrument": "nircam",
+      "start_filter": "near_infrared",
+      "start_exposure": 300.0,
+      "start_integrations": 4,
+      "start_attitude": 100.0,
+      "brightness": 0.7
+    },
+    "new_mechanic_en": "Emission-line filter: isolate hot ionised gas and map it to colour.",
+    "new_mechanic_zh": "发射线滤镜：分离高温电离气体并映射为颜色。"
   },
   {
     "id": "level_75",
@@ -3355,7 +3474,6 @@
     "assembly_mode": "advanced",
     "telescope_family": "space_segmented",
     "requires_telescope": false,
-    "requires_collimation": false,
     "collimation_threshold": 90,
     "target_object_id": "andromeda",
     "required_parts": [
@@ -3378,7 +3496,7 @@
     ],
     "required_assembly_score": 88,
     "minimum_success_quality": "Good",
-    "required_concept_card": "infrared_space_observing",
+    "required_concept_card": "jwst_infrared_light",
     "hint_text_en": "Segments must act as one surface before the infrared instrument can form a useful image.",
     "hint_text_zh": "分段镜片必须像一个整体工作，红外仪器才能形成有效图像。",
     "success_text_en": "You now observe light no eye can see. There is radiation even \"colder\" than infrared - and for that, we have a giant in Guizhou.",
@@ -3398,7 +3516,22 @@
     "waveband": "infrared",
     "teaching_steps": [],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "space_profile": {
+      "target_id": "andromeda",
+      "kind": "galaxy",
+      "best_instrument": "nircam",
+      "best_filter": "near_infrared",
+      "science": "dust_rich",
+      "start_instrument": "nircam",
+      "start_filter": "near_infrared",
+      "start_exposure": 500.0,
+      "start_integrations": 6,
+      "start_attitude": 110.0,
+      "brightness": 0.6
+    },
+    "new_mechanic_en": "Graduation: full pipeline, deep stack, cosmic-ray rejection and science report.",
+    "new_mechanic_zh": "毕业关：完整管线、深叠加、宇宙线剔除与科学报告。"
   },
   {
     "id": "level_76",
@@ -3454,7 +3587,20 @@
       }
     ],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "radio_profile": {
+      "target_id": "pulsar_b0329",
+      "kind": "pulsar",
+      "azimuth": 145.0,
+      "altitude": 52.0,
+      "period_ms": 714.5,
+      "dm": 26.8,
+      "center_mhz": 1250.0,
+      "bandwidth_mhz": 90.0,
+      "source_strength": 1.0,
+      "start_center_mhz": 1400.0,
+      "start_period_ms": 690.0
+    }
   },
   {
     "id": "level_77",
@@ -3502,7 +3648,37 @@
     "waveband": "radio",
     "teaching_steps": [],
     "drift_enabled": false,
-    "hold_seconds": 0
+    "hold_seconds": 0,
+    "radio_profile": {
+      "target_id": "pulsar_b0329",
+      "kind": "pulsar",
+      "azimuth": 96.0,
+      "altitude": 63.0,
+      "period_ms": 253.0,
+      "dm": 12.4,
+      "center_mhz": 1120.0,
+      "bandwidth_mhz": 70.0,
+      "source_strength": 0.72,
+      "start_center_mhz": 1400.0,
+      "start_period_ms": 300.0,
+      "rfi": [
+        {
+          "mhz": 1075.0,
+          "strength": 0.9,
+          "source": "radar"
+        },
+        {
+          "mhz": 1210.0,
+          "strength": 0.82,
+          "source": "satellite"
+        },
+        {
+          "mhz": 1355.0,
+          "strength": 0.7,
+          "source": "phone"
+        }
+      ]
+    }
   },
   {
     "id": "level_78",

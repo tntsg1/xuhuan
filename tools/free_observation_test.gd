@@ -70,6 +70,8 @@ func _initialize() -> void:
 	_check(not gm.is_free_observation(), "6. mission target selected -> not free")
 	var ok: bool = gm.complete_current_mission(gm.current_target_object_id(), {"success": true, "quality": "Good", "ratios": {"light": 1.0, "clarity": 1.0, "stability": 1.0}})
 	_check(ok, "6. mission target completes the mission normally")
+	_check(not gm.get_object("moon").is_empty(), "6. completing a mission does not remove its target from the catalog")
+	_check(gm.object_detail("moon").has("name_en"), "6. the completed target remains available for later free observation")
 
 	# --- 7. Below-horizon free targets still obey the horizon rules ---
 	gm.new_game()

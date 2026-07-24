@@ -23,8 +23,21 @@ func _initialize() -> void:
 		var view: Control = load("res://scenes/sky_observation.tscn").instantiate()
 		root.add_child(view)
 		current_scene = view
-		await _settle()
+		# Reticle rendering must not depend on whether today's target happens to
+		# be below the horizon at the machine's current time.
 		var target_id: String = str(gm.current_target_object_id())
+		var sky: Dictionary = view.get("sky_data")
+		var target: Dictionary = sky.get(target_id, {}).duplicate(true)
+		target["azimuth"] = 180.0
+		target["altitude"] = 45.0
+		target["visible"] = true
+		target["below_horizon"] = false
+		target["source"] = "calculated"
+		sky[target_id] = target
+		view.set("sky_data", sky)
+		gm.publish_sky_positions(sky)
+		view.call("_rebuild_view")
+		await _settle()
 		var sky_item: Dictionary = (view.get("sky_data") as Dictionary).get(target_id, {})
 		view.set("telescope_azimuth", float(sky_item.get("azimuth", 180.0)))
 		view.set("telescope_altitude", float(sky_item.get("altitude", 45.0)))

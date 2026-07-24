@@ -4,6 +4,7 @@ const TURBULENCE_SHADER := preload("res://shaders/turbulence.gdshader")
 const GRAIN_SHADER := preload("res://shaders/grain.gdshader")
 const LENS_RING_OCCLUDER_SHADER := preload("res://shaders/lens_ring_occluder.gdshader")
 const NAKED_EYE_OUTER_RING_SHADER := preload("res://shaders/naked_eye_outer_ring.gdshader")
+const OPTICAL_LENS_SHADER := preload("res://shaders/optical_lens.gdshader")
 
 const COL_BG := Color(0.004, 0.006, 0.014)
 const COL_NAVY := Color(0.030, 0.045, 0.085, 0.96)
@@ -2133,6 +2134,7 @@ func _scope_visual() -> Control:
 	if observation_mode != "naked_eye":
 		_add_cloud_layer(root, center)
 	_add_quality_noise(root, center)
+	_add_optical_lens_effect(root, center)
 	if observation_mode != "naked_eye":
 		# Ring occluder ABOVE all lens content: clips drifting sprites /
 		# clouds / stars to the circle by repainting the barrel on top.
@@ -2159,6 +2161,34 @@ func _scope_visual() -> Control:
 	if observation_mode == "naked_eye":
 		_add_observation_reticle(root, center)
 	return root
+
+
+func _add_optical_lens_effect(parent: Control, center: Vector2) -> void:
+	if _is_constellation_observation():
+		return
+	var lens_size := 524.0 if observation_mode == "naked_eye" else 436.0
+	var overlay := ColorRect.new()
+	overlay.name = "OpticalLensOverlay"
+	overlay.position = center - Vector2.ONE * lens_size * 0.5
+	overlay.size = Vector2.ONE * lens_size
+	overlay.color = Color.WHITE
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var material := ShaderMaterial.new()
+	material.shader = OPTICAL_LENS_SHADER
+	material.set_shader_parameter("region_uv_size", Vector2(lens_size / 1024.0, lens_size / 768.0))
+	material.set_shader_parameter("circular_lens", 1.0)
+	if observation_mode == "naked_eye":
+		material.set_shader_parameter("curvature", 0.020)
+		material.set_shader_parameter("vignette_strength", 0.075)
+		material.set_shader_parameter("chroma_px", 0.06)
+		material.set_shader_parameter("glass_highlight", 0.024)
+	else:
+		material.set_shader_parameter("curvature", 0.060)
+		material.set_shader_parameter("vignette_strength", 0.18)
+		material.set_shader_parameter("chroma_px", 0.25)
+		material.set_shader_parameter("glass_highlight", 0.055)
+	overlay.material = material
+	parent.add_child(overlay)
 
 
 func _is_constellation_observation() -> bool:
@@ -2229,6 +2259,8 @@ func _add_target_visual(parent: Control, scope_center: Vector2) -> void:
 	elif effect == "dim" and quality in ["Poor", "Failed"] and not _city_glow_diffuse_target():
 		base_alpha *= 0.55
 	base_alpha = clampf(base_alpha + _dark_adaptation_alpha_bonus(), 0.0, 1.0)
+	# Brightness floor: a solid target never fades below identifiability.
+	base_alpha = maxf(base_alpha, _target_alpha_floor())
 	if GameManager.current_level().get("observation_requirements", {}).has("exposure_max"):
 		base_alpha = clampf(base_alpha * lerpf(0.42, 1.35, exposure_value), 0.0, 1.0)
 
@@ -2416,6 +2448,8 @@ func _refresh_target_sprite() -> void:
 	elif effect == "dim" and quality in ["Poor", "Failed"] and not _city_glow_diffuse_target():
 		base_alpha *= 0.55
 	base_alpha = clampf(base_alpha + _dark_adaptation_alpha_bonus(), 0.0, 1.0)
+	# Brightness floor: a solid target never fades below identifiability.
+	base_alpha = maxf(base_alpha, _target_alpha_floor())
 	if GameManager.current_level().get("observation_requirements", {}).has("exposure_max"):
 		base_alpha = clampf(base_alpha * lerpf(0.42, 1.35, exposure_value), 0.0, 1.0)
 	var path := _sprite_path_for_target(id, quality, effect)
@@ -2449,7 +2483,21 @@ func _cloud_alpha_multiplier() -> float:
 	# Clouds crossing the target darken it in real time - the 0.6s
 	# re-evaluation loop (_advance_conditions) applies the same factor to
 	# the actual quality math via extra_context["cloud_attenuation"].
-	return 1.0 - 0.75 * cond_cloud_atten
+	# Solid bright bodies (Moon, planets, stars) keep a floor so a cloud dims
+	# them but can never turn them into an unreadable black disc. Faint diffuse
+	# targets keep the full range - fading out IS their observing challenge.
+	var raw := 1.0 - 0.75 * cond_cloud_atten
+	if _is_diffuse_target():
+		return raw
+	return maxf(raw, 0.45)
+
+
+func _target_alpha_floor() -> float:
+	# Minimum brightness a lit target may reach after seeing/cloud/low-light so
+	# it is always still IDENTIFIABLE. Diffuse deep-sky is allowed to go faint.
+	if _is_diffuse_target():
+		return 0.12
+	return 0.55
 
 
 func _city_glow_diffuse_target() -> bool:

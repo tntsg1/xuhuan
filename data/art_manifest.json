@@ -1,0 +1,970 @@
+{
+  "generated_by": "tools/art/build_space_fast_art.py",
+  "style": "pixel-realistic astronomy UI; deep navy / black / gold / silver / cyan; single light source upper-left; consistent 3/4 perspective; 500x500 RGBA transparent part sprites",
+  "all_temporary_art": true,
+  "how_to_replace": "Drop a final PNG at the same res_path. Keep it 500x500 RGBA with a transparent background and one centred, uncropped part. Then set temporary_art=false here. No code or level-data change is required, because icon_path already points at this path.",
+  "assets": [
+    {
+      "name": "segmented_primary_array.png",
+      "path": "assets/telescope_parts/space_segmented/segmented_primary_array.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/segmented_primary_array.png",
+      "purpose": "18-segment gold-coated beryllium primary mirror array",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        16,
+        49,
+        484,
+        447
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "deployable_secondary_mirror.png",
+      "path": "assets/telescope_parts/space_segmented/deployable_secondary_mirror.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/deployable_secondary_mirror.png",
+      "purpose": "Convex secondary mirror on deployable tripod struts",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        80,
+        46,
+        476,
+        456
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "fine_steering_mirror.png",
+      "path": "assets/telescope_parts/space_segmented/fine_steering_mirror.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/fine_steering_mirror.png",
+      "purpose": "Gimballed fine steering mirror for line-of-sight stabilisation",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        26,
+        20,
+        467,
+        470
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "tertiary_mirror_module.png",
+      "path": "assets/telescope_parts/space_segmented/tertiary_mirror_module.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/tertiary_mirror_module.png",
+      "purpose": "Fixed tertiary mirror module folding light toward the instruments",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        24,
+        70,
+        469,
+        418
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "five_layer_sunshield.png",
+      "path": "assets/telescope_parts/space_segmented/five_layer_sunshield.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/five_layer_sunshield.png",
+      "purpose": "Five-layer tennis-court sunshield, kite planform",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        19,
+        123,
+        477,
+        372
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "space_telescope_bus.png",
+      "path": "assets/telescope_parts/space_segmented/space_telescope_bus.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/space_telescope_bus.png",
+      "purpose": "Spacecraft bus: power, propulsion, avionics and comms",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        23,
+        49,
+        470,
+        441
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "deployable_tower.png",
+      "path": "assets/telescope_parts/space_segmented/deployable_tower.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/deployable_tower.png",
+      "purpose": "Deployable tower separating the cold optics from the warm bus",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        96,
+        20,
+        395,
+        471
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "deployment_hinges.png",
+      "path": "assets/telescope_parts/space_segmented/deployment_hinges.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/deployment_hinges.png",
+      "purpose": "Motorised hinge set for wing and sunshield deployment",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        21,
+        153,
+        474,
+        338
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "infrared_instrument_package.png",
+      "path": "assets/telescope_parts/space_segmented/infrared_instrument_package.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/infrared_instrument_package.png",
+      "purpose": "ISIM integrated science instrument package",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        22,
+        79,
+        472,
+        412
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "nircam_instrument.png",
+      "path": "assets/telescope_parts/space_segmented/nircam_instrument.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/nircam_instrument.png",
+      "purpose": "NIRCam near-infrared camera (0.6-5 micron imaging)",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        21,
+        90,
+        472,
+        400
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "nirspec_instrument.png",
+      "path": "assets/telescope_parts/space_segmented/nirspec_instrument.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/nirspec_instrument.png",
+      "purpose": "NIRSpec near-infrared multi-object spectrograph",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        20,
+        127,
+        473,
+        363
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "miri_instrument.png",
+      "path": "assets/telescope_parts/space_segmented/miri_instrument.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/miri_instrument.png",
+      "purpose": "MIRI mid-infrared imager and spectrograph (5-28 micron, ~7 K)",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        74,
+        64,
+        419,
+        472
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "fgs_niriss_instrument.png",
+      "path": "assets/telescope_parts/space_segmented/fgs_niriss_instrument.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/fgs_niriss_instrument.png",
+      "purpose": "FGS/NIRISS fine guidance sensor and near-IR imager-slitless spectrograph",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        22,
+        155,
+        473,
+        336
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "solar_array.png",
+      "path": "assets/telescope_parts/space_segmented/solar_array.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/solar_array.png",
+      "purpose": "Photovoltaic wing on the sun-facing side of the sunshield",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        40,
+        157,
+        477,
+        397
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "communication_antenna.png",
+      "path": "assets/telescope_parts/space_segmented/communication_antenna.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/communication_antenna.png",
+      "purpose": "Steerable high-gain antenna for the science downlink",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        94,
+        23,
+        406,
+        426
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "thermal_radiator.png",
+      "path": "assets/telescope_parts/space_segmented/thermal_radiator.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/thermal_radiator.png",
+      "purpose": "Passive radiator rejecting instrument heat to deep space",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        23,
+        70,
+        470,
+        418
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "instrument_bay.png",
+      "path": "assets/telescope_parts/space_segmented/instrument_bay.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/instrument_bay.png",
+      "purpose": "Instrument bay frame carrying four cold instrument slots",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        21,
+        73,
+        472,
+        413
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "infrared_detector_module.png",
+      "path": "assets/telescope_parts/space_segmented/infrared_detector_module.png",
+      "res_path": "res://assets/telescope_parts/space_segmented/infrared_detector_module.png",
+      "purpose": "HgCdTe infrared detector module with its cold shield",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        33,
+        69,
+        468,
+        431
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "fast_active_dish.png",
+      "path": "assets/telescope_parts/fast_radio/fast_active_dish.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/fast_active_dish.png",
+      "purpose": "500 m active primary reflector set in its karst basin",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        91,
+        94,
+        409,
+        362
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "reflector_panel_segment.png",
+      "path": "assets/telescope_parts/fast_radio/reflector_panel_segment.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/reflector_panel_segment.png",
+      "purpose": "Perforated triangular reflector panel of the active surface",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        19,
+        84,
+        476,
+        404
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "panel_actuator.png",
+      "path": "assets/telescope_parts/fast_radio/panel_actuator.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/panel_actuator.png",
+      "purpose": "Down-tied screw-jack actuator that shapes the active surface",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        105,
+        16,
+        386,
+        469
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "suspended_feed_cabin.png",
+      "path": "assets/telescope_parts/fast_radio/suspended_feed_cabin.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/suspended_feed_cabin.png",
+      "purpose": "Cable-suspended feed cabin riding above the dish",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        19,
+        81,
+        481,
+        412
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "feed_cabin_receiver.png",
+      "path": "assets/telescope_parts/fast_radio/feed_cabin_receiver.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/feed_cabin_receiver.png",
+      "purpose": "Cryogenic corrugated feed horn and receiver front end",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        70,
+        16,
+        422,
+        469
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "feed_cabin_cable_system.png",
+      "path": "assets/telescope_parts/fast_radio/feed_cabin_cable_system.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/feed_cabin_cable_system.png",
+      "purpose": "Six-tower cable-drive suspension for the feed cabin",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        19,
+        81,
+        473,
+        410
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "cable_tension_controller.png",
+      "path": "assets/telescope_parts/fast_radio/cable_tension_controller.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/cable_tension_controller.png",
+      "purpose": "Winch and tension controller for the support cables",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        24,
+        75,
+        469,
+        413
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "radio_frequency_receiver.png",
+      "path": "assets/telescope_parts/fast_radio/radio_frequency_receiver.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/radio_frequency_receiver.png",
+      "purpose": "Wideband radio-frequency receiver front end",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        21,
+        47,
+        471,
+        442
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "signal_spectrum_monitor.png",
+      "path": "assets/telescope_parts/fast_radio/signal_spectrum_monitor.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/signal_spectrum_monitor.png",
+      "purpose": "Live spectrum monitor across the tuned band",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        21,
+        47,
+        471,
+        442
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "radio_signal_processor.png",
+      "path": "assets/telescope_parts/fast_radio/radio_signal_processor.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/radio_signal_processor.png",
+      "purpose": "Digital backend channelising and integrating the signal",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        21,
+        47,
+        471,
+        442
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "pulsar_timing_console.png",
+      "path": "assets/telescope_parts/fast_radio/pulsar_timing_console.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/pulsar_timing_console.png",
+      "purpose": "Pulsar folding and timing console",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        21,
+        47,
+        471,
+        442
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "rfi_monitor.png",
+      "path": "assets/telescope_parts/fast_radio/rfi_monitor.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/rfi_monitor.png",
+      "purpose": "Radio-frequency-interference monitor",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        21,
+        47,
+        471,
+        442
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "data_recording_console.png",
+      "path": "assets/telescope_parts/fast_radio/data_recording_console.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/data_recording_console.png",
+      "purpose": "Observation data recorder and archive console",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        21,
+        47,
+        471,
+        442
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "observatory_control_terminal.png",
+      "path": "assets/telescope_parts/fast_radio/observatory_control_terminal.png",
+      "res_path": "res://assets/telescope_parts/fast_radio/observatory_control_terminal.png",
+      "purpose": "Observatory master control terminal",
+      "kind": "part_sprite",
+      "size": [
+        500,
+        500
+      ],
+      "content_bbox": [
+        21,
+        47,
+        471,
+        442
+      ],
+      "transparent_background": true,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "space_main_blueprint.png",
+      "path": "assets/assembly/space_main_blueprint.png",
+      "res_path": "res://assets/assembly/space_main_blueprint.png",
+      "purpose": "Space telescope main assembly board",
+      "kind": "assembly_blueprint",
+      "size": [
+        880,
+        700
+      ],
+      "slots": {
+        "sunshield": [
+          96,
+          452,
+          160,
+          130
+        ],
+        "optical_tube_assembly": [
+          352,
+          60,
+          190,
+          150
+        ],
+        "spacecraft_bus": [
+          628,
+          452,
+          160,
+          130
+        ],
+        "solar_array": [
+          96,
+          90,
+          160,
+          130
+        ]
+      },
+      "transparent_background": false,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "space_mirror_blueprint.png",
+      "path": "assets/assembly/space_mirror_blueprint.png",
+      "res_path": "res://assets/assembly/space_mirror_blueprint.png",
+      "purpose": "Mirror wing deployment board",
+      "kind": "assembly_blueprint",
+      "size": [
+        900,
+        660
+      ],
+      "slots": {
+        "segmented_primary_array": [
+          368,
+          236,
+          172,
+          150
+        ],
+        "deployable_secondary_mirror": [
+          400,
+          26,
+          120,
+          110
+        ],
+        "tertiary_mirror_module": [
+          70,
+          300,
+          120,
+          110
+        ],
+        "fine_steering_mirror": [
+          710,
+          300,
+          120,
+          110
+        ],
+        "deployable_tower": [
+          420,
+          500,
+          110,
+          120
+        ],
+        "deployment_hinges": [
+          70,
+          60,
+          120,
+          110
+        ]
+      },
+      "transparent_background": false,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "space_instrument_blueprint.png",
+      "path": "assets/assembly/space_instrument_blueprint.png",
+      "res_path": "res://assets/assembly/space_instrument_blueprint.png",
+      "purpose": "Science instrument bay board",
+      "kind": "assembly_blueprint",
+      "size": [
+        880,
+        640
+      ],
+      "slots": {
+        "instrument_bay": [
+          348,
+          244,
+          180,
+          150
+        ],
+        "nircam_instrument": [
+          70,
+          60,
+          130,
+          120
+        ],
+        "nirspec_instrument": [
+          676,
+          60,
+          130,
+          120
+        ],
+        "miri_instrument": [
+          70,
+          452,
+          130,
+          120
+        ],
+        "fgs_niriss_instrument": [
+          676,
+          452,
+          130,
+          120
+        ],
+        "infrared_detector_module": [
+          376,
+          60,
+          130,
+          120
+        ]
+      },
+      "transparent_background": false,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "space_thermal_blueprint.png",
+      "path": "assets/assembly/space_thermal_blueprint.png",
+      "res_path": "res://assets/assembly/space_thermal_blueprint.png",
+      "purpose": "Thermal and sunshield system board",
+      "kind": "assembly_blueprint",
+      "size": [
+        880,
+        620
+      ],
+      "slots": {
+        "five_layer_sunshield": [
+          330,
+          340,
+          220,
+          160
+        ],
+        "thermal_radiator": [
+          70,
+          110,
+          140,
+          120
+        ],
+        "space_telescope_bus": [
+          666,
+          110,
+          140,
+          120
+        ],
+        "communication_antenna": [
+          666,
+          400,
+          140,
+          120
+        ]
+      },
+      "transparent_background": false,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "fast_main_blueprint.png",
+      "path": "assets/assembly/fast_main_blueprint.png",
+      "res_path": "res://assets/assembly/fast_main_blueprint.png",
+      "purpose": "FAST observatory main board",
+      "kind": "assembly_blueprint",
+      "size": [
+        900,
+        660
+      ],
+      "slots": {
+        "fast_active_dish": [
+          330,
+          372,
+          240,
+          160
+        ],
+        "suspended_feed_cabin": [
+          386,
+          118,
+          128,
+          116
+        ],
+        "feed_cabin_cable_system": [
+          60,
+          96,
+          140,
+          120
+        ],
+        "observatory_control_terminal": [
+          700,
+          460,
+          140,
+          120
+        ]
+      },
+      "transparent_background": false,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "fast_feed_blueprint.png",
+      "path": "assets/assembly/fast_feed_blueprint.png",
+      "res_path": "res://assets/assembly/fast_feed_blueprint.png",
+      "purpose": "Feed cabin alignment board",
+      "kind": "assembly_blueprint",
+      "size": [
+        880,
+        640
+      ],
+      "slots": {
+        "suspended_feed_cabin": [
+          360,
+          246,
+          160,
+          140
+        ],
+        "feed_cabin_receiver": [
+          70,
+          70,
+          130,
+          120
+        ],
+        "cable_tension_controller": [
+          676,
+          70,
+          130,
+          120
+        ],
+        "panel_actuator": [
+          70,
+          450,
+          130,
+          120
+        ],
+        "reflector_panel_segment": [
+          676,
+          450,
+          130,
+          120
+        ]
+      },
+      "transparent_background": false,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    },
+    {
+      "name": "fast_signal_blueprint.png",
+      "path": "assets/assembly/fast_signal_blueprint.png",
+      "res_path": "res://assets/assembly/fast_signal_blueprint.png",
+      "purpose": "Radio signal processing chain board",
+      "kind": "assembly_blueprint",
+      "size": [
+        900,
+        620
+      ],
+      "slots": {
+        "radio_frequency_receiver": [
+          56,
+          70,
+          150,
+          130
+        ],
+        "signal_spectrum_monitor": [
+          276,
+          70,
+          150,
+          130
+        ],
+        "radio_signal_processor": [
+          496,
+          70,
+          150,
+          130
+        ],
+        "rfi_monitor": [
+          716,
+          70,
+          150,
+          130
+        ],
+        "pulsar_timing_console": [
+          276,
+          420,
+          150,
+          130
+        ],
+        "data_recording_console": [
+          496,
+          420,
+          150,
+          130
+        ]
+      },
+      "transparent_background": false,
+      "temporary_art": true,
+      "status": "complete_usable_temporary"
+    }
+  ]
+}

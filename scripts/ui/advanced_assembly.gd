@@ -28,10 +28,21 @@ const DOBSONIAN_MAIN_SOURCE_SLOTS := {
 	"finder_scope": Rect2(363.0, 52.0, 72.0, 66.0),
 	"mount": Rect2(292.0, 560.0, 121.0, 132.0),
 }
+# Cassegrain main bench: the user's full-UI blueprint cropped to just the
+# center board; slot rects measured on the crop + overlay-verified.
+const CASSEGRAIN_MAIN_BLUEPRINT := "res://assets/assembly/cassegrain_main_blueprint_cropped.png"
+const CASSEGRAIN_MAIN_SOURCE_SIZE := Vector2(694.0, 783.0)
+const CASSEGRAIN_MAIN_SOURCE_SLOTS := {
+	"finder_scope": Rect2(203.0, 14.0, 120.0, 86.0),
+	"optical_tube_assembly": Rect2(283.0, 106.0, 252.0, 128.0),
+	"mount": Rect2(195.0, 322.0, 108.0, 120.0),
+	"tripod": Rect2(389.0, 624.0, 162.0, 150.0),
+}
 
 var selected_type := ""
 var order: Array[String] = []
 var status_label: Label
+var flat_inspector_detail: Label
 var blueprint: Control
 var template_parts_scroll: ScrollContainer
 var template_parts_list: Control
@@ -67,7 +78,7 @@ func _build() -> void:
 	part_card_controls.clear()
 	slot_controls.clear()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	if _family() in ["newtonian", "dobsonian"]:
+	if _family() in ["newtonian", "dobsonian", "cassegrain"]:
 		_build_newtonian_template_main()
 		return
 	if _is_nested_ground_family():
@@ -77,10 +88,11 @@ func _build() -> void:
 	for type_value in GameManager.current_level().get("assembly_order", []):
 		order.append(str(type_value))
 	_rect(Vector2.ZERO, Vector2(1024, 768), BG)
-	_label(GameManager.text("REFLECTOR ASSEMBLY BENCH", "反射镜组装台"), Vector2(20, 14), Vector2(984, 32), 25, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	_label(GameManager.text("Newtonian blueprint: front opening -> primary mirror -> diagonal secondary -> side focuser.", "牛顿镜蓝图：前端入光 -> 主镜 -> 斜副镜 -> 侧置调焦座。"), Vector2(20, 50), Vector2(984, 20), 12, CYAN, HORIZONTAL_ALIGNMENT_CENTER)
+	_label(_flat_bench_title(), Vector2(20, 14), Vector2(984, 32), 25, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_add_type_selector()
+	_label(_flat_bench_subtitle(), Vector2(20, 50), Vector2(984, 20), 12, CYAN, HORIZONTAL_ALIGNMENT_CENTER)
 
-	var tray := _panel(Vector2(20, 88), Vector2(278, 614), GameManager.text("REFLECTOR PARTS", "反射镜零件"))
+	var tray := _panel(Vector2(20, 88), Vector2(278, 614), _flat_tray_title())
 	var scroll := ScrollContainer.new()
 	scroll.position = Vector2(12, 42)
 	scroll.size = Vector2(254, 558)
@@ -93,7 +105,7 @@ func _build() -> void:
 	for part_type in order:
 		list.add_child(_part_card(part_type))
 
-	var board_panel := _panel(Vector2(316, 88), Vector2(448, 614), GameManager.text("NEWTONIAN LIGHT PATH", "牛顿反射光路"))
+	var board_panel := _panel(Vector2(316, 88), Vector2(448, 614), _flat_board_title())
 	blueprint = Control.new()
 	blueprint.position = Vector2(10, 38)
 	blueprint.size = Vector2(428, 500)
@@ -102,8 +114,18 @@ func _build() -> void:
 
 	var inspector := _panel(Vector2(782, 88), Vector2(222, 614), GameManager.text("ASSEMBLY CHECK", "组装检查"))
 	var level := GameManager.current_level()
-	inspector.add_child(_label(GameManager.dict_text(level, "title"), Vector2(12, 42), Vector2(198, 46), 15, TEXT, HORIZONTAL_ALIGNMENT_CENTER))
-	status_label = _label(_status_text(), Vector2(14, 106), Vector2(194, 178), 12, TEXT)
+	inspector.add_child(_label(GameManager.dict_text(level, "title"), Vector2(12, 40), Vector2(198, 40), 15, TEXT, HORIZONTAL_ALIGNMENT_CENTER))
+	# Inspector detail: name + purpose + status of the SELECTED part.
+	var detail_box := Panel.new()
+	detail_box.position = Vector2(12, 84)
+	detail_box.size = Vector2(198, 150)
+	detail_box.add_theme_stylebox_override("panel", _style(Color(0.03, 0.05, 0.085, 0.9), Color(0.22, 0.34, 0.5), 1))
+	inspector.add_child(detail_box)
+	flat_inspector_detail = _label("", Vector2(10, 8), Vector2(178, 134), 12, TEXT)
+	flat_inspector_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	flat_inspector_detail.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	detail_box.add_child(flat_inspector_detail)
+	status_label = _label(_status_text(), Vector2(14, 244), Vector2(194, 120), 12, TEXT)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inspector.add_child(status_label)
 	var finish := _button(GameManager.text("Finish Assembly", "完成组装"), Vector2(14, 500), Vector2(194, 42), Color(0.10, 0.30, 0.20))
@@ -115,6 +137,7 @@ func _build() -> void:
 		GameManager.go("observatory")
 	)
 	inspector.add_child(back)
+	_update_flat_inspector(selected_type)
 
 
 func _is_nested_ground_family() -> bool:
@@ -124,6 +147,7 @@ func _is_nested_ground_family() -> bool:
 func _build_nested_main() -> void:
 	_rect(Vector2.ZERO, Vector2(1024, 768), BG)
 	_label(GameManager.text("ADVANCED TELESCOPE MAIN ASSEMBLY", "高级望远镜主组装台"), Vector2(20, 14), Vector2(984, 32), 25, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_add_type_selector()
 	_label(GameManager.text("Build the support system here. Assemble every mirror and optical part inside the Optical Tube Assembly.", "此处组装支撑系统。所有镜面和光学零件请在光学镜筒组件中完成。"), Vector2(30, 50), Vector2(964, 22), 13, CYAN, HORIZONTAL_ALIGNMENT_CENTER)
 	var tray := _panel(Vector2(20, 88), Vector2(278, 614), GameManager.text("MAIN COMPONENTS", "主组件"))
 	var list := VBoxContainer.new()
@@ -163,6 +187,7 @@ func _build_newtonian_template_main() -> void:
 		GameManager.text("Telescope Assembly", "望远镜组装台"),
 		GameManager.text("Pick a part, then click its blueprint slot.", "选择零件，再点击蓝图安装位。")
 	)
+	_add_type_selector()
 	AssemblyUITemplate.add_titled_panel(self, AssemblyUITemplate.LEFT_PANEL_RECT, GameManager.text("Parts Tray", "零件托盘"))
 	AssemblyUITemplate.add_blueprint_panel(self, GameManager.text("Blueprint", "蓝图"))
 
@@ -185,8 +210,8 @@ func _build_newtonian_template_main() -> void:
 	template_parts_list.size = template_parts_list.custom_minimum_size
 
 	template_blueprint_layer = Control.new()
-	template_blueprint_layer.position = Vector2(344, 122)
-	template_blueprint_layer.size = Vector2(412, 448)
+	template_blueprint_layer.position = Vector2(334, 112)
+	template_blueprint_layer.size = Vector2(424, 512)
 	add_child(template_blueprint_layer)
 	var config := _main_blueprint_config()
 	var source_size: Vector2 = config["size"]
@@ -206,12 +231,12 @@ func _build_newtonian_template_main() -> void:
 		var slot_rect := _source_rect_to_blueprint(slots[part_type], layout)
 		_newtonian_reference_slot(template_blueprint_layer, str(part_type), slot_rect)
 
-	var helper := _label(GameManager.text("Select a card, then click the matching slot.", "选择零件卡，再点击对应安装位。"), Vector2(346, 580), Vector2(408, 28), 12, Color(0.72, 0.82, 0.90), HORIZONTAL_ALIGNMENT_CENTER)
+	var helper := _label(GameManager.text("Select a card, then click the matching slot.", "选择零件卡，再点击对应安装位。"), Vector2(346, 632), Vector2(408, 28), 12, Color(0.72, 0.82, 0.90), HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(helper)
 	var order_hint := GameManager.text("Tripod -> Mount -> Tube Assembly -> Finder", "三脚架 -> 支架 -> 镜筒组件 -> 寻星镜")
 	if _family() == "dobsonian":
 		order_hint = GameManager.text("Rocker Mount -> Tube Assembly -> Finder", "摇箱底座 -> 镜筒组件 -> 寻星镜")
-	var order_text := _label(order_hint, Vector2(346, 614), Vector2(408, 22), 11, Color(0.56, 0.68, 0.78), HORIZONTAL_ALIGNMENT_CENTER)
+	var order_text := _label(order_hint, Vector2(346, 664), Vector2(408, 22), 11, Color(0.56, 0.68, 0.78), HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(order_text)
 
 	var back_callback := func() -> void:
@@ -235,6 +260,30 @@ func _build_newtonian_template_main() -> void:
 	status_label = template_feedback
 	AssemblyUITemplate.add_hints_toggle(self, GameManager, _build)
 	_refresh_newtonian_main_inspector()
+
+
+func _add_type_selector() -> void:
+	var button := _button(GameManager.text("Type: ", "类型：") + _family_display_name(), Vector2(24, 18), Vector2(180, 30), Color(0.08, 0.12, 0.20))
+	button.name = "TelescopeTypeButton"
+	button.add_theme_font_size_override("font_size", 11)
+	button.tooltip_text = GameManager.text("Choose another unlocked telescope family", "选择其他已解锁的望远镜类型")
+	button.pressed.connect(func() -> void:
+		GameManager.set_meta("telescope_types_browse", false)
+		GameManager.set_meta("telescope_types_return_scene", "advanced_assembly")
+		GameManager.go("telescope_types")
+	)
+	add_child(button)
+
+
+func _family_display_name() -> String:
+	match _family():
+		"newtonian": return GameManager.text("Newtonian", "牛顿反射式")
+		"dobsonian": return GameManager.text("Dobsonian", "多布森")
+		"cassegrain": return GameManager.text("Cassegrain", "卡塞格林")
+		"gregorian": return GameManager.text("Gregorian", "格里高利")
+		"space_segmented": return GameManager.text("Infrared", "红外")
+		"fast_radio": return GameManager.text("FAST Radio", "FAST 射电")
+	return GameManager.text("Refractor", "折射式")
 
 
 func _add_newtonian_main_card(part_type: String, position: Vector2) -> void:
@@ -312,6 +361,8 @@ func _open_tube_or_hint() -> void:
 func _main_blueprint_config() -> Dictionary:
 	if _family() == "dobsonian":
 		return {"path": DOBSONIAN_MAIN_BLUEPRINT, "size": DOBSONIAN_MAIN_SOURCE_SIZE, "slots": DOBSONIAN_MAIN_SOURCE_SLOTS}
+	if _family() == "cassegrain":
+		return {"path": CASSEGRAIN_MAIN_BLUEPRINT, "size": CASSEGRAIN_MAIN_SOURCE_SIZE, "slots": CASSEGRAIN_MAIN_SOURCE_SLOTS}
 	return {"path": NEWTONIAN_MAIN_BLUEPRINT, "size": NEWTONIAN_MAIN_SOURCE_SIZE, "slots": NEWTONIAN_MAIN_SOURCE_SLOTS}
 
 
@@ -322,6 +373,8 @@ func _main_template_part(part_type: String) -> Dictionary:
 		"tripod":
 			return GameManager.get_part("basic_tripod")
 		"mount":
+			if _family() == "cassegrain":
+				return GameManager.get_part("cassegrain_fork_mount")
 			if _family() == "dobsonian":
 				return GameManager.get_part("dobsonian_rocker_mount")
 			# Newtonian mounts are a free slot now (upgrades like the
@@ -333,6 +386,15 @@ func _main_template_part(part_type: String) -> Dictionary:
 		"finder_scope":
 			return GameManager.get_part("basic_finder_scope")
 	if part_type == "optical_tube_assembly":
+		if _family() == "cassegrain":
+			return {
+				"id": "cassegrain_optical_tube_assembly",
+				"name_en": "Cassegrain Optical Tube Assembly",
+				"name_zh": "卡塞格林光学镜筒组件",
+				"description_en": "The completed folded-path tube: primary, convex secondary, baffle, rear focuser and eyepiece.",
+				"description_zh": "完成的折叠光路镜筒：主镜、凸面副镜、挡板、后端调焦座和目镜。",
+				"icon_path": "res://assets/telescope_parts/cassegrain/cassegrain_compact_tube.png",
+			}
 		if _family() == "dobsonian":
 			return {
 				"id": "dobsonian_optical_tube_assembly",
@@ -739,6 +801,9 @@ func _newtonian_reference_slot(parent: Control, part_type: String, rect: Rect2) 
 func _main_parts() -> Array[String]:
 	if _family() == "newtonian":
 		return ["tripod", "mount", "optical_tube_assembly", "finder_scope"]
+	if _family() == "cassegrain":
+		# Four EXTERNAL components only; the 8 internal parts live in the tube.
+		return ["tripod", "mount", "optical_tube_assembly", "finder_scope"]
 	if _family() == "dobsonian":
 		return ["mount", "optical_tube_assembly", "finder_scope"]
 	return ["tripod", "mount", "optical_tube_assembly"]
@@ -914,30 +979,48 @@ func _part_texture_control(part: Dictionary, bounds: Rect2) -> TextureRect:
 func _part_card(part_type: String) -> Control:
 	var part := _part_for_type(part_type)
 	var installed := _installed(part_type)
+	var is_selected := selected_type == part_type and not installed
 	var card := Panel.new()
 	card.custom_minimum_size = Vector2(236, 54)
-	card.add_theme_stylebox_override("panel", _style(Color(0.075, 0.10, 0.15), GREEN if installed else Color(0.25, 0.43, 0.66), 2))
+	var border := GREEN if installed else (GOLD if is_selected else Color(0.25, 0.43, 0.66))
+	card.add_theme_stylebox_override("panel", _style(Color(0.075, 0.10, 0.15), border, 3 if is_selected else 2))
 	var title := _label(GameManager.dict_text(part, "name"), Vector2(10, 5), Vector2(166, 18), 12, TEXT)
 	title.clip_text = true
 	card.add_child(title)
-	card.add_child(_label(GameManager.text("Installed", "已安装") if installed else GameManager.text("Select", "选择"), Vector2(10, 27), Vector2(92, 16), 11, GREEN if installed else CYAN))
-	var choose := Button.new()
-	choose.text = GameManager.text("Use", "使用")
-	choose.position = Vector2(180, 10)
-	choose.size = Vector2(46, 32)
-	choose.add_theme_font_size_override("font_size", 11)
-	choose.pressed.connect(func() -> void:
-		selected_type = part_type
-		status_label.text = GameManager.text("Selected " + GameManager.dict_text(part, "name") + ". Click its marked slot.", "已选择" + GameManager.dict_text(part, "name") + "，请点击对应安装位。")
-		_draw_specialized_blueprint()
-	)
-	card.add_child(choose)
+	var state_text := GameManager.text("Installed", "已安装") if installed else (GameManager.text("Selected", "已选择") if is_selected else GameManager.text("Tap to select", "点击选择"))
+	card.add_child(_label(state_text, Vector2(10, 27), Vector2(120, 16), 11, GREEN if installed else (GOLD if is_selected else CYAN)))
+	# The whole card is the select control (a tap selects; it never observes,
+	# never installs, never completes the mission). A green check marks installed.
+	if installed:
+		var check := _label("✓", Vector2(196, 12), Vector2(30, 30), 22, GREEN, HORIZONTAL_ALIGNMENT_CENTER)
+		card.add_child(check)
+	else:
+		var hit := Button.new()
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.position = Vector2.ZERO
+		hit.size = Vector2(236, 54)
+		hit.pressed.connect(func() -> void: _select_flat_part(part_type))
+		card.add_child(hit)
 	part_card_controls[part_type] = card
 	return card
 
 
+func _select_flat_part(part_type: String) -> void:
+	# Selection only: highlight, update the inspector, and mark the blueprint
+	# slot. Explicitly does NOT install, observe, log, score or save.
+	selected_type = part_type
+	_build()  # rebuild recreates the cards/labels and re-applies the gold border
+	var part := _part_for_type(part_type)
+	status_label.text = GameManager.text(
+		"Selected " + GameManager.dict_text(part, "name") + ". Now click its highlighted slot.",
+		"已选择" + GameManager.dict_text(part, "name") + "。现在点击高亮的安装位。")
+	status_label.add_theme_color_override("font_color", TEXT)
+	_update_flat_inspector(part_type)
+
+
 func _family() -> String:
-	return str(GameManager.current_level().get("telescope_family", "newtonian"))
+	return GameManager.assembly_family()
 
 
 func _draw_specialized_blueprint() -> void:
@@ -945,17 +1028,25 @@ func _draw_specialized_blueprint() -> void:
 	var art := TextureRect.new()
 	art.texture = _family_art_texture(family)
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	art.position = Vector2(28, 40)
-	art.size = Vector2(372, 330)
+	art.position = Vector2(40, 30)
+	art.size = Vector2(348, 300)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	blueprint.add_child(art)
-	var caption := _label_to(blueprint, _family_caption(family), Vector2(16, 374), Vector2(396, 34), 12, CYAN, HORIZONTAL_ALIGNMENT_CENTER)
-	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var placements := _specialized_slot_positions(family)
 	for part_type in order:
-		_draw_slot(part_type, placements.get(part_type, Rect2(156, 430, 116, 42)))
+		_draw_slot(part_type, placements.get(part_type, Rect2(156, 388, 116, 42)))
+	# Caption sits in its own strip BELOW the slots, on a solid backing, so it can
+	# never overlap the green install frames or the art.
+	var caption_bg := Panel.new()
+	caption_bg.position = Vector2(14, 452)
+	caption_bg.size = Vector2(400, 40)
+	caption_bg.add_theme_stylebox_override("panel", _style(Color(0.03, 0.05, 0.085, 0.94), Color(0.20, 0.34, 0.5), 1))
+	caption_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blueprint.add_child(caption_bg)
+	var caption := _label_to(blueprint, _family_caption(family), Vector2(22, 458), Vector2(384, 28), 13, CYAN, HORIZONTAL_ALIGNMENT_CENTER)
+	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 
 func _family_caption(family: String) -> String:
@@ -1008,9 +1099,10 @@ func _draw_slot(part_type: String, rect: Rect2) -> void:
 	blueprint.add_child(slot)
 	slot_controls[part_type] = slot
 	var part := _part_for_type(part_type)
-	var label := _label(GameManager.dict_text(part, "name") if installed else _short_type(part_type), Vector2(3, 3), rect.size - Vector2(6, 6), 10, color, HORIZONTAL_ALIGNMENT_CENTER)
+	var label := _label(GameManager.dict_text(part, "name") if installed else _short_type(part_type), Vector2(3, 3), rect.size - Vector2(6, 6), 12, color, HORIZONTAL_ALIGNMENT_CENTER)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.clip_text = true
 	slot.add_child(label)
 	var hit := Button.new()
 	hit.flat = true
@@ -1128,10 +1220,74 @@ func _installed(part_type: String) -> bool:
 
 func _status_text() -> String:
 	var missing: Array = GameManager.missing_parts()
-	return GameManager.text("Missing: ", "缺少：") + (", ".join(missing) if not missing.is_empty() else GameManager.text("All reflector parts installed.", "所有反射镜部件已安装。"))
+	if missing.is_empty():
+		return GameManager.text("All parts installed. Press Finish Assembly.", "全部零件已安装。点击“完成组装”。")
+	return GameManager.text("Still missing: ", "尚缺零件：") + ", ".join(missing)
+
+
+# --- family-aware bench copy (the flat bench serves space_segmented + fast_radio,
+# so it must never call itself a Newtonian reflector) --------------------------
+func _flat_bench_title() -> String:
+	match _family():
+		"space_segmented": return GameManager.text("INFRARED OBSERVATORY ASSEMBLY", "红外天文台组装台")
+		"fast_radio": return GameManager.text("RADIO TELESCOPE ASSEMBLY", "射电望远镜组装台")
+	return GameManager.text("REFLECTOR ASSEMBLY BENCH", "反射镜组装台")
+
+
+func _flat_bench_subtitle() -> String:
+	match _family():
+		"space_segmented": return GameManager.text("Select a part, then click its slot on the blueprint. Finishing does NOT start an observation.", "选择零件，再点击蓝图上的安装位。完成组装不会开始观测。")
+		"fast_radio": return GameManager.text("Assemble the dish, feed cabin and signal chain. Observing happens later, from the control room.", "组装反射面、馈源舱与信号链。观测将在控制室中进行。")
+	return GameManager.text("Select a part, then click its marked slot on the blueprint.", "选择零件，再点击蓝图上标记的安装位。")
+
+
+func _flat_tray_title() -> String:
+	match _family():
+		"space_segmented": return GameManager.text("OBSERVATORY PARTS", "天文台零件")
+		"fast_radio": return GameManager.text("RADIO PARTS", "射电零件")
+	return GameManager.text("REFLECTOR PARTS", "反射镜零件")
+
+
+func _flat_board_title() -> String:
+	match _family():
+		"space_segmented": return GameManager.text("INFRARED LIGHT PATH", "红外光路")
+		"fast_radio": return GameManager.text("RADIO SIGNAL PATH", "无线电信号路径")
+	return GameManager.text("REFLECTOR LIGHT PATH", "反射光路")
+
+
+func _update_flat_inspector(part_type: String) -> void:
+	if flat_inspector_detail == null:
+		return
+	if part_type == "":
+		flat_inspector_detail.text = GameManager.text(
+			"Click a part card to select it. Its name, job and status show here.",
+			"点击零件卡片进行选择。这里会显示它的名称、用途和状态。")
+		flat_inspector_detail.add_theme_color_override("font_color", Color(0.62, 0.72, 0.82))
+		return
+	var part := _part_for_type(part_type)
+	var state := GameManager.text("Installed", "已安装") if _installed(part_type) else GameManager.text("Selected - click its slot", "已选择——请点击安装位")
+	flat_inspector_detail.text = "%s\n\n%s\n\n%s: %s" % [
+		GameManager.dict_text(part, "name"),
+		GameManager.dict_text(part, "description"),
+		GameManager.text("Status", "状态"), state]
+	flat_inspector_detail.add_theme_color_override("font_color", Color(0.92, 0.93, 0.86))
 
 
 func _short_type(part_type: String) -> String:
+	# Localised slot captions - never leak English into Chinese mode.
+	match part_type:
+		"primary_mirror": return GameManager.text("Primary Mirror", "主镜")
+		"secondary_mirror": return GameManager.text("Secondary Mirror", "副镜")
+		"detector": return GameManager.text("Detector", "探测器")
+		"sunshield": return GameManager.text("Sunshield", "遮阳罩")
+		"reflector_tube": return GameManager.text("Reflector Tube", "镜筒")
+		"focuser": return GameManager.text("Focuser", "调焦座")
+		"eyepiece": return GameManager.text("Eyepiece", "目镜")
+		"mount": return GameManager.text("Mount", "支架")
+		"tripod": return GameManager.text("Tripod", "三脚架")
+		"radio_dish": return GameManager.text("Radio Dish", "反射面")
+		"receiver": return GameManager.text("Receiver", "接收机")
+		"signal_processor": return GameManager.text("Signal Processor", "信号处理")
 	return part_type.replace("_", " ").capitalize()
 
 

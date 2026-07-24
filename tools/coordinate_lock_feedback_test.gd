@@ -13,6 +13,13 @@ func _initialize() -> void:
 		quit(1)
 		return
 	gm.debug_jump_to_level(14, true)
+	# Real-sky positions move with the clock: if Mars is below the horizon right
+	# now, travel to a site where it has risen so the approach/lock ring can
+	# actually render (the feedback under test needs the target IN the sky).
+	if gm.target_requires_relocation():
+		var rec: Dictionary = gm.recommend_observation_location()
+		if not rec.is_empty():
+			gm.set_observing_location(rec["site"])
 	gm.language_mode = "zh"
 	gm.progress["language_mode"] = "zh"
 	gm.last_sky_aim = {"valid": false}

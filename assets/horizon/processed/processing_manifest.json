@@ -1,0 +1,590 @@
+{
+  "note": "Generated assets. Source files are retained unchanged.",
+  "assets": [
+    {
+      "source": "assets/horizon/cloud_band.png",
+      "output": "assets/horizon/processed/cloud_band.png",
+      "source_sha256": "104ce2c5471e177d98bca95ec9f213c27c77e0ab1fce2c78e14894427fab72fd",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.48,
+        "saturation": 0.3,
+        "tint": [
+          0.62,
+          0.72,
+          0.92
+        ]
+      },
+      "before": {
+        "width": 1000,
+        "height": 37,
+        "transparent_fraction": 0.684622,
+        "semi_transparent_fraction": 0.211,
+        "bright_semi_pixels": 4651,
+        "opaque_dark_pixels": 0,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 70.5405
+      },
+      "after": {
+        "width": 1000,
+        "height": 37,
+        "transparent_fraction": 0.687216,
+        "semi_transparent_fraction": 0.211459,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 0,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/cloud_layer.png",
+      "output": "assets/horizon/processed/cloud_layer.png",
+      "source_sha256": "95f367bbab4a7dd403bd9c358e32298586649df997c3e0a6d43e1f5128dd8aa8",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.48,
+        "saturation": 0.3,
+        "tint": [
+          0.62,
+          0.72,
+          0.92
+        ]
+      },
+      "before": {
+        "width": 866,
+        "height": 94,
+        "transparent_fraction": 0.846764,
+        "semi_transparent_fraction": 0.135436,
+        "bright_semi_pixels": 184,
+        "opaque_dark_pixels": 0,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      },
+      "after": {
+        "width": 866,
+        "height": 94,
+        "transparent_fraction": 0.842035,
+        "semi_transparent_fraction": 0.140165,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 0,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/cloud_wisp.png",
+      "output": "assets/horizon/processed/cloud_wisp.png",
+      "source_sha256": "db2fefa300f3f0ea0b75d90edcb2f3231023d5e7aa6aac2dfcb3e22c22e9c42b",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.48,
+        "saturation": 0.3,
+        "tint": [
+          0.62,
+          0.72,
+          0.92
+        ]
+      },
+      "before": {
+        "width": 866,
+        "height": 58,
+        "transparent_fraction": 0.820419,
+        "semi_transparent_fraction": 0.174265,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 0,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 30.4828
+      },
+      "after": {
+        "width": 866,
+        "height": 58,
+        "transparent_fraction": 0.8245,
+        "semi_transparent_fraction": 0.170383,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 0,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/far_city.png",
+      "output": "assets/horizon/processed/far_city.png",
+      "source_sha256": "21937feca3e76cbc88f50d2a4265ca57b899e82f24bec2d8223a7be38d8500cd",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.88,
+        "saturation": 0.62,
+        "tint": [
+          0.78,
+          0.86,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 2508,
+        "height": 175,
+        "transparent_fraction": 0.505596,
+        "semi_transparent_fraction": 0.062228,
+        "bright_semi_pixels": 16343,
+        "opaque_dark_pixels": 1,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 24.7314
+      },
+      "after": {
+        "width": 2508,
+        "height": 175,
+        "transparent_fraction": 0.512643,
+        "semi_transparent_fraction": 0.059752,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 3,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/far_desert.png",
+      "output": "assets/horizon/processed/far_desert.png",
+      "source_sha256": "e0a100191739f3c0c6d4ac09cf461af75417029a6e7496aefa75beacc46a364f",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.88,
+        "saturation": 0.62,
+        "tint": [
+          0.78,
+          0.86,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 1881,
+        "height": 819,
+        "transparent_fraction": 0.717185,
+        "semi_transparent_fraction": 0.005339,
+        "bright_semi_pixels": 4471,
+        "opaque_dark_pixels": 6716,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0427
+      },
+      "after": {
+        "width": 1881,
+        "height": 819,
+        "transparent_fraction": 0.718093,
+        "semi_transparent_fraction": 0.005655,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 18324,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/far_forest.png",
+      "output": "assets/horizon/processed/far_forest.png",
+      "source_sha256": "0644b93b515b6b6694abad76faa7c63f675df0d375d32b2c4089405dc4f0483a",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.88,
+        "saturation": 0.62,
+        "tint": [
+          0.78,
+          0.86,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 2172,
+        "height": 694,
+        "transparent_fraction": 0.655141,
+        "semi_transparent_fraction": 0.011868,
+        "bright_semi_pixels": 15580,
+        "opaque_dark_pixels": 27,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 2.8948
+      },
+      "after": {
+        "width": 2172,
+        "height": 694,
+        "transparent_fraction": 0.656295,
+        "semi_transparent_fraction": 0.013074,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 1256,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/far_mountain.png",
+      "output": "assets/horizon/processed/far_mountain.png",
+      "source_sha256": "de1c9493658a79c064820b0acced018c4a8319108037df4982d4ca7b84975259",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.88,
+        "saturation": 0.62,
+        "tint": [
+          0.78,
+          0.86,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 2172,
+        "height": 186,
+        "transparent_fraction": 0.076252,
+        "semi_transparent_fraction": 0.022627,
+        "bright_semi_pixels": 5110,
+        "opaque_dark_pixels": 2,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 9.5968
+      },
+      "after": {
+        "width": 2172,
+        "height": 186,
+        "transparent_fraction": 0.079276,
+        "semi_transparent_fraction": 0.024736,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 79,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/far_snow.png",
+      "output": "assets/horizon/processed/far_snow.png",
+      "source_sha256": "ddabd29691ff8a4d226d049f5233deade1cc699b1193b390efaa79c61ebb8943",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.88,
+        "saturation": 0.62,
+        "tint": [
+          0.78,
+          0.86,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 1983,
+        "height": 308,
+        "transparent_fraction": 0.152263,
+        "semi_transparent_fraction": 0.014439,
+        "bright_semi_pixels": 4790,
+        "opaque_dark_pixels": 8636,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 1.0812
+      },
+      "after": {
+        "width": 1983,
+        "height": 308,
+        "transparent_fraction": 0.152737,
+        "semi_transparent_fraction": 0.018695,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 20911,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/mid_city.png",
+      "output": "assets/horizon/processed/mid_city.png",
+      "source_sha256": "830efab59d1ccf420bffdfe620f55e09a0d5b046cef9f883fb36081262268774",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.9,
+        "saturation": 0.72,
+        "tint": [
+          0.84,
+          0.9,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 2172,
+        "height": 713,
+        "transparent_fraction": 0.952478,
+        "semi_transparent_fraction": 0.018791,
+        "bright_semi_pixels": 17142,
+        "opaque_dark_pixels": 210,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 16.805
+      },
+      "after": {
+        "width": 2172,
+        "height": 713,
+        "transparent_fraction": 0.955416,
+        "semi_transparent_fraction": 0.016442,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 408,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/mid_desert.png",
+      "output": "assets/horizon/processed/mid_desert.png",
+      "source_sha256": "94f31df8729eca3b8c27541792613ade4ccb80ae506e8b26673f08350261d0c7",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.9,
+        "saturation": 0.72,
+        "tint": [
+          0.84,
+          0.9,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 2172,
+        "height": 678,
+        "transparent_fraction": 0.678971,
+        "semi_transparent_fraction": 0.006375,
+        "bright_semi_pixels": 5152,
+        "opaque_dark_pixels": 4066,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.6932
+      },
+      "after": {
+        "width": 2172,
+        "height": 678,
+        "transparent_fraction": 0.679967,
+        "semi_transparent_fraction": 0.006909,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 8377,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/mid_forest.png",
+      "output": "assets/horizon/processed/mid_forest.png",
+      "source_sha256": "27e79cac61aeb66703b47e8bff483ebafd5fdf06de361f0dba4617c22df8054a",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.9,
+        "saturation": 0.72,
+        "tint": [
+          0.84,
+          0.9,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 2172,
+        "height": 670,
+        "transparent_fraction": 0.653399,
+        "semi_transparent_fraction": 0.047597,
+        "bright_semi_pixels": 32807,
+        "opaque_dark_pixels": 3836,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 14.3687
+      },
+      "after": {
+        "width": 2172,
+        "height": 670,
+        "transparent_fraction": 0.655925,
+        "semi_transparent_fraction": 0.053476,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 19365,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/mid_observatory.png",
+      "output": "assets/horizon/processed/mid_observatory.png",
+      "source_sha256": "eab6803c821d5f6f058e222a46e0aaa6ef1c2ab25b1e4615c0f72036dd382633",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.9,
+        "saturation": 0.72,
+        "tint": [
+          0.84,
+          0.9,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 2508,
+        "height": 310,
+        "transparent_fraction": 0.471375,
+        "semi_transparent_fraction": 0.060619,
+        "bright_semi_pixels": 23680,
+        "opaque_dark_pixels": 28559,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 83.0516
+      },
+      "after": {
+        "width": 2508,
+        "height": 310,
+        "transparent_fraction": 0.475859,
+        "semi_transparent_fraction": 0.066944,
+        "bright_semi_pixels": 0,
+        "opaque_dark_pixels": 79265,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/near_forest.png",
+      "output": "assets/horizon/processed/near_forest.png",
+      "source_sha256": "14bba55175ffe28029cb212fc5fa9c5b3d232ec20418ef8dbc584582ba03ca9f",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.92,
+        "saturation": 0.8,
+        "tint": [
+          0.9,
+          0.93,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 2172,
+        "height": 724,
+        "transparent_fraction": 0.611537,
+        "semi_transparent_fraction": 0.092821,
+        "bright_semi_pixels": 69380,
+        "opaque_dark_pixels": 48778,
+        "top_edge_visible_pixels": 479,
+        "left_right_alpha_mae": 60.0691
+      },
+      "after": {
+        "width": 2172,
+        "height": 724,
+        "transparent_fraction": 0.608701,
+        "semi_transparent_fraction": 0.104537,
+        "bright_semi_pixels": 19,
+        "opaque_dark_pixels": 83764,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/near_platform.png",
+      "output": "assets/horizon/processed/near_platform.png",
+      "source_sha256": "38ce488b1d42c3fc7d14c2e59861b177dbe6f0cd069bea43521728b2fe8345f0",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.92,
+        "saturation": 0.8,
+        "tint": [
+          0.9,
+          0.93,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 2172,
+        "height": 284,
+        "transparent_fraction": 0.347486,
+        "semi_transparent_fraction": 0.090426,
+        "bright_semi_pixels": 33808,
+        "opaque_dark_pixels": 5798,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 9.7923
+      },
+      "after": {
+        "width": 2172,
+        "height": 284,
+        "transparent_fraction": 0.359388,
+        "semi_transparent_fraction": 0.081777,
+        "bright_semi_pixels": 45,
+        "opaque_dark_pixels": 8658,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    },
+    {
+      "source": "assets/horizon/near_platform_b.png",
+      "output": "assets/horizon/processed/near_platform_b.png",
+      "source_sha256": "31695ea4f23b25b5f5727ffa64e0a72baacea991bc230bae5710d9784777df2d",
+      "processing": [
+        "alpha-preserving nearest-opaque edge color repair",
+        "layer-aware night grade with warm-light preservation",
+        "horizontal seam matching"
+      ],
+      "grade": {
+        "exposure": 0.92,
+        "saturation": 0.8,
+        "tint": [
+          0.9,
+          0.93,
+          1.0
+        ]
+      },
+      "before": {
+        "width": 1983,
+        "height": 416,
+        "transparent_fraction": 0.516096,
+        "semi_transparent_fraction": 0.057886,
+        "bright_semi_pixels": 25297,
+        "opaque_dark_pixels": 14463,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 22.7452
+      },
+      "after": {
+        "width": 1983,
+        "height": 416,
+        "transparent_fraction": 0.525182,
+        "semi_transparent_fraction": 0.053402,
+        "bright_semi_pixels": 63,
+        "opaque_dark_pixels": 19596,
+        "top_edge_visible_pixels": 0,
+        "left_right_alpha_mae": 0.0
+      }
+    }
+  ]
+}

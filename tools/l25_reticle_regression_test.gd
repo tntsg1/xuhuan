@@ -20,6 +20,20 @@ func _initialize() -> void:
 	view = load("res://scenes/sky_observation.tscn").instantiate()
 	root.add_child(view)
 	current_scene = view
+	# This test verifies reticle rebuilding, not seasonal visibility. Pin only the
+	# live horizontal fixture above the horizon before the deferred map gate.
+	var target_id := str(view.get("target_id"))
+	var sky: Dictionary = view.get("sky_data")
+	var target: Dictionary = sky.get(target_id, {}).duplicate(true)
+	target["azimuth"] = 180.0
+	target["altitude"] = 45.0
+	target["visible"] = true
+	target["below_horizon"] = false
+	target["source"] = "calculated"
+	sky[target_id] = target
+	view.set("sky_data", sky)
+	gm.publish_sky_positions(sky)
+	view.call("_rebuild_view")
 	await _settle()
 	await _check_mode("naked_eye", "l25_zh_eye_reticle.png")
 	await _check_mode("finder", "l25_zh_finder_reticle.png")

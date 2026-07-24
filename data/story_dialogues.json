@@ -2124,20 +2124,20 @@
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "This is a model of a segmented space telescope — like the James Webb. Its primary mirror is 18 hexagonal segments that unfold in space, because no rocket can carry it in one piece.",
-      "text_zh": "这是一台分段式空间望远镜的模型——就像詹姆斯·韦布。它的主镜由 18 块六边形镜片组成，在太空中展开，因为没有火箭能整块运上去。"
+      "text_en": "Meet a segmented space telescope, like the James Webb. Its primary mirror is not one disc but many hexagonal segments folded for launch.",
+      "text_zh": "认识一台分段式空间望远镜，就像詹姆斯·韦伯。它的主镜不是一整块，而是许多可折叠发射的六边形分段。"
     },
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "It does not observe visible light. It sees INFRARED — heat radiation. That's why it carries a sunshield the size of a tennis court: the telescope itself must stay colder than its targets.",
-      "text_zh": "它观测的不是可见光，而是红外线——热辐射。这就是为什么它带着一面网球场大小的遮阳板：望远镜自身必须比它的目标更冷。"
+      "text_en": "It does not form an eyepiece image of visible light. It reads INFRARED - the heat of dust-shrouded nurseries and the coldest, most distant galaxies.",
+      "text_zh": "它不形成可见光的目镜图像，而是读取红外——尘埃笼罩的恒星摇篮、以及最冷最遥远星系的热辐射。"
     },
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "Assemble the segments, the instrument package, and the sunshield. Every piece here answers the question: how do you see heat without feeling your own?",
-      "text_zh": "把镜片阵列、仪器包和遮阳板装起来。这里的每个部件都在回答同一个问题：如何看见热，而不被自己的热干扰？"
+      "text_en": "Assemble the hexagonal segments, the deployable secondary, the five-layer sunshield and the infrared instrument bay, then align and deploy them.",
+      "text_zh": "组装六边形分段主镜、可展开副镜、五层遮阳罩和红外仪器舱，再完成对准与展开。"
     }
   ],
   "level_66_after": [
@@ -2338,8 +2338,20 @@
     {
       "speaker": "Maya",
       "portrait": "maya",
-      "text_en": "You've now used mirrors two ways: straight through (Newtonian) and folded back (Cassegrain). There's a third, stranger fold — the Gregorian. It's older than both.",
-      "text_zh": "你已经用过两种镜面布局：直通的牛顿式和折返的卡塞格林式。还有第三种更奇特的折叠——格里高利式。它比前两种都古老。"
+      "text_en": "You've now folded visible light with mirrors two ways: straight through with a Newtonian, and doubled back with the Cassegrain.",
+      "text_zh": "你已经用镜面折叠可见光两种方式：牛顿镜直穿、卡塞格林镜折返。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "But the universe does not shine only in visible light. Some objects are hidden behind dust; some star-forming regions are almost dark to our eyes.",
+      "text_zh": "但宇宙并不只用可见光发光。有些天体被尘埃遮挡，有些恒星形成区在可见光下几乎是暗的。"
+    },
+    {
+      "speaker": "Maya",
+      "portrait": "maya",
+      "text_en": "Infrared - heat radiation - passes through some of that dust and reveals the warmth beneath. For that, we leave the ground and go to space.",
+      "text_zh": "红外线——热辐射——能穿过部分尘埃，显示其下的温度。为此，我们要离开地面，走向太空。"
     }
   ],
   "level_54_before": [

@@ -85,7 +85,7 @@ func _test_assets_and_layers() -> void:
 	var object_icons: Dictionary = view.get("object_icons")
 	if not object_icons.is_empty():
 		var first_icon := object_icons.values()[0] as TextureRect
-		_check(first_icon.z_index < (view.get("cloud_layer") as Control).z_index, "atmosphere is above celestial targets")
+		_check((view.get("cloud_layer") as Control).z_index < first_icon.z_index, "atmosphere artwork stays below celestial targets")
 	_check((view.get("cloud_layer") as Control).z_index < reticle.z_index, "atmosphere remains below aiming artwork")
 	_check(reticle.z_index < (view.get("az_readout") as Label).z_index, "dynamic readouts remain above aiming artwork")
 	_check((view.get("az_readout") as Label).z_index < (view.get("guidance_banner") as Label).z_index, "bottom guidance remains the top sky-viewport layer")

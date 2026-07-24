@@ -26,6 +26,19 @@ func _initialize() -> void:
 	view = load("res://scenes/sky_observation.tscn").instantiate()
 	root.add_child(view)
 	current_scene = view
+	# Guidance is tested against a stable above-horizon offset; real seasonal
+	# visibility is covered separately by the horizon tests.
+	var sky: Dictionary = view.get("sky_data")
+	var vega: Dictionary = sky.get("vega", {}).duplicate(true)
+	vega["azimuth"] = 130.0
+	vega["altitude"] = 40.0
+	vega["visible"] = true
+	vega["below_horizon"] = false
+	vega["source"] = "calculated"
+	sky["vega"] = vega
+	view.set("sky_data", sky)
+	gm.publish_sky_positions(sky)
+	view.call("_rebuild_view")
 	for index in range(5):
 		await process_frame
 

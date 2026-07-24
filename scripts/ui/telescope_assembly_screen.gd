@@ -157,25 +157,21 @@ func _build() -> void:
 
 func _draw_title_bar() -> void:
 	AssemblyUITemplate.add_title_bar(self, GameManager.text("Telescope Assembly", "望远镜组装台"), GameManager.text("Pick a part, then click its blueprint slot.", "选择零件，再点击蓝图安装位。"))
+	_add_type_selector()
 	AssemblyUITemplate.add_hints_toggle(self, GameManager, _build)
-	return
-	_rect(Vector2(0, 0), Vector2(1024, 58), Color(0.030, 0.045, 0.085, 0.96))
-	_rect(Vector2(18, 12), Vector2(988, 3), Color(0.78, 0.56, 0.28))
-	_rect(Vector2(18, 52), Vector2(988, 3), Color(0.17, 0.25, 0.40))
-	var title := _label(GameManager.text("Telescope Assembly", "望远镜组装台"), 24, Color(0.96, 0.95, 0.90))
-	title.position = Vector2(216, 13)
-	title.size = Vector2(592, 30)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.autowrap_mode = TextServer.AUTOWRAP_OFF
-	add_child(title)
 
-	var subtitle := _label(GameManager.text("Pick a part, then click its blueprint slot.", "选择零件，再点击蓝图安装位。"), 11, Color(0.76, 0.84, 0.88))
-	subtitle.position = Vector2(708, 16)
-	subtitle.size = Vector2(286, 30)
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	add_child(subtitle)
-	subtitle.visible = false
+
+func _add_type_selector() -> void:
+	var button := _button(GameManager.text("Type: Refractor", "类型：折射式"), Vector2(24, 18), Vector2(180, 30))
+	button.name = "TelescopeTypeButton"
+	button.add_theme_font_size_override("font_size", 11)
+	button.tooltip_text = GameManager.text("Choose another unlocked telescope family", "选择其他已解锁的望远镜类型")
+	button.pressed.connect(func() -> void:
+		GameManager.set_meta("telescope_types_browse", false)
+		GameManager.set_meta("telescope_types_return_scene", "assembly")
+		GameManager.go("telescope_types")
+	)
+	add_child(button)
 
 
 func _build_parts_panel() -> void:

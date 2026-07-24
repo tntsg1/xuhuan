@@ -75,18 +75,6 @@ const FAMILIES := [
 		"targets_zh": "行星、小型行星状星云、紧密双星。"
 	},
 	{
-		"id": "gregorian", "unlock": 56, "scene": "advanced_assembly",
-		"name_en": "Gregorian", "name_zh": "格里高利",
-		"principle_en": "Like a Cassegrain but the secondary is a CONCAVE mirror placed beyond the primary's focus, giving an upright image.",
-		"principle_zh": "类似卡塞格林，但副镜是放在主镜焦点之外的凹面镜，能得到正立的像。",
-		"pros_en": "Upright, correctly-oriented image; clean optical path; used in solar and research scopes.",
-		"pros_zh": "成像正立、方向正确；光路干净；常用于太阳镜和科研望远镜。",
-		"cons_en": "Longer tube than a Cassegrain; the extra reflection demands precise alignment.",
-		"cons_zh": "镜筒比卡塞格林长；多一次反射，需要更精确的对准。",
-		"targets_en": "Solar observation, research-grade imaging, upright terrestrial views.",
-		"targets_zh": "太阳观测、科研级成像、正立地面观测。"
-	},
-	{
 		"id": "space_segmented", "unlock": 66, "scene": "advanced_assembly",
 		"name_en": "Infrared / Space", "name_zh": "红外 / 空间",
 		"principle_en": "A large segmented mirror above the atmosphere feeds cold infrared instruments that read heat, not visible light.",
@@ -125,7 +113,9 @@ func _ready() -> void:
 	# browse_only when opened from the observatory info entry; otherwise this is
 	# the confirm step for the current lesson's advanced assembly.
 	browse_only = bool(GameManager.get_meta("telescope_types_browse", false))
-	selected_family = _recommended_family()
+	selected_family = GameManager.assembly_family()
+	if _entry(selected_family).is_empty() or not _is_unlocked(_entry(selected_family)):
+		selected_family = _recommended_family()
 	_build()
 	InteractionFeedback.page_enter(self)
 
@@ -326,6 +316,8 @@ func _proceed() -> void:
 	if entry.is_empty() or not _is_unlocked(entry):
 		return
 	GameManager.set_meta("telescope_types_browse", false)
+	GameManager.select_assembly_family(selected_family)
+	GameManager.remove_meta("telescope_types_return_scene")
 	# Route to the correct bench for the chosen family. Level data is untouched;
 	# for a browse-only visit we still open the matching assembly scene so the
 	# player can inspect the bench.
@@ -335,7 +327,9 @@ func _proceed() -> void:
 
 func _go_back() -> void:
 	GameManager.set_meta("telescope_types_browse", false)
-	GameManager.go("observatory")
+	var return_scene := str(GameManager.get_meta("telescope_types_return_scene", GameManager.assembly_scene_key()))
+	GameManager.remove_meta("telescope_types_return_scene")
+	GameManager.go(return_scene)
 
 
 # ------------------------------------------------------------------ helpers

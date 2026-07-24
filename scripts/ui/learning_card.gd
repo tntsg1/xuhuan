@@ -95,14 +95,25 @@ func _build_mission_complete(data: Dictionary) -> void:
 	_quality_panel(observation, data.get("stats", {}))
 	_learned_panel(obj, level, observation, data, concept)
 	_rewards_panel(level, concept)
+	# NEXT STEP block: what the next mission is, where to go, and what to do.
+	# Without this the player finishes a level and is dropped into the lobby with
+	# no idea whether to observe, assemble, swap parts or open the mission board.
 	var next_route := GameManager.current_room_route()
-	var next_step := _label(
-		GameManager.text("NEXT: ", "下一步：") + str(next_route.get("action", "")),
-		Vector2(170, 610), Vector2(684, 28), 15, GOLD, HORIZONTAL_ALIGNMENT_CENTER
-	)
-	next_step.clip_text = true
+	_dark_panel(Vector2(168, 594), Vector2(688, 66), Color(0.02, 0.05, 0.035, 0.95), GOLD)
+	var next_level := int(GameManager.progress.get("current_level", 0))
+	var next_title := GameManager.dict_text(GameManager.current_level(), "title")
+	var head := _label(
+		GameManager.text("NEXT: Level %d - %s" % [next_level, next_title], "下一关：第 %d 关 - %s" % [next_level, next_title]),
+		Vector2(180, 598), Vector2(664, 22), 15, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	head.clip_text = true
+	var where := _label(
+		GameManager.text("Go to: ", "前往：") + str(next_route.get("action", "")),
+		Vector2(180, 619), Vector2(664, 20), 14, Color(0.72, 0.94, 0.68), HORIZONTAL_ALIGNMENT_CENTER)
+	where.clip_text = true
+	var what := _label(str(next_route.get("hint", "")), Vector2(180, 638), Vector2(664, 18), 12, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	what.clip_text = true
 
-	var continue_button: Button = _mission_button(GameManager.text("Continue", "继续"), Vector2(298, 650), Vector2(210, 50), Color(0.08, 0.38, 0.20))
+	var continue_button: Button = _mission_button(GameManager.text("Continue", "继续"), Vector2(298, 668), Vector2(210, 48), Color(0.08, 0.38, 0.20))
 	continue_button.pressed.connect(func() -> void:
 		GameManager.update_room_guidance_for_level()
 		# Family-arc levels close with a short Maya epilogue (summary plus the
@@ -113,7 +124,7 @@ func _build_mission_complete(data: Dictionary) -> void:
 		GameManager.go("observatory")
 	)
 
-	var journal_button: Button = _mission_button(GameManager.text("Open Journal", "打开观测日志"), Vector2(536, 650), Vector2(230, 50), Color(0.06, 0.20, 0.42))
+	var journal_button: Button = _mission_button(GameManager.text("Open Journal", "打开观测日志"), Vector2(536, 668), Vector2(230, 48), Color(0.06, 0.20, 0.42))
 	journal_button.pressed.connect(func() -> void:
 		GameManager.set_observatory_spawn("journal")
 		GameManager.go("journal")
